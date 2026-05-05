@@ -69,18 +69,18 @@ const CLASSES = [
 ]
 
 const STATS = [
-  { value: 20,  prefix: '',  suffix: '',     label: 'Max Students Per Class' },
-  { value: 60,  prefix: '',  suffix: ' min', label: 'Class Duration' },
-  { value: 46,  prefix: '$', suffix: '',     label: 'Drop-In Per Session' },
-  { value: 100, prefix: '',  suffix: '%',    label: 'Tail Wags Guaranteed' },
+  { value: 20, prefix: '', suffix: '', label: 'Max Students Per Class' },
+  { value: 60, prefix: '', suffix: ' min', label: 'Class Duration' },
+  { value: 46, prefix: '$', suffix: '', label: 'Drop-In Per Session' },
+  { value: 100, prefix: '', suffix: '%', label: 'Tail Wags Guaranteed' },
 ]
 
 const GALLERY = [
-  { src: '/IMG_7546.webp',                                        alt: 'Studio Yopaw session',   tall: true  },
-  { src: '/IMG_7268_43334cab-c14c-4b05-b4b9-497a9fcd7f92.webp', alt: 'Class in session',       tall: false },
-  { src: '/IMG_7478_3c7b739e-7a8c-43b3-b104-99f3db44a731.webp', alt: 'Happy pup moment',       tall: false },
+  { src: '/IMG_7546.webp', alt: 'Studio Yopaw session', tall: true },
+  { src: '/IMG_7268_43334cab-c14c-4b05-b4b9-497a9fcd7f92.webp', alt: 'Class in session', tall: false },
+  { src: '/IMG_7478_3c7b739e-7a8c-43b3-b104-99f3db44a731.webp', alt: 'Happy pup moment', tall: false },
   { src: '/IMG_9045_b027fb31-b966-46ee-ac10-47bafc1ef696.webp', alt: 'Yoga flow with puppies', tall: false },
-  { src: '/IMG_1167_ff8c28e8-ef39-491c-bf7c-ae0caa5fda75.webp', alt: 'Studio highlight',       tall: false },
+  { src: '/IMG_1167_ff8c28e8-ef39-491c-bf7c-ae0caa5fda75.webp', alt: 'Studio highlight', tall: false },
 ]
 
 const TESTIMONIALS = [
@@ -177,12 +177,12 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
 
       {menuOpen && (
         <div className="mobile-menu">
-          <a href="#about"     onClick={() => setMenuOpen(false)}>About</a>
-          <a href="#classes"   onClick={() => setMenuOpen(false)}>Classes</a>
-          <a href="#pricing"   onClick={() => setMenuOpen(false)}>Pricing</a>
-          <a href="#gallery"   onClick={() => setMenuOpen(false)}>Gallery</a>
+          <a href="#about" onClick={() => setMenuOpen(false)}>About</a>
+          <a href="#classes" onClick={() => setMenuOpen(false)}>Classes</a>
+          <a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing</a>
+          <a href="#gallery" onClick={() => setMenuOpen(false)}>Gallery</a>
           <a href="#corporate" onClick={() => setMenuOpen(false)}>Corporate</a>
-          <a href="#faq"       onClick={() => setMenuOpen(false)}>FAQ</a>
+          <a href="#faq" onClick={() => setMenuOpen(false)}>FAQ</a>
           <a
             href="#book"
             className="btn-primary"
@@ -216,7 +216,7 @@ function HeroSection() {
           and four-legged companionship to your practice — right here in Saint-Lazare.
         </p>
         <div className="hero-ctas">
-          <a href="#book"    className="btn-primary btn-lg">Book a Session</a>
+          <a href="#book" className="btn-primary btn-lg">Book a Session</a>
           <a href="#classes" className="btn-ghost   btn-lg">Our Classes</a>
         </div>
       </div>
@@ -471,23 +471,23 @@ function IllustrationSection() {
             <line x1="180" y1="90" x2="284" y2="214" stroke="#F0EBE3" strokeWidth="14" strokeLinecap="round" />
             <ellipse cx="282" cy="218" rx="15" ry="8" fill="#F0D5B5" />
             <ellipse cx="298" cy="224" rx="11" ry="6" fill="#DFC09A" opacity="0.75" />
-            <circle cx="71"  cy="219" r="11" fill="#F0D5B5" />
-            <circle cx="101" cy="228" r="8"  fill="#DFC09A" opacity="0.75" />
+            <circle cx="71" cy="219" r="11" fill="#F0D5B5" />
+            <circle cx="101" cy="228" r="8" fill="#DFC09A" opacity="0.75" />
             <circle cx="55" cy="196" r="25" fill="#F0D5B5" />
             <ellipse cx="55" cy="178" rx="25" ry="15" fill="#7A5A3A" />
-            <circle cx="47" cy="197" r="3"  fill="#4A3520" />
-            <circle cx="62" cy="199" r="3"  fill="#4A3520" />
+            <circle cx="47" cy="197" r="3" fill="#4A3520" />
+            <circle cx="62" cy="199" r="3" fill="#4A3520" />
             <path d="M48 207 Q55 213 62 207" stroke="#6B4A30" strokeWidth="2.5" fill="none" strokeLinecap="round" />
             <circle cx="180" cy="90" r="6" fill="rgba(240,235,227,0.35)" />
             <ellipse cx="180" cy="67" rx="31" ry="21" fill="#C4895A" />
             <circle cx="153" cy="51" r="23" fill="#C4895A" />
             <ellipse cx="140" cy="59" rx="11" ry="9" fill="#A87040" />
-            <ellipse cx="146" cy="33" rx="9"  ry="15" fill="#9E6230" transform="rotate(-18 146 33)" />
-            <ellipse cx="168" cy="31" rx="9"  ry="15" fill="#9E6230" transform="rotate(12 168 31)" />
+            <ellipse cx="146" cy="33" rx="9" ry="15" fill="#9E6230" transform="rotate(-18 146 33)" />
+            <ellipse cx="168" cy="31" rx="9" ry="15" fill="#9E6230" transform="rotate(12 168 31)" />
             <circle cx="147" cy="47" r="5.5" fill="#1C1C1C" />
             <circle cx="162" cy="45" r="5.5" fill="#1C1C1C" />
-            <circle cx="148" cy="46" r="2"   fill="white" />
-            <circle cx="163" cy="44" r="2"   fill="white" />
+            <circle cx="148" cy="46" r="2" fill="white" />
+            <circle cx="163" cy="44" r="2" fill="white" />
             <ellipse cx="140" cy="57" rx="5" ry="4" fill="#5A2A2A" />
             <path d="M136 63 Q140 71 144 63" stroke="#D44040" strokeWidth="2.5" fill="#D44040" strokeLinecap="round" />
             <line x1="163" y1="84" x2="158" y2="103" stroke="#9E6230" strokeWidth="9" strokeLinecap="round" />
@@ -761,11 +761,11 @@ export default function App() {
       <MarqueeTicker />
       <AboutSection />
       <ClassesSection />
+      <GallerySection />
       <ExperienceSection />
       <StatsBar />
       <PricingSection />
       <IllustrationSection />
-      <GallerySection />
       <CorporateSection />
       <TestimonialsSection />
       <FAQSection />
