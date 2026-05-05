@@ -1,5 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, type FormEvent } from 'react'
 import './App.css'
+import type { Lang } from './i18n/siteStrings'
+import { interpolate, useI18n } from './i18n/LanguageProvider'
 
 // ── SVG Icons ──────────────────────────────────────────────
 
@@ -41,110 +43,27 @@ function useInView(threshold = 0.2) {
 
 // ── Static Data ────────────────────────────────────────────
 
-const CLASSES = [
-  {
-    title: 'Puppy Yoga — Yin',
-    duration: '60 min',
-    image: '/IMG_0642.webp',
-    description: 'A slow, meditative practice accompanied by adorable puppies. Designed for all levels — the perfect balance of stillness, breathing, and puppy cuddles.',
-    link: '#book',
-    linkText: 'Reserve a spot →',
-  },
-  {
-    title: 'Puppy Yoga — Gentle Flow',
-    duration: '60 min',
-    image: '/IMG_1468.webp',
-    description: 'Beginner-friendly movement in a warm, welcoming atmosphere. Explore yoga at your own pace while our puppies bring endless joy to your mat.',
-    link: '#book',
-    linkText: 'Reserve a spot →',
-  },
-  {
-    title: 'Private & Corporate',
-    duration: 'Flexible',
-    image: '/IMG_2299_2.webp',
-    description: 'Book a private session for your group — up to 20 participants. Perfect for corporate wellness, team building, birthdays, and special celebrations.',
-    link: '#corporate',
-    linkText: 'Learn more →',
-  },
+const GALLERY_IMAGES = [
+  { src: '/IMG_7546.webp', tall: true as const },
+  { src: '/IMG_7268_43334cab-c14c-4b05-b4b9-497a9fcd7f92.webp', tall: false as const },
+  { src: '/IMG_7478_3c7b739e-7a8c-43b3-b104-99f3db44a731.webp', tall: false as const },
+  { src: '/IMG_9045_b027fb31-b966-46ee-ac10-47bafc1ef696.webp', tall: false as const },
+  { src: '/IMG_1167_ff8c28e8-ef39-491c-bf7c-ae0caa5fda75.webp', tall: false as const },
 ]
 
-const STATS = [
-  { value: 20, prefix: '', suffix: '', label: 'Max Students Per Class' },
-  { value: 60, prefix: '', suffix: ' min', label: 'Class Duration' },
-  { value: 46, prefix: '$', suffix: '', label: 'Drop-In Per Session' },
-  { value: 100, prefix: '', suffix: '%', label: 'Tail Wags Guaranteed' },
-]
-
-const GALLERY = [
-  { src: '/IMG_7546.webp', alt: 'Studio Yopaw session', tall: true },
-  { src: '/IMG_7268_43334cab-c14c-4b05-b4b9-497a9fcd7f92.webp', alt: 'Class in session', tall: false },
-  { src: '/IMG_7478_3c7b739e-7a8c-43b3-b104-99f3db44a731.webp', alt: 'Happy pup moment', tall: false },
-  { src: '/IMG_9045_b027fb31-b966-46ee-ac10-47bafc1ef696.webp', alt: 'Yoga flow with puppies', tall: false },
-  { src: '/IMG_1167_ff8c28e8-ef39-491c-bf7c-ae0caa5fda75.webp', alt: 'Studio highlight', tall: false },
-]
-
-const TESTIMONIALS = [
-  {
-    name: 'Sarah M.',
-    since: 'Yoga participant',
-    quote: "I've tried every yoga studio in the city, but nothing compares to the pure joy of practicing with puppies. It completely transformed my relationship with mindfulness.",
-    rating: 5,
-  },
-  {
-    name: 'Jamie L.',
-    since: 'Regular attendee',
-    quote: "The instructors are incredible, the puppies are adorable, and the atmosphere is so welcoming. It's genuinely the highlight of my week, every single week.",
-    rating: 5,
-  },
-  {
-    name: 'Priya K.',
-    since: 'First-time visitor',
-    quote: "As someone who struggles with anxiety, puppy yoga has been genuinely therapeutic. The combination of mindful movement and puppy cuddles is simply unbeatable.",
-    rating: 5,
-  },
-]
-
-const MARQUEE = [
-  '🐾 Yoga avec chiens', '·', 'Animal-Assisted Therapy', '·', 'Saint-Lazare, QC', '·',
-  'Yin & Gentle Flow', '·', 'RYT 200 Certified', '·', 'All Sizes Welcome', '·',
-  '🐾 Puppy Yoga', '·', 'Stress Relief & Joy', '·', 'Namaste & Play', '·',
-]
-
-const FAQS = [
-  {
-    q: 'Do I need yoga experience to attend?',
-    a: "Not at all! Our Yin and Gentle Flow classes are fully beginner-friendly. Whether it's your first time on a mat or you're a seasoned practitioner, you'll feel right at home.",
-  },
-  {
-    q: 'What size dogs are welcome?',
-    a: 'All sizes are welcome! From tiny Chihuahuas to large Golden Retrievers — the more the merrier at Studio Yopaw.',
-  },
-  {
-    q: 'Do the dogs need to be vaccinated?',
-    a: 'Vaccinations are strongly recommended for the safety and well-being of all animals participating in class. We want every pup to have a happy, healthy experience.',
-  },
-  {
-    q: 'What should I bring to class?',
-    a: "Comfortable yoga clothes and ideally your own yoga mat. If you don't have one, we offer rentals on-site for just $5.",
-  },
-  {
-    q: 'What is your cancellation policy?',
-    a: 'Cancel at least 72 hours before your class start time to receive a full refund or credit toward a future session.',
-  },
-  {
-    q: 'How long is a class and what does it look like?',
-    a: 'Each class is 60 minutes: 15 minutes of warm-up yoga (without puppies), 15 minutes of yoga with the puppies joining in, and 30 minutes of free play and photos with our furry friends.',
-  },
-  {
-    q: 'How do I book a class?',
-    a: "Book online at studioyopaw.ca — it's quick and easy. Payment is taken at time of booking, and you'll receive an email confirmation right away. Reminder emails are sent the Monday before your weekend class.",
-  },
+const CLASS_IMAGES = [
+  '/IMG_0642.webp',
+  '/IMG_1468.webp',
+  '/IMG_2299_2.webp',
 ]
 
 // ── Sections ───────────────────────────────────────────────
 
 function Navbar({ scrolled }: { scrolled: boolean }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const { lang, s, toggleLang } = useI18n()
+  const toggleLabel = lang === 'en' ? 'FR' : 'EN'
+  const toggleAria = lang === 'en' ? s.navSwitchToFrAria : s.navSwitchToEnAria
 
   return (
     <>
@@ -152,23 +71,32 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
         <div className="navbar-inner">
           <a href="#hero" className="navbar-logo">
             <PawIcon size={26} className="logo-paw" />
-            Studio Yopaw
+            {s.navBrand}
           </a>
           <ul className="navbar-links">
-            <li><a href="#about">About</a></li>
-            <li><a href="#classes">Classes</a></li>
-            <li><a href="#pricing">Pricing</a></li>
-            <li><a href="#gallery">Gallery</a></li>
-            <li><a href="#corporate">Corporate</a></li>
-            <li><a href="#faq">FAQ</a></li>
+            <li><a href="#experience">{s.navLinks.howItWorks}</a></li>
+            <li><a href="#classes">{s.navLinks.classes}</a></li>
+            <li><a href="#testimonials">{s.navLinks.reviews}</a></li>
+            <li><a href="#pricing">{s.navLinks.pricing}</a></li>
+            <li><a href="#corporate">{s.navLinks.corporate}</a></li>
+            <li><a href="#faq">{s.navLinks.faq}</a></li>
           </ul>
-          <div className="navbar-cta">
-            <a href="#book" className="btn-primary">Book a Session</a>
+          <div className="navbar-actions">
+            <button
+              type="button"
+              className="lang-switch"
+              onClick={toggleLang}
+              aria-label={toggleAria}
+              title={s.navLangOtherHint}
+            >
+              {toggleLabel}
+            </button>
+            <a href="#book" className="btn-primary">{s.navBook}</a>
           </div>
           <button
             className="hamburger"
             onClick={() => setMenuOpen(o => !o)}
-            aria-label="Toggle navigation"
+            aria-label={s.navToggle}
           >
             <span /><span /><span />
           </button>
@@ -177,19 +105,19 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
 
       {menuOpen && (
         <div className="mobile-menu">
-          <a href="#about" onClick={() => setMenuOpen(false)}>About</a>
-          <a href="#classes" onClick={() => setMenuOpen(false)}>Classes</a>
-          <a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing</a>
-          <a href="#gallery" onClick={() => setMenuOpen(false)}>Gallery</a>
-          <a href="#corporate" onClick={() => setMenuOpen(false)}>Corporate</a>
-          <a href="#faq" onClick={() => setMenuOpen(false)}>FAQ</a>
+          <a href="#experience" onClick={() => setMenuOpen(false)}>{s.navLinks.howItWorks}</a>
+          <a href="#classes" onClick={() => setMenuOpen(false)}>{s.navLinks.classes}</a>
+          <a href="#testimonials" onClick={() => setMenuOpen(false)}>{s.navLinks.reviews}</a>
+          <a href="#pricing" onClick={() => setMenuOpen(false)}>{s.navLinks.pricing}</a>
+          <a href="#corporate" onClick={() => setMenuOpen(false)}>{s.navLinks.corporate}</a>
+          <a href="#faq" onClick={() => setMenuOpen(false)}>{s.navLinks.faq}</a>
           <a
             href="#book"
             className="btn-primary"
             style={{ marginTop: 8, textAlign: 'center' }}
             onClick={() => setMenuOpen(false)}
           >
-            Book a Session
+            {s.navMobileBook}
           </a>
         </div>
       )}
@@ -198,6 +126,7 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
 }
 
 function HeroSection() {
+  const { s } = useI18n()
   return (
     <section className="hero-section" id="hero">
       <video
@@ -207,21 +136,20 @@ function HeroSection() {
       />
       <div className="hero-overlay" />
       <div className="hero-content">
-        <div className="hero-badge">🐾 Est. 2026 · Saint-Lazare, QC</div>
         <h1 className="hero-title">
-          Where Puppies & People<br />Find Their <em>Flow</em>
+          {s.heroTitleL1}<br />
+          {s.heroTitleL2Prefix}<em>{s.heroTitleItalic}</em>
         </h1>
         <p className="hero-sub">
-          Animal-assisted therapy meets mindful movement. Our puppy yoga classes bring joy, calm,
-          and four-legged companionship to your practice — right here in Saint-Lazare.
+          {s.heroSub}
         </p>
         <div className="hero-ctas">
-          <a href="#book" className="btn-primary btn-lg">Book a Session</a>
-          <a href="#classes" className="btn-ghost   btn-lg">Our Classes</a>
+          <a href="#book" className="btn-primary btn-lg">{s.heroBook}</a>
+          <a href="#classes" className="btn-ghost   btn-lg">{s.heroClasses}</a>
         </div>
       </div>
       <div className="hero-scroll">
-        <span>Scroll</span>
+        <span>{s.heroScroll}</span>
         <div className="scroll-chevron" />
       </div>
     </section>
@@ -229,7 +157,8 @@ function HeroSection() {
 }
 
 function MarqueeTicker() {
-  const doubled = [...MARQUEE, ...MARQUEE]
+  const { s } = useI18n()
+  const doubled = [...s.marqueeItems, ...s.marqueeItems]
   return (
     <div className="marquee-wrapper" aria-hidden="true">
       <div className="marquee-track">
@@ -243,26 +172,24 @@ function MarqueeTicker() {
 
 function AboutSection() {
   const { ref, inView } = useInView(0.2)
+  const { s } = useI18n()
   return (
     <section className="about-section" id="about">
       <div className={`about-inner${inView ? ' visible' : ''}`} ref={ref}>
         <div className="about-text">
-          <span className="section-badge">Notre Histoire</span>
-          <h2>Yoga. Chiens.<br />Pure <em>Bonheur</em>.</h2>
-          <p>
-            Studio Yopaw was born from a beautiful combination: a deep love for dogs and the
-            well-being that yoga provides. Founded in 2026 by Joelle Castonguay in Saint-Lazare, QC,
-            our studio exists to offer animal-assisted therapy to people of all backgrounds.
-          </p>
-          <p>
-            Our RYT 200 certified instructors guide every 60-minute session with care and expertise.
-            Whether you're stepping onto a mat for the first time or deepening a long-time practice,
-            every class is made infinitely better by our four-legged co-instructors.
-          </p>
-          <a href="#classes" className="link-arrow">Explore our classes →</a>
+          <span className="section-badge">{s.aboutBadge}</span>
+          <h2>
+            {s.aboutHeadingL1}
+            <br />
+            {s.aboutHeadingEmPrefix}
+            <em>{s.aboutHeadingItalic}</em>.
+          </h2>
+          <p>{s.aboutP1}</p>
+          <p>{s.aboutP2}</p>
+          <a href="#classes" className="link-arrow">{s.aboutLink}</a>
         </div>
         <div className="about-image">
-          <img src="/IMG_5574.webp" alt="Studio Yopaw puppy yoga session" />
+          <img src="/IMG_5574.webp" alt={s.aboutImgAlt} />
           <div className="paw-float paw-float-1"><PawIcon size={46} /></div>
           <div className="paw-float paw-float-2"><PawIcon size={32} /></div>
           <div className="paw-float paw-float-3"><PawIcon size={22} /></div>
@@ -274,31 +201,36 @@ function AboutSection() {
 
 function ClassesSection() {
   const { ref, inView } = useInView(0.12)
+  const { s } = useI18n()
   return (
     <section className="classes-section" id="classes">
       <div className="section-header">
-        <span className="section-badge">What We Offer</span>
-        <h2>One Class. <em>Infinite Joy</em>.</h2>
-        <p>Puppy yoga for every level — Yin, Gentle Flow, and private sessions. All dogs, all levels, all welcome.</p>
+        <span className="section-badge">{s.classesBadge}</span>
+        <h2>{s.classesHeading}<em>{s.classesHeadingEm}</em>.</h2>
+        <p>{s.classesSub}</p>
       </div>
       <div className={`classes-grid${inView ? ' visible' : ''}`} ref={ref}>
-        {CLASSES.map((cls, i) => (
+        {s.classCards.map((cls, i) => (
           <div
             key={cls.title}
             className="class-card"
             style={{ transitionDelay: `${i * 0.13}s` }}
           >
             <div className="card-image">
-              <img src={cls.image} alt={cls.title} loading="lazy" />
+              <img src={CLASS_IMAGES[i]} alt={cls.title} loading="lazy" />
               <span className="duration-badge">{cls.duration}</span>
             </div>
             <div className="card-body">
               <h3>{cls.title}</h3>
               <p>{cls.description}</p>
-              <a href={cls.link} className="link-arrow">{cls.linkText}</a>
             </div>
           </div>
         ))}
+      </div>
+      <div style={{ marginTop: '2.75rem', width: '100%', textAlign: 'center' }}>
+        <a href="#booking" className="btn-primary btn-lg">
+          {s.classesBook}
+        </a>
       </div>
     </section>
   )
@@ -306,206 +238,604 @@ function ClassesSection() {
 
 function ExperienceSection() {
   const { ref, inView } = useInView(0.1)
-
-  const steps = [
-    {
-      icon: '🧘',
-      time: '15 min',
-      title: 'Warm Up',
-      description: 'We begin with gentle yoga — breathing, centering, and preparing your body for movement. A mindful start, just you and your mat.',
-    },
-    {
-      icon: '🐾',
-      time: '15 min',
-      title: 'Flow With Pups',
-      description: 'The puppies join the mat! Continue your practice with adorable four-legged companions weaving through poses and filling the room with joy.',
-    },
-    {
-      icon: '📸',
-      time: '30 min',
-      title: 'Play & Connect',
-      description: 'The mats roll up and the fun begins. Free play, cuddles, and as many photos as your heart desires. Pure puppy bliss.',
-    },
-  ]
+  const { s } = useI18n()
+  /** Bump this when replacing step PNGs in /public under the same filename (forces browsers/CDNs to reload). */
+  const stepLogoV = '2'
+  const stepSrc = [`/step1Logo.png?v=${stepLogoV}`, `/step2Logo.png?v=${stepLogoV}`, `/step3Logo.png?v=${stepLogoV}`]
 
   return (
     <section className="experience-section" id="experience">
       <div className="section-header">
-        <span className="section-badge">Your 60-Minute Journey</span>
-        <h2>What to <em>Expect</em></h2>
-        <p>Every session is designed to warm your body, open your heart, and leave you glowing.</p>
+        <span className="section-badge">{s.experienceBadge}</span>
+        <h2>
+          {s.experienceHeadingPre}
+          <em>{s.experienceHeadingEm}</em>
+        </h2>
+        <p>{s.experienceSub}</p>
       </div>
       <div className={`experience-grid${inView ? ' visible' : ''}`} ref={ref}>
-        {steps.map((step, i) => (
+        {s.experienceSteps.map((step, i) => (
           <div
             key={step.title}
             className="experience-card"
             style={{ transitionDelay: `${i * 0.15}s` }}
           >
-            <div className="exp-icon">{step.icon}</div>
+            <div className={i === 0 ? 'exp-icon exp-icon--step1' : 'exp-icon'}>
+              <img src={stepSrc[i]} alt={step.logoAlt} loading="lazy" />
+            </div>
             <div className="exp-time">{step.time}</div>
             <h3>{step.title}</h3>
             <p>{step.description}</p>
           </div>
         ))}
       </div>
-    </section>
-  )
-}
-
-function StatCounter({ value, prefix = '', suffix, label }: { value: number; prefix?: string; suffix: string; label: string }) {
-  const [count, setCount] = useState(0)
-  const ref = useRef<HTMLDivElement>(null)
-  const started = useRef(false)
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !started.current) {
-          started.current = true
-          const steps = 60
-          const duration = 1600
-          const increment = value / steps
-          let current = 0
-          const id = setInterval(() => {
-            current += increment
-            if (current >= value) { setCount(value); clearInterval(id) }
-            else setCount(Math.floor(current))
-          }, duration / steps)
-        }
-      },
-      { threshold: 0.5 }
-    )
-    if (ref.current) observer.observe(ref.current)
-    return () => observer.disconnect()
-  }, [value])
-
-  return (
-    <div className="stat-item" ref={ref}>
-      <span className="stat-value">{prefix}{count}{suffix}</span>
-      <span className="stat-label">{label}</span>
-    </div>
-  )
-}
-
-function StatsBar() {
-  return (
-    <div className="stats-bar">
-      {STATS.map(s => <StatCounter key={s.label} {...s} />)}
-    </div>
-  )
-}
-
-function PricingSection() {
-  return (
-    <section className="pricing-section" id="pricing">
-      <div className="pricing-inner">
-        <div className="section-header">
-          <span className="section-badge badge-light">Simple Pricing</span>
-          <h2 style={{ color: '#fff' }}>One Price. <em style={{ color: '#A8D5A0' }}>Pure Joy.</em></h2>
-          <p style={{ color: 'rgba(255,255,255,0.65)' }}>Transparent, fair, and no surprises.</p>
-        </div>
-        <div className="pricing-card glass-dark">
-          <div className="pricing-amount">
-            <span className="price-value">$46</span>
-            <span className="price-suffix">+ taxes</span>
-          </div>
-          <div className="price-type">Drop-In · Per Class</div>
-          <ul className="price-features">
-            <li>✓ 60-minute guided session</li>
-            <li>✓ RYT 200 certified instructor</li>
-            <li>✓ All dog sizes welcome</li>
-            <li>✓ Photo opportunities included</li>
-            <li>✓ Yoga mat rental on-site ($5)</li>
-          </ul>
-          <a
-            href="https://www.studioyopaw.ca"
-            className="btn-primary btn-lg"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Book Your Spot
-          </a>
-          <div className="pricing-note">
-            <span>💳 Payment at time of booking (online)</span>
-            <span>↩ 72-hour cancellation · Full refund or credit</span>
-          </div>
-        </div>
+      <div style={{ marginTop: '2.75rem', textAlign: 'center' }}>
+        <a href="#book" className="btn-primary btn-lg">
+          {s.experienceBook}
+        </a>
       </div>
     </section>
   )
 }
 
-function IllustrationSection() {
+const WEEKEND_SPOTS_PATTERN = [18, 12, 0, 7, 0, 15] as const
+
+type YogaStyle = 'yin' | 'gentle'
+
+type WeekendSession = { iso: string; spotsRemaining: number }
+
+function addDaysLocal(base: Date, days: number): Date {
+  const d = new Date(base)
+  d.setDate(d.getDate() + days)
+  return d
+}
+
+function buildNextWeekendSessions(): WeekendSession[] {
+  const start = new Date()
+  start.setHours(0, 0, 0, 0)
+  const out: WeekendSession[] = []
+  for (let i = 0; i < 200 && out.length < 12; i++) {
+    const d = addDaysLocal(start, i)
+    const wd = d.getDay()
+    if (wd === 0 || wd === 6) {
+      const wi = Math.floor(out.length / 2)
+      const spotsRemaining = WEEKEND_SPOTS_PATTERN[wi % WEEKEND_SPOTS_PATTERN.length]
+      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      out.push({ iso, spotsRemaining })
+    }
+  }
+  return out
+}
+
+function formatLongSessionDate(iso: string, lang: Lang): string {
+  const [y, m, day] = iso.split('-').map(Number)
+  const d = new Date(y, m - 1, day)
+  const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
+  return d.toLocaleDateString(loc, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function formatShortSessionDate(iso: string, lang: Lang): string {
+  const [y, m, day] = iso.split('-').map(Number)
+  const d = new Date(y, m - 1, day)
+  const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
+  return d.toLocaleDateString(loc, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function PricingStepBack({ onClick }: { onClick: () => void }) {
+  const { s } = useI18n()
   return (
-    <section className="illustration-section">
-      {[0, 1, 2, 3, 4, 5].map(i => (
-        <div key={i} className={`float-paw fp-${i}`}>
-          <PawIcon size={20} />
-        </div>
-      ))}
+    <button type="button" className="pricing-step-back" onClick={onClick} aria-label={s.commonBackAria}>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path
+          d="M15 6l-6 6 6 6"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </button>
+  )
+}
 
-      <div className="illus-inner">
-        <div className="illus-content">
-          <span className="section-badge badge-light">The Mission</span>
-          <h2>Your Mat,<br />Their <em>World</em></h2>
-          <p>
-            At Studio Yopaw, we believe in the healing power of animal connection.
-            Our mission is to offer animal-assisted therapy through the practice of yoga —
-            a beautiful combination that soothes stress, lifts mood, and opens hearts.
-          </p>
-          <p>
-            Puppies bring no judgment, no ego — just pure presence, curiosity, and unconditional
-            love. Every session, something remarkable happens: you rediscover the same.
-          </p>
-          <a href="#book" className="btn-primary btn-lg">Book Your Spot</a>
-        </div>
+function PricingSection() {
+  const { lang, s } = useI18n()
+  const weekendSessions = useMemo(() => buildNextWeekendSessions(), [])
+  const bookingClassChoices = useMemo(
+    () =>
+      [
+        { id: 'yin' as const, label: s.bookingChoiceYin },
+        { id: 'gentle' as const, label: s.bookingChoiceGentle },
+        { id: 'corporate' as const, label: s.bookingChoiceCorporate },
+      ] as const,
+    [s]
+  )
 
-        <div className="illus-svg-wrapper">
-          <svg viewBox="0 0 360 300" className="yoga-illustration" xmlns="http://www.w3.org/2000/svg">
-            <ellipse cx="180" cy="278" rx="145" ry="13" fill="rgba(74,107,80,0.3)" />
-            <rect x="55" y="266" width="250" height="12" rx="6" fill="rgba(74,107,80,0.18)" />
-            <line x1="180" y1="90" x2="102" y2="226" stroke="rgba(180,168,155,0.65)" strokeWidth="11" strokeLinecap="round" />
-            <line x1="180" y1="90" x2="300" y2="220" stroke="rgba(180,168,155,0.65)" strokeWidth="11" strokeLinecap="round" />
-            <line x1="180" y1="90" x2="72" y2="218" stroke="#F0EBE3" strokeWidth="14" strokeLinecap="round" />
-            <line x1="180" y1="90" x2="284" y2="214" stroke="#F0EBE3" strokeWidth="14" strokeLinecap="round" />
-            <ellipse cx="282" cy="218" rx="15" ry="8" fill="#F0D5B5" />
-            <ellipse cx="298" cy="224" rx="11" ry="6" fill="#DFC09A" opacity="0.75" />
-            <circle cx="71" cy="219" r="11" fill="#F0D5B5" />
-            <circle cx="101" cy="228" r="8" fill="#DFC09A" opacity="0.75" />
-            <circle cx="55" cy="196" r="25" fill="#F0D5B5" />
-            <ellipse cx="55" cy="178" rx="25" ry="15" fill="#7A5A3A" />
-            <circle cx="47" cy="197" r="3" fill="#4A3520" />
-            <circle cx="62" cy="199" r="3" fill="#4A3520" />
-            <path d="M48 207 Q55 213 62 207" stroke="#6B4A30" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-            <circle cx="180" cy="90" r="6" fill="rgba(240,235,227,0.35)" />
-            <ellipse cx="180" cy="67" rx="31" ry="21" fill="#C4895A" />
-            <circle cx="153" cy="51" r="23" fill="#C4895A" />
-            <ellipse cx="140" cy="59" rx="11" ry="9" fill="#A87040" />
-            <ellipse cx="146" cy="33" rx="9" ry="15" fill="#9E6230" transform="rotate(-18 146 33)" />
-            <ellipse cx="168" cy="31" rx="9" ry="15" fill="#9E6230" transform="rotate(12 168 31)" />
-            <circle cx="147" cy="47" r="5.5" fill="#1C1C1C" />
-            <circle cx="162" cy="45" r="5.5" fill="#1C1C1C" />
-            <circle cx="148" cy="46" r="2" fill="white" />
-            <circle cx="163" cy="44" r="2" fill="white" />
-            <ellipse cx="140" cy="57" rx="5" ry="4" fill="#5A2A2A" />
-            <path d="M136 63 Q140 71 144 63" stroke="#D44040" strokeWidth="2.5" fill="#D44040" strokeLinecap="round" />
-            <line x1="163" y1="84" x2="158" y2="103" stroke="#9E6230" strokeWidth="9" strokeLinecap="round" />
-            <circle cx="157" cy="105" r="5.5" fill="#854F20" />
-            <line x1="196" y1="87" x2="193" y2="106" stroke="#9E6230" strokeWidth="9" strokeLinecap="round" />
-            <circle cx="192" cy="108" r="5.5" fill="#854F20" />
-            <g className="tail-group">
-              <path
-                d="M208 62 Q222 47 226 32 Q230 18 221 13"
-                stroke="#C4895A" strokeWidth="10" strokeLinecap="round" fill="none"
-              />
-              <circle cx="220" cy="12" r="7" fill="#C4895A" />
-            </g>
-            <text x="255" y="50" fontSize="22" textAnchor="middle"
-              style={{ animation: 'bounce-gentle 2s ease-in-out infinite', display: 'inline-block' }}>
-              🐾
-            </text>
-          </svg>
+  type Flow =
+    | { kind: 'chooseClass' }
+    | { kind: 'public'; step: 'mat' | 'date' | 'contact'; yoga: YogaStyle }
+    | { kind: 'publicSuccess' }
+    | { kind: 'corporate'; step: 'form' }
+    | { kind: 'corporateSuccess' }
+
+  const [flow, setFlow] = useState<Flow>({ kind: 'chooseClass' })
+  const [selectedSessionIso, setSelectedSessionIso] = useState<string | null>(null)
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [corpName, setCorpName] = useState('')
+  const [corpEmail, setCorpEmail] = useState('')
+  const [corpPhone, setCorpPhone] = useState('')
+  const [groupSize, setGroupSize] = useState('')
+  const [eventDetails, setEventDetails] = useState('')
+
+  const pricingCardRef = useRef<HTMLDivElement>(null)
+  const hasInteractedWithBookingFormRef = useRef(false)
+  const pendingPricingStepScrollRef = useRef(false)
+  const flowTransitionKey =
+    flow.kind === 'chooseClass'
+      ? 'choose'
+      : flow.kind === 'publicSuccess'
+        ? 'pub-success'
+        : flow.kind === 'corporateSuccess'
+          ? 'corp-success'
+          : flow.kind === 'corporate'
+            ? 'corp-form'
+            : `pub-${flow.step}-${flow.yoga}`
+
+  const requestScrollPricingCardAfterAdvance = () => {
+    hasInteractedWithBookingFormRef.current = true
+    pendingPricingStepScrollRef.current = true
+  }
+
+  useEffect(() => {
+    if (!hasInteractedWithBookingFormRef.current || !pendingPricingStepScrollRef.current) return
+    const card = pricingCardRef.current
+    if (!card || !hasInteractedWithBookingFormRef.current) return
+    pendingPricingStepScrollRef.current = false
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!hasInteractedWithBookingFormRef.current) return
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
+    })
+  }, [flowTransitionKey])
+
+  const progressPercent = (): number => {
+    if (flow.kind === 'chooseClass') return 25
+    if (flow.kind === 'publicSuccess') return 100
+    if (flow.kind === 'public') {
+      if (flow.step === 'mat') return 50
+      if (flow.step === 'date') return 75
+      return 100
+    }
+    if (flow.kind === 'corporate' || flow.kind === 'corporateSuccess') return 100
+    return 0
+  }
+
+  const showProgress =
+    flow.kind !== 'publicSuccess' && flow.kind !== 'corporateSuccess'
+
+  const goBack = () => {
+    if (flow.kind === 'public') {
+      if (flow.step === 'mat') {
+        setFlow({ kind: 'chooseClass' })
+        return
+      }
+      if (flow.step === 'date') {
+        setFlow({ kind: 'public', step: 'mat', yoga: flow.yoga })
+        setSelectedSessionIso(null)
+        return
+      }
+      setFlow({ kind: 'public', step: 'date', yoga: flow.yoga })
+      return
+    }
+    if (flow.kind === 'corporate' && flow.step === 'form') {
+      setFlow({ kind: 'chooseClass' })
+      setCorpName('')
+      setCorpEmail('')
+      setCorpPhone('')
+      setGroupSize('')
+      setEventDetails('')
+    }
+  }
+
+  const chooseClass = (id: (typeof bookingClassChoices)[number]['id']) => {
+    requestScrollPricingCardAfterAdvance()
+    if (id === 'corporate') {
+      setFlow({ kind: 'corporate', step: 'form' })
+      return
+    }
+    setFlow({ kind: 'public', step: 'mat', yoga: id })
+    setSelectedSessionIso(null)
+  }
+
+  const pickMat = () => {
+    requestScrollPricingCardAfterAdvance()
+    setFlow(prev =>
+      prev.kind === 'public' && prev.step === 'mat'
+        ? { ...prev, step: 'date' }
+        : prev
+    )
+    setSelectedSessionIso(null)
+  }
+
+  const submitPublic = (e: FormEvent) => {
+    e.preventDefault()
+    requestScrollPricingCardAfterAdvance()
+    setFlow({ kind: 'publicSuccess' })
+  }
+
+  const submitCorporate = (e: FormEvent) => {
+    e.preventDefault()
+    requestScrollPricingCardAfterAdvance()
+    setFlow({ kind: 'corporateSuccess' })
+  }
+
+  const restartPublicBooking = () => {
+    setFlow({ kind: 'chooseClass' })
+    setSelectedSessionIso(null)
+    setFullName('')
+    setEmail('')
+    setPhone('')
+  }
+
+  const renderPublicSuccess = () => (
+    <div className="pricing-success">
+      <div className="pricing-success-icon" aria-hidden>
+        <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="22" stroke="var(--sage)" strokeWidth="2" opacity="0.35" />
+          <path d="M14 24l8 8 13-17" stroke="var(--sage-dark)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+      <h3 className="pricing-step-title">{s.pricingSuccessPublicTitle}</h3>
+      <p className="pricing-success-body">
+        {interpolate(s.pricingSuccessPublicBody, {
+          email,
+          date: selectedSessionIso
+            ? formatLongSessionDate(selectedSessionIso, lang)
+            : s.pricingSuccessChosenDayFallback,
+        })}
+      </p>
+      <p className="pricing-success-foot">{s.pricingSuccessPublicFoot}</p>
+      <button type="button" className="pricing-success-restart" onClick={restartPublicBooking}>
+        {s.pricingSuccessRestart}
+      </button>
+    </div>
+  )
+
+  const renderCorporateSuccess = () => (
+    <div className="pricing-success">
+      <div className="pricing-success-icon" aria-hidden>
+        <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="22" stroke="var(--sage)" strokeWidth="2" opacity="0.35" />
+          <path d="M14 24l8 8 13-17" stroke="var(--sage-dark)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+      <h3 className="pricing-step-title">{s.pricingSuccessCorpTitle}</h3>
+      <p className="pricing-success-body">{s.pricingSuccessCorpBody}</p>
+    </div>
+  )
+
+  let showBack = false
+  if (flow.kind === 'public' && flow.step === 'mat') showBack = true
+  else if (flow.kind === 'public' && flow.step === 'date') showBack = true
+  else if (flow.kind === 'public' && flow.step === 'contact') showBack = true
+  else if (flow.kind === 'corporate' && flow.step === 'form') showBack = true
+
+  const showFullPricingCardHeader =
+    flow.kind === 'chooseClass' ||
+    flow.kind === 'corporate' ||
+    flow.kind === 'corporateSuccess'
+
+  return (
+    <section className="pricing-section" id="pricing">
+      <span id="booking" style={{ display: 'block', height: 0, overflow: 'hidden' }} aria-hidden />
+      <span id="corporate" style={{ display: 'block', height: 0, overflow: 'hidden' }} aria-hidden />
+      <span id="book" style={{ display: 'block', height: 0, overflow: 'hidden' }} aria-hidden />
+      <div className="pricing-inner">
+        <div className="section-header">
+          <span className="section-badge badge-light">{s.pricingSectionBadge}</span>
+          <h2 style={{ color: '#fff' }}>
+            {lang === 'fr' ? (
+              <>
+                {s.pricingHeadingPre}
+                <br />
+                {s.pricingHeadingMidLead}
+                <em style={{ color: '#A8D5A0', fontStyle: 'italic' }}>{s.pricingHeadingEm}</em>
+                {s.pricingHeadingMidTrail}
+              </>
+            ) : (
+              <>
+                {s.pricingHeadingPre}
+                <em style={{ color: '#A8D5A0', fontStyle: 'italic' }}>{s.pricingHeadingEm}</em>
+              </>
+            )}
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,0.65)' }}>{s.pricingSub}</p>
+        </div>
+        <div ref={pricingCardRef} className="pricing-card">
+          {showFullPricingCardHeader ? (
+            <>
+              <div className="pricing-amount">
+                <span className="price-value">{s.pricingAmount}</span>
+                <span className="price-suffix">{s.pricingPlusTaxes}</span>
+              </div>
+              <div className="price-type">{s.pricingDropInRow}</div>
+              <ul className="price-features">
+                <li>{s.pricingFeat1}</li>
+                <li>{s.pricingFeat2}</li>
+                <li>{s.pricingFeat3}</li>
+                <li>{s.pricingFeat4}</li>
+                <li>{s.pricingFeat5}</li>
+              </ul>
+
+              <hr className="pricing-card-divider" />
+            </>
+          ) : (
+            <p className="pricing-header-summary">{s.pricingHeaderSummary}</p>
+          )}
+
+          <div className="pricing-multi-flow">
+            {showProgress && (
+              <div className="pricing-progress-wrap" aria-hidden>
+                <div className="pricing-progress-track">
+                  <div className="pricing-progress-fill" style={{ width: `${progressPercent()}%` }} />
+                </div>
+              </div>
+            )}
+
+            {showBack && (
+              <div className="pricing-step-toolbar">
+                <PricingStepBack onClick={goBack} />
+              </div>
+            )}
+
+            {flow.kind === 'chooseClass' && (
+              <div className="pricing-step-block">
+                <h3 className="pricing-step-title">{s.pricingAskClassType}</h3>
+                <div className="pricing-choice-stack">
+                  {bookingClassChoices.map(opt => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className="pricing-choice-card"
+                      onClick={() => chooseClass(opt.id)}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {flow.kind === 'public' && flow.step === 'mat' && (
+              <div className="pricing-step-block">
+                <h3 className="pricing-step-title">{s.pricingAskMat}</h3>
+                <div className="pricing-choice-stack pricing-choice-stack--pair">
+                    <button type="button" className="pricing-choice-card" onClick={pickMat}>
+                    {s.pricingMatYes}
+                  </button>
+                  <button type="button" className="pricing-choice-card" onClick={pickMat}>
+                    {s.pricingMatNo}
+                  </button>
+                </div>
+                <p className="pricing-helper-text">{s.pricingMatHelper}</p>
+              </div>
+            )}
+
+            {flow.kind === 'public' && flow.step === 'date' && (
+              <div className="pricing-step-block">
+                <h3 className="pricing-step-title">{s.pricingChooseSession}</h3>
+                <div className="pricing-session-list">
+                  {weekendSessions.map(session => {
+                    const full = session.spotsRemaining <= 0
+                    const sel = selectedSessionIso === session.iso
+                    return (
+                      <button
+                        key={session.iso}
+                        type="button"
+                        className={`pricing-session-row${full ? ' is-disabled' : ''}${sel ? ' is-selected' : ''}`}
+                        disabled={full}
+                        onClick={() => {
+                          if (full) return
+                          requestScrollPricingCardAfterAdvance()
+                          setSelectedSessionIso(session.iso)
+                          setFlow(prev =>
+                            prev.kind === 'public' && prev.step === 'date'
+                              ? { kind: 'public', step: 'contact', yoga: prev.yoga }
+                              : prev
+                          )
+                        }}
+                      >
+                        <span className="pricing-session-date">{formatShortSessionDate(session.iso, lang)}</span>
+                        <span className="pricing-session-spots">
+                          {full
+                            ? s.pricingSpotFull
+                            : interpolate(s.pricingSpotsRemain, { count: String(session.spotsRemaining) })}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {flow.kind === 'public' && flow.step === 'contact' && (
+              <form className="pricing-booking-form" onSubmit={submitPublic}>
+                <h3 className="pricing-step-title">{s.pricingContactHeading}</h3>
+                <div className="pricing-form-field">
+                  <label className="pricing-form-label" htmlFor="pub-fullname">
+                    {s.pricingLblFullName}{' '}
+                    <abbr className="pricing-req-mark" title={s.abbrevRequiredTitle}>*</abbr>
+                  </label>
+                  <input
+                    id="pub-fullname"
+                    type="text"
+                    name="fullName"
+                    className="pricing-input"
+                    autoComplete="name"
+                    value={fullName}
+                    onChange={e => setFullName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="pricing-form-field">
+                  <label className="pricing-form-label" htmlFor="pub-email">
+                    {s.pricingLblEmail}{' '}
+                    <abbr className="pricing-req-mark" title={s.abbrevRequiredTitle}>*</abbr>
+                  </label>
+                  <input
+                    id="pub-email"
+                    type="email"
+                    name="email"
+                    className="pricing-input"
+                    autoComplete="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="pricing-form-field">
+                  <label className="pricing-form-label" htmlFor="pub-phone">
+                    {s.pricingLblPhone}{' '}
+                    <abbr className="pricing-req-mark" title={s.abbrevRequiredTitle}>*</abbr>
+                  </label>
+                  <input
+                    id="pub-phone"
+                    type="tel"
+                    name="phone"
+                    className="pricing-input"
+                    autoComplete="tel"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    required
+                  />
+                </div>
+                <button type="submit" className="btn-primary btn-lg pricing-submit">
+                  {s.pricingSubmitBookSpot}
+                </button>
+              </form>
+            )}
+
+            {flow.kind === 'publicSuccess' && renderPublicSuccess()}
+
+            {flow.kind === 'corporate' && flow.step === 'form' && (
+              <form className="pricing-booking-form" onSubmit={submitCorporate}>
+                <h3 className="pricing-step-title">{s.pricingCorporateTitle}</h3>
+                <p className="pricing-step-intro">{s.pricingCorporateIntro}</p>
+                <div className="pricing-form-field">
+                  <label className="pricing-form-label" htmlFor="corp-fullname">
+                    {s.pricingLblFullName}{' '}
+                    <abbr className="pricing-req-mark" title={s.abbrevRequiredTitle}>*</abbr>
+                  </label>
+                  <input
+                    id="corp-fullname"
+                    type="text"
+                    name="corpFullName"
+                    className="pricing-input"
+                    autoComplete="name"
+                    value={corpName}
+                    onChange={e => setCorpName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="pricing-form-field">
+                  <label className="pricing-form-label" htmlFor="corp-email">
+                    {s.pricingLblEmail}{' '}
+                    <abbr className="pricing-req-mark" title={s.abbrevRequiredTitle}>*</abbr>
+                  </label>
+                  <input
+                    id="corp-email"
+                    type="email"
+                    name="corpEmail"
+                    className="pricing-input"
+                    autoComplete="email"
+                    value={corpEmail}
+                    onChange={e => setCorpEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="pricing-form-field">
+                  <label className="pricing-form-label" htmlFor="corp-phone">
+                    {s.pricingLblPhone}{' '}
+                    <abbr className="pricing-req-mark" title={s.abbrevRequiredTitle}>*</abbr>
+                  </label>
+                  <input
+                    id="corp-phone"
+                    type="tel"
+                    name="corpPhone"
+                    className="pricing-input"
+                    autoComplete="tel"
+                    value={corpPhone}
+                    onChange={e => setCorpPhone(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="pricing-form-field">
+                  <label className="pricing-form-label" htmlFor="corp-group">
+                    {s.pricingLblGroupSize}{' '}
+                    <abbr className="pricing-req-mark" title={s.abbrevRequiredTitle}>*</abbr>
+                  </label>
+                  <input
+                    id="corp-group"
+                    type="number"
+                    name="groupSize"
+                    className="pricing-input"
+                    min={1}
+                    max={20}
+                    step={1}
+                    value={groupSize}
+                    onChange={e => {
+                      const v = e.target.value
+                      const n = parseInt(v, 10)
+                      if (v === '' || Number.isNaN(n)) setGroupSize('')
+                      else setGroupSize(String(Math.min(20, Math.max(1, n))))
+                    }}
+                    required
+                  />
+                </div>
+                <div className="pricing-form-field">
+                  <label className="pricing-form-label" htmlFor="corp-event">
+                    {s.pricingLblEventDetails}{' '}
+                    <abbr className="pricing-req-mark" title={s.abbrevRequiredTitle}>*</abbr>
+                  </label>
+                  <textarea
+                    id="corp-event"
+                    name="eventDetails"
+                    className="pricing-input pricing-input-textarea"
+                    rows={4}
+                    placeholder={s.pricingCorpPlaceholder}
+                    value={eventDetails}
+                    onChange={e => setEventDetails(e.target.value)}
+                    required
+                  />
+                </div>
+                <button type="submit" className="btn-primary btn-lg pricing-submit">
+                  {s.pricingCorporateSubmit}
+                </button>
+              </form>
+            )}
+
+            {flow.kind === 'corporateSuccess' && renderCorporateSuccess()}
+          </div>
+
+          {flow.kind === 'public' && flow.step === 'contact' && (
+            <div className="pricing-note">
+              <span>{s.pricingPaymentNote}</span>
+              <span>{s.pricingCancelNote}</span>
+            </div>
+          )}
         </div>
       </div>
     </section>
@@ -514,21 +844,29 @@ function IllustrationSection() {
 
 function GallerySection() {
   const { ref, inView } = useInView(0.08)
+  const { s } = useI18n()
+  const galleryAlts = [
+    s.galleryAlts.session,
+    s.galleryAlts.classSession,
+    s.galleryAlts.happyMoment,
+    s.galleryAlts.yogaFlow,
+    s.galleryAlts.highlight,
+  ]
   return (
     <section className="gallery-section" id="gallery">
       <div className="section-header">
-        <span className="section-badge">The Studio</span>
-        <h2>Moments of <em>Joy</em></h2>
-        <p>Every session is a memory in the making.</p>
+        <span className="section-badge">{s.galleryBadge}</span>
+        <h2>{s.galleryHeading}<em>{s.galleryHeadingEm}</em></h2>
+        <p>{s.gallerySub}</p>
       </div>
       <div className={`gallery-grid${inView ? ' visible' : ''}`} ref={ref}>
-        {GALLERY.map((img, i) => (
+        {GALLERY_IMAGES.map((img, i) => (
           <div
             key={img.src}
             className={`gallery-item${img.tall ? ' tall' : ''}`}
             style={{ transitionDelay: `${i * 0.1}s` }}
           >
-            <img src={img.src} alt={img.alt} loading="lazy" />
+            <img src={img.src} alt={galleryAlts[i] ?? s.galleryAlts.highlight} loading="lazy" />
             <div className="gallery-overlay">
               <PawIcon size={42} className="overlay-paw" />
             </div>
@@ -539,93 +877,121 @@ function GallerySection() {
   )
 }
 
-function CorporateSection() {
+function TestimonialCarouselArrow({
+  dir,
+}: {
+  dir: 'prev' | 'next'
+}) {
   return (
-    <section className="corporate-section" id="corporate">
-      <div className="corporate-inner">
-        <div className="corporate-card glass-dark">
-          <PawIcon size={52} className="corporate-paw" />
-          <span className="section-badge badge-light">Private &amp; Corporate</span>
-          <h2 style={{ color: '#fff', marginTop: 16 }}>
-            Bring the Joy<br />to Your <em style={{ color: '#A8D5A0' }}>Team</em>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d={dir === 'prev' ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'}
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function TestimonialsSection() {
+  const { s } = useI18n()
+  const [active, setActive] = useState(0)
+  const cards = s.testimonialCards
+  const len = cards.length
+
+  useEffect(() => {
+    const id = setInterval(() => setActive(a => (a + 1) % len), 4500)
+    return () => clearInterval(id)
+  }, [len])
+
+  const goPrev = () => setActive(a => (a - 1 + len) % len)
+  const goNext = () => setActive(a => (a + 1) % len)
+
+  return (
+    <section className="testimonials-section" id="testimonials">
+      <div
+        className="testimonials-bg"
+        style={{ backgroundImage: "url('/IMG_5575_a560e5dd-077d-48be-8f15-5d23890ed291.webp')" }}
+        aria-hidden
+      />
+      <div className="testimonials-overlay" aria-hidden />
+      <div className="testimonials-inner">
+        <div className="section-header">
+          <span className="section-badge">{s.testimonialsBadge}</span>
+          <h2 style={{ color: '#fff' }}>
+            {s.testimonialsHeadingPre}
+            <em style={{ color: '#A8D5A0', fontStyle: 'italic' }}>{s.testimonialsHeadingEm}</em>
           </h2>
-          <p>
-            Looking for a one-of-a-kind group experience? Book a private puppy yoga session
-            for your team — up to 20 participants. Perfect for corporate wellness days,
-            team building, birthdays, bachelorette parties, and special celebrations.
-          </p>
-          <div className="corporate-features">
-            <div className="corp-feature">👥 Up to 20 participants</div>
-            <div className="corp-feature">🎉 Special events & birthdays</div>
-            <div className="corp-feature">🏢 Corporate wellness days</div>
-            <div className="corp-feature">📸 Photo opportunities</div>
+          <p style={{ color: 'rgba(255,255,255,0.65)' }}>{s.testimonialsSub}</p>
+        </div>
+
+        <div className="testimonial-carousel">
+          <button
+            type="button"
+            className="testimonial-arrow testimonial-arrow--prev"
+            onClick={goPrev}
+            aria-label={s.testimonialsPrevAria}
+          >
+            <TestimonialCarouselArrow dir="prev" />
+          </button>
+
+          <div className="testimonial-track-shell">
+            <div className="testimonial-track">
+              {cards.map((t, i) => (
+                <div key={t.name} className={`testimonial-card${i === active ? ' active' : ''}`}>
+                  <div className="stars">
+                    {Array.from({ length: 5 }).map((_, j) => <StarIcon key={j} />)}
+                  </div>
+                  <blockquote>&ldquo;{t.quote}&rdquo;</blockquote>
+                  <div className="testimonial-author">
+                    <strong>{t.name}</strong>
+                    <span>{t.since}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="corporate-ctas">
-            <a href="mailto:Studioyopaw@gmail.com" className="btn-primary btn-lg">Email Us</a>
-            <a href="tel:5142424947" className="btn-ghost btn-lg">514-242-4947</a>
-          </div>
+
+          <button
+            type="button"
+            className="testimonial-arrow testimonial-arrow--next"
+            onClick={goNext}
+            aria-label={s.testimonialsNextAria}
+          >
+            <TestimonialCarouselArrow dir="next" />
+          </button>
+        </div>
+
+        <div className="testimonial-dots">
+          {cards.map((_, i) => (
+            <button
+              key={i}
+              className={`dot${i === active ? ' active' : ''}`}
+              onClick={() => setActive(i)}
+              aria-label={`${s.testimonialsDotAria} ${i + 1}`}
+            />
+          ))}
         </div>
       </div>
     </section>
   )
 }
 
-function TestimonialsSection() {
-  const [active, setActive] = useState(0)
-
-  useEffect(() => {
-    const id = setInterval(() => setActive(a => (a + 1) % TESTIMONIALS.length), 4500)
-    return () => clearInterval(id)
-  }, [])
-
-  return (
-    <section className="testimonials-section">
-      <div className="section-header">
-        <span className="section-badge">Kind Words</span>
-        <h2>Loved by Every <em>Pup Parent</em></h2>
-      </div>
-
-      <div className="testimonial-track">
-        {TESTIMONIALS.map((t, i) => (
-          <div key={t.name} className={`testimonial-card${i === active ? ' active' : ''}`}>
-            <div className="stars">
-              {Array.from({ length: t.rating }).map((_, j) => <StarIcon key={j} />)}
-            </div>
-            <blockquote>"{t.quote}"</blockquote>
-            <div className="testimonial-author">
-              <strong>{t.name}</strong>
-              <span>{t.since}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="testimonial-dots">
-        {TESTIMONIALS.map((_, i) => (
-          <button
-            key={i}
-            className={`dot${i === active ? ' active' : ''}`}
-            onClick={() => setActive(i)}
-            aria-label={`Go to testimonial ${i + 1}`}
-          />
-        ))}
-      </div>
-    </section>
-  )
-}
-
 function FAQSection() {
+  const { s } = useI18n()
   const [open, setOpen] = useState<number | null>(null)
 
   return (
     <section className="faq-section" id="faq">
       <div className="section-header">
-        <span className="section-badge">Got Questions?</span>
-        <h2>Frequently Asked <em>Questions</em></h2>
-        <p>Everything you need to know before your first class.</p>
+        <span className="section-badge">{s.faqBadge}</span>
+        <h2>{s.faqHeading}<em>{s.faqHeadingEm}</em></h2>
+        <p>{s.faqSub}</p>
       </div>
       <div className="faq-list">
-        {FAQS.map((faq, i) => (
+        {s.faqItems.map((faq, i) => (
           <div
             key={i}
             className={`faq-item${open === i ? ' open' : ''}`}
@@ -643,54 +1009,24 @@ function FAQSection() {
   )
 }
 
-function CTASection() {
-  return (
-    <section className="cta-section" id="book">
-      <div
-        className="cta-bg"
-        style={{ backgroundImage: "url('/IMG_5575_a560e5dd-077d-48be-8f15-5d23890ed291.webp')" }}
-      />
-      <div className="cta-overlay" />
-      <div className="cta-content">
-        <PawIcon size={52} className="cta-paw" />
-        <h2>Ready to Find<br />Your <em>Flow</em>?</h2>
-        <p>
-          Join Studio Yopaw in Saint-Lazare and discover the joy of animal-assisted yoga.
-          Your first class is just a click away.
-        </p>
-        <a
-          href="https://www.studioyopaw.ca"
-          className="btn-primary btn-xl"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Book Your First Class
-        </a>
-        <span className="cta-note">
-          $46 + taxes · All levels welcome · Yoga mat rental available $5 🐾
-        </span>
-      </div>
-    </section>
-  )
-}
-
 function Footer() {
+  const { s } = useI18n()
   return (
     <footer className="footer">
       <div className="footer-inner">
         <div className="footer-brand">
           <div className="footer-logo">
             <PawIcon size={28} className="text-sage" />
-            Studio Yopaw
+            {s.navBrand}
           </div>
-          <p>Animal-assisted therapy through yoga.<br />Where every pose is better with a pup.</p>
+          <p>{s.footerTaglineL1}<br />{s.footerTaglineL2}</p>
           <div className="footer-social">
-            <a href="https://instagram.com/studioyopaw" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+            <a href="https://instagram.com/studioyopaw" target="_blank" rel="noopener noreferrer" aria-label={s.footerIgAria}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
               </svg>
             </a>
-            <a href="#" aria-label="Facebook">
+            <a href="#" aria-label={s.footerFbAria}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
               </svg>
@@ -699,21 +1035,20 @@ function Footer() {
         </div>
 
         <div className="footer-links">
-          <h4>Navigate</h4>
+          <h4>{s.footerNavigate}</h4>
           <ul>
-            <li><a href="#about">About</a></li>
-            <li><a href="#classes">Classes</a></li>
-            <li><a href="#pricing">Pricing</a></li>
-            <li><a href="#gallery">Gallery</a></li>
-            <li><a href="#corporate">Corporate</a></li>
-            <li><a href="#faq">FAQ</a></li>
-            <li><a href="#book">Book a Session</a></li>
+            <li><a href="#experience">{s.navLinks.howItWorks}</a></li>
+            <li><a href="#classes">{s.navLinks.classes}</a></li>
+            <li><a href="#testimonials">{s.navLinks.reviews}</a></li>
+            <li><a href="#pricing">{s.navLinks.pricing}</a></li>
+            <li><a href="#corporate">{s.navLinks.corporate}</a></li>
+            <li><a href="#faq">{s.navLinks.faq}</a></li>
           </ul>
         </div>
 
         <div className="footer-contact">
-          <h4>Find Us</h4>
-          <p>1515A, des Marguerites<br />Saint-Lazare, QC J7T2R8</p>
+          <h4>{s.footerFindUs}</h4>
+          <p>{s.footerAddressL1}<br />{s.footerAddressL2}</p>
           <p>
             <a href="mailto:Studioyopaw@gmail.com" style={{ color: 'rgba(255,255,255,0.65)' }}>
               Studioyopaw@gmail.com
@@ -731,13 +1066,13 @@ function Footer() {
               rel="noopener noreferrer"
               style={{ color: 'var(--sage)' }}
             >
-              www.studioyopaw.ca
+              {s.footerSite}
             </a>
           </p>
         </div>
       </div>
       <div className="footer-bottom">
-        <p>© 2026 Studio Yopaw · Saint-Lazare, QC · Made with 🐾</p>
+        <p>{s.footerBottom}</p>
       </div>
     </footer>
   )
@@ -747,6 +1082,10 @@ function Footer() {
 
 export default function App() {
   const [scrolled, setScrolled] = useState(false)
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 60)
@@ -759,17 +1098,13 @@ export default function App() {
       <Navbar scrolled={scrolled} />
       <HeroSection />
       <MarqueeTicker />
-      <AboutSection />
-      <ClassesSection />
-      <GallerySection />
       <ExperienceSection />
-      <StatsBar />
-      <PricingSection />
-      <IllustrationSection />
-      <CorporateSection />
+      <ClassesSection />
       <TestimonialsSection />
+      <PricingSection />
+      <GallerySection />
+      <AboutSection />
       <FAQSection />
-      <CTASection />
       <Footer />
     </div>
   )
