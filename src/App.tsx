@@ -45,15 +45,15 @@ function useInView(threshold = 0.2) {
 
 const GALLERY_IMAGES = [
   { src: '/IMG_7546.webp', tall: true as const },
-  { src: '/IMG_7268_43334cab-c14c-4b05-b4b9-497a9fcd7f92.webp', tall: false as const },
+  { src: '/magnific_change-the-dog-to-a-dachs_2935979833.png', tall: false as const },
   { src: '/IMG_7478_3c7b739e-7a8c-43b3-b104-99f3db44a731.webp', tall: false as const },
   { src: '/IMG_9045_b027fb31-b966-46ee-ac10-47bafc1ef696.webp', tall: false as const },
   { src: '/IMG_1167_ff8c28e8-ef39-491c-bf7c-ae0caa5fda75.webp', tall: false as const },
 ]
 
 const CLASS_IMAGES = [
-  '/IMG_0642.webp',
-  '/IMG_1468.webp',
+  '/magnific_change-the-dog-to-a-frenc_2935952488.png',
+  '/magnific_change-the-dog-to-a-labra_2935977057.png',
   '/IMG_2299_2.webp',
 ]
 
@@ -919,7 +919,7 @@ function TestimonialsSection() {
     <section className="testimonials-section" id="testimonials">
       <div
         className="testimonials-bg"
-        style={{ backgroundImage: "url('/IMG_5575_a560e5dd-077d-48be-8f15-5d23890ed291.webp')" }}
+        style={{ backgroundImage: "url('/magnific_change-the-dog-to-a-poodl_2935981941.png')" }}
         aria-hidden
       />
       <div className="testimonials-overlay" aria-hidden />
