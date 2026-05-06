@@ -405,7 +405,7 @@ h2 em { font-style: italic; color: var(--sage); }
   animation: fade-rise 1s ease-out 0.4s both;
 }
 .hero-scroll {
-  position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: 40px; left: 0; right: 0;
   z-index: 2; display: flex; flex-direction: column;
   align-items: center; gap: 10px;
   color: rgba(255,255,255,0.55); font-size: 0.7rem;
