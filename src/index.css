@@ -101,8 +101,8 @@ h2, h3 { margin: 0; }
 }
 .badge-light {
   color: rgba(255, 235, 248, 0.95);
-  background: rgba(244, 114, 182, 0.22);
-  border-color: rgba(252, 231, 243, 0.25);
+  background: rgba(244, 114, 182, 0.40);
+  border-color: rgba(252, 231, 243, 0.55);
 }
 
 .section-header {
