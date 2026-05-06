@@ -552,13 +552,13 @@ function PricingSection() {
                 {s.pricingHeadingPre}
                 <br />
                 {s.pricingHeadingMidLead}
-                <em style={{ color: '#A8D5A0', fontStyle: 'italic' }}>{s.pricingHeadingEm}</em>
+                <em style={{ color: '#F472B6', fontStyle: 'italic' }}>{s.pricingHeadingEm}</em>
                 {s.pricingHeadingMidTrail}
               </>
             ) : (
               <>
                 {s.pricingHeadingPre}
-                <em style={{ color: '#A8D5A0', fontStyle: 'italic' }}>{s.pricingHeadingEm}</em>
+                <em style={{ color: '#F472B6', fontStyle: 'italic' }}>{s.pricingHeadingEm}</em>
               </>
             )}
           </h2>
@@ -922,7 +922,7 @@ function TestimonialsSection() {
           <span className="section-badge">{s.testimonialsBadge}</span>
           <h2 style={{ color: '#fff' }}>
             {s.testimonialsHeadingPre}
-            <em style={{ color: '#A8D5A0', fontStyle: 'italic' }}>{s.testimonialsHeadingEm}</em>
+            <em style={{ color: '#F472B6', fontStyle: 'italic' }}>{s.testimonialsHeadingEm}</em>
           </h2>
           <p style={{ color: 'rgba(255,255,255,0.65)' }}>{s.testimonialsSub}</p>
         </div>
