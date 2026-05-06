@@ -193,7 +193,7 @@ h2 em { font-style: italic; color: var(--sage); }
   color: #fff; transition: color 0.35s; flex-shrink: 0;
 }
 .navbar-logo-img {
-  height: 44px;
+  height: 52px;
   width: auto;
   display: block;
   border-radius: 10px;
@@ -1209,7 +1209,7 @@ h2 em { font-style: italic; color: var(--sage); }
   color: #fff; margin-bottom: 18px;
 }
 .footer-logo-img {
-  height: 60px;
+  height: 72px;
   width: auto;
   display: block;
   border-radius: 12px;

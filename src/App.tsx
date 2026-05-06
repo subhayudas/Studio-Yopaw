@@ -70,8 +70,7 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
       <nav className={`navbar${scrolled ? ' scrolled' : ''}`}>
         <div className="navbar-inner">
           <a href="#hero" className="navbar-logo">
-            <img src="/yopawlogo.png" alt="" className="navbar-logo-img" />
-            {s.navBrand}
+            <img src="/yopawlogo.png" alt="Studio Yopaw" className="navbar-logo-img" />
           </a>
           <ul className="navbar-links">
             <li><a href="#experience">{s.navLinks.howItWorks}</a></li>
@@ -1022,8 +1021,7 @@ function Footer() {
       <div className="footer-inner">
         <div className="footer-brand">
           <div className="footer-logo">
-            <img src="/yopawlogo.png" alt="" className="footer-logo-img" />
-            {s.navBrand}
+            <img src="/yopawlogo.png" alt="Studio Yopaw" className="footer-logo-img" />
           </div>
           <p>{s.footerTaglineL1}<br />{s.footerTaglineL2}</p>
           <div className="footer-social">
