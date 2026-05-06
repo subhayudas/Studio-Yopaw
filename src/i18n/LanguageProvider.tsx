@@ -96,7 +96,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         <div className="lang-picker-overlay" role="dialog" aria-modal="true" aria-labelledby="lang-picker-heading">
           <div className="lang-picker-modal">
             <div className="lang-picker-brand">
-              <LangPickerPaw size={40} />
+              <img src="/yopawlogo.png" alt="" className="lang-picker-logo-img" />
               <span className="lang-picker-brand-name">Studio Yopaw</span>
             </div>
             <p id="lang-picker-heading" className="lang-picker-prompt">

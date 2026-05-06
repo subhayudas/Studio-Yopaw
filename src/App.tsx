@@ -70,7 +70,7 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
       <nav className={`navbar${scrolled ? ' scrolled' : ''}`}>
         <div className="navbar-inner">
           <a href="#hero" className="navbar-logo">
-            <PawIcon size={26} className="logo-paw" />
+            <img src="/yopawlogo.png" alt="" className="navbar-logo-img" />
             {s.navBrand}
           </a>
           <ul className="navbar-links">
@@ -558,13 +558,13 @@ function PricingSection() {
                 {s.pricingHeadingPre}
                 <br />
                 {s.pricingHeadingMidLead}
-                <em style={{ color: '#F472B6', fontStyle: 'italic' }}>{s.pricingHeadingEm}</em>
+                <em style={{ color: '#F9A8D4', fontStyle: 'italic' }}>{s.pricingHeadingEm}</em>
                 {s.pricingHeadingMidTrail}
               </>
             ) : (
               <>
                 {s.pricingHeadingPre}
-                <em style={{ color: '#F472B6', fontStyle: 'italic' }}>{s.pricingHeadingEm}</em>
+                <em style={{ color: '#F9A8D4', fontStyle: 'italic' }}>{s.pricingHeadingEm}</em>
               </>
             )}
           </h2>
@@ -928,7 +928,7 @@ function TestimonialsSection() {
           <span className="section-badge">{s.testimonialsBadge}</span>
           <h2 style={{ color: '#fff' }}>
             {s.testimonialsHeadingPre}
-            <em style={{ color: '#F472B6', fontStyle: 'italic' }}>{s.testimonialsHeadingEm}</em>
+            <em style={{ color: '#F9A8D4', fontStyle: 'italic' }}>{s.testimonialsHeadingEm}</em>
           </h2>
           <p style={{ color: 'rgba(255,255,255,0.65)' }}>{s.testimonialsSub}</p>
         </div>
@@ -1022,7 +1022,7 @@ function Footer() {
       <div className="footer-inner">
         <div className="footer-brand">
           <div className="footer-logo">
-            <PawIcon size={28} className="text-sage" />
+            <img src="/yopawlogo.png" alt="" className="footer-logo-img" />
             {s.navBrand}
           </div>
           <p>{s.footerTaglineL1}<br />{s.footerTaglineL2}</p>
