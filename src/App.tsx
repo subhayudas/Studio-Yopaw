@@ -111,14 +111,20 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
           <a href="#pricing" onClick={() => setMenuOpen(false)}>{s.navLinks.pricing}</a>
           <a href="#corporate" onClick={() => setMenuOpen(false)}>{s.navLinks.corporate}</a>
           <a href="#faq" onClick={() => setMenuOpen(false)}>{s.navLinks.faq}</a>
-          <a
-            href="#book"
-            className="btn-primary"
-            style={{ marginTop: 8, textAlign: 'center' }}
-            onClick={() => setMenuOpen(false)}
-          >
-            {s.navMobileBook}
-          </a>
+          <div className="mobile-menu-actions">
+            <button
+              type="button"
+              className="lang-switch"
+              onClick={() => { toggleLang(); setMenuOpen(false); }}
+              aria-label={toggleAria}
+              title={s.navLangOtherHint}
+            >
+              {toggleLabel}
+            </button>
+            <a href="#book" className="btn-primary mobile-menu-book" onClick={() => setMenuOpen(false)}>
+              {s.navMobileBook}
+            </a>
+          </div>
         </div>
       )}
     </>

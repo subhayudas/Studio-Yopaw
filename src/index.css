@@ -338,6 +338,19 @@ h2 em { font-style: italic; color: var(--sage); }
 .mobile-menu a { font-size: 1.1rem; font-weight: 500; color: var(--text); }
 .mobile-menu a:hover { color: var(--sage); }
 
+.mobile-menu-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  margin-top: 4px;
+}
+.mobile-menu-book {
+  flex: 1;
+  text-align: center;
+}
+
 /* ── Hero ────────────────────────────────────────────────── */
 .hero-section {
   position: relative; height: 100vh; min-height: 620px;
@@ -1217,21 +1230,27 @@ h2 em { font-style: italic; color: var(--sage); }
   font-size: 0.8rem; color: rgba(255,255,255,0.28);
 }
 
+/* ── Scroll margin for fixed navbar ─────────────────────── */
+section, #booking, #corporate, #book { scroll-margin-top: 80px; }
+
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 1024px) {
   .navbar { padding: 0 24px; }
   .navbar-links, .navbar-cta { display: none; }
+  .navbar-actions { display: none; }
   .hamburger { display: flex; }
+
+  .section-header { margin-bottom: 48px; }
 
   .about-section  { padding: 80px 24px; }
   .about-inner    { grid-template-columns: 1fr; gap: 52px; }
   .about-image    { max-width: 520px; margin: 0 auto; }
 
   .classes-section { padding: 80px 24px; }
-  .classes-grid    { grid-template-columns: 1fr; max-width: 500px; margin: 0 auto; }
+  .classes-grid    { grid-template-columns: repeat(2, 1fr); max-width: none; margin: 0; }
 
   .experience-section { padding: 80px 24px; }
-  .experience-grid    { grid-template-columns: 1fr; max-width: 500px; margin: 0 auto; }
+  .experience-grid    { grid-template-columns: repeat(2, 1fr); max-width: none; margin: 0; }
 
   .pricing-section { padding: 80px 24px; }
   .pricing-card    { padding: 44px 36px; }
@@ -1252,11 +1271,35 @@ h2 em { font-style: italic; color: var(--sage); }
 }
 
 @media (max-width: 640px) {
-  .gallery-grid { grid-template-columns: 1fr; grid-auto-rows: 260px; }
+  .about-section, .classes-section, .experience-section,
+  .gallery-section, .testimonials-section, .faq-section { padding: 60px 20px; }
+  .pricing-section { padding: 60px 20px; }
+  .footer { padding: 48px 20px 0; }
+  .footer-inner { gap: 32px; padding-bottom: 48px; }
+
+  .section-header { margin-bottom: 36px; }
+
+  .classes-grid { grid-template-columns: 1fr; max-width: 500px; margin: 0 auto; }
+  .experience-grid { grid-template-columns: 1fr; max-width: 500px; margin: 0 auto; }
+
+  .about-inner { gap: 32px; }
+  .paw-float { display: none; }
+
+  .gallery-grid { grid-template-columns: 1fr; grid-auto-rows: 240px; }
+
   .hero-ctas { flex-direction: column; align-items: center; }
+
   .testimonial-carousel { gap: 8px; max-width: 100%; margin-left: auto; margin-right: auto; }
   .testimonial-arrow { width: 42px; height: 42px; }
   .testimonial-arrow svg { width: 18px; height: 18px; }
   .testimonial-card { padding: 32px 28px; }
+
   .pricing-card { padding: 36px 24px; }
+}
+
+@media (max-width: 480px) {
+  .pricing-card { padding: 28px 18px; }
+  .experience-card { padding: 36px 20px; }
+  .testimonial-card { padding: 28px 20px; }
+  .footer-inner { gap: 28px; padding-bottom: 40px; }
 }
