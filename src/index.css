@@ -172,7 +172,7 @@ h2 em { font-style: italic; color: var(--sage); }
 /* ── Navbar ──────────────────────────────────────────────── */
 .navbar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  padding: 0 48px; height: 72px;
+  padding: 0 48px; height: 96px;
   display: flex; align-items: center;
   transition: background 0.35s, backdrop-filter 0.35s, box-shadow 0.35s;
 }
@@ -193,7 +193,7 @@ h2 em { font-style: italic; color: var(--sage); }
   color: #fff; transition: color 0.35s; flex-shrink: 0;
 }
 .navbar-logo-img {
-  height: 52px;
+  height: 90px;
   width: auto;
   display: block;
   border-radius: 10px;
@@ -1209,7 +1209,7 @@ h2 em { font-style: italic; color: var(--sage); }
   color: #fff; margin-bottom: 18px;
 }
 .footer-logo-img {
-  height: 72px;
+  height: 90px;
   width: auto;
   display: block;
   border-radius: 12px;
@@ -1249,11 +1249,11 @@ h2 em { font-style: italic; color: var(--sage); }
 }
 
 /* ── Scroll margin for fixed navbar ─────────────────────── */
-section, #booking, #corporate, #book { scroll-margin-top: 80px; }
+section, #booking, #corporate, #book { scroll-margin-top: 104px; }
 
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 1024px) {
-  .navbar { padding: 0 24px; }
+  .navbar { padding: 0 24px; height: 72px; }
   .navbar-links, .navbar-cta { display: none; }
   .navbar-actions { display: none; }
   .hamburger { display: flex; }
@@ -1289,6 +1289,8 @@ section, #booking, #corporate, #book { scroll-margin-top: 80px; }
 }
 
 @media (max-width: 640px) {
+  .navbar-logo-img { height: 44px; }
+  .footer-logo-img { height: 64px; }
   .about-section, .classes-section, .experience-section,
   .gallery-section, .testimonials-section, .faq-section { padding: 60px 20px; }
   .pricing-section { padding: 60px 20px; }
