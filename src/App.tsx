@@ -45,15 +45,15 @@ function useInView(threshold = 0.2) {
 
 const GALLERY_IMAGES = [
   { src: '/IMG_7546.webp', tall: true as const },
-  { src: '/IMG_7268_43334cab-c14c-4b05-b4b9-497a9fcd7f92.webp', tall: false as const },
+  { src: '/magnific_change-the-dog-to-a-dachs_2935979833.png', tall: false as const },
   { src: '/IMG_7478_3c7b739e-7a8c-43b3-b104-99f3db44a731.webp', tall: false as const },
   { src: '/IMG_9045_b027fb31-b966-46ee-ac10-47bafc1ef696.webp', tall: false as const },
   { src: '/IMG_1167_ff8c28e8-ef39-491c-bf7c-ae0caa5fda75.webp', tall: false as const },
 ]
 
 const CLASS_IMAGES = [
-  '/IMG_0642.webp',
-  '/IMG_1468.webp',
+  '/magnific_change-the-dog-to-a-frenc_2935952488.png',
+  '/magnific_change-the-dog-to-a-labra_2935977057.png',
   '/IMG_2299_2.webp',
 ]
 
@@ -70,8 +70,7 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
       <nav className={`navbar${scrolled ? ' scrolled' : ''}`}>
         <div className="navbar-inner">
           <a href="#hero" className="navbar-logo">
-            <PawIcon size={26} className="logo-paw" />
-            {s.navBrand}
+            <img src="/yopawlogo.png" alt="Studio Yopaw" className="navbar-logo-img" />
           </a>
           <ul className="navbar-links">
             <li><a href="#experience">{s.navLinks.howItWorks}</a></li>
@@ -111,14 +110,20 @@ function Navbar({ scrolled }: { scrolled: boolean }) {
           <a href="#pricing" onClick={() => setMenuOpen(false)}>{s.navLinks.pricing}</a>
           <a href="#corporate" onClick={() => setMenuOpen(false)}>{s.navLinks.corporate}</a>
           <a href="#faq" onClick={() => setMenuOpen(false)}>{s.navLinks.faq}</a>
-          <a
-            href="#book"
-            className="btn-primary"
-            style={{ marginTop: 8, textAlign: 'center' }}
-            onClick={() => setMenuOpen(false)}
-          >
-            {s.navMobileBook}
-          </a>
+          <div className="mobile-menu-actions">
+            <button
+              type="button"
+              className="lang-switch"
+              onClick={() => { toggleLang(); setMenuOpen(false); }}
+              aria-label={toggleAria}
+              title={s.navLangOtherHint}
+            >
+              {toggleLabel}
+            </button>
+            <a href="#book" className="btn-primary mobile-menu-book" onClick={() => setMenuOpen(false)}>
+              {s.navMobileBook}
+            </a>
+          </div>
         </div>
       )}
     </>
@@ -552,13 +557,13 @@ function PricingSection() {
                 {s.pricingHeadingPre}
                 <br />
                 {s.pricingHeadingMidLead}
-                <em style={{ color: '#A8D5A0', fontStyle: 'italic' }}>{s.pricingHeadingEm}</em>
+                <em style={{ color: '#F9A8D4', fontStyle: 'italic' }}>{s.pricingHeadingEm}</em>
                 {s.pricingHeadingMidTrail}
               </>
             ) : (
               <>
                 {s.pricingHeadingPre}
-                <em style={{ color: '#A8D5A0', fontStyle: 'italic' }}>{s.pricingHeadingEm}</em>
+                <em style={{ color: '#F9A8D4', fontStyle: 'italic' }}>{s.pricingHeadingEm}</em>
               </>
             )}
           </h2>
@@ -913,7 +918,7 @@ function TestimonialsSection() {
     <section className="testimonials-section" id="testimonials">
       <div
         className="testimonials-bg"
-        style={{ backgroundImage: "url('/IMG_5575_a560e5dd-077d-48be-8f15-5d23890ed291.webp')" }}
+        style={{ backgroundImage: "url('/magnific_change-the-dog-to-a-poodl_2935981941.png')" }}
         aria-hidden
       />
       <div className="testimonials-overlay" aria-hidden />
@@ -922,7 +927,7 @@ function TestimonialsSection() {
           <span className="section-badge">{s.testimonialsBadge}</span>
           <h2 style={{ color: '#fff' }}>
             {s.testimonialsHeadingPre}
-            <em style={{ color: '#A8D5A0', fontStyle: 'italic' }}>{s.testimonialsHeadingEm}</em>
+            <em style={{ color: '#F9A8D4', fontStyle: 'italic' }}>{s.testimonialsHeadingEm}</em>
           </h2>
           <p style={{ color: 'rgba(255,255,255,0.65)' }}>{s.testimonialsSub}</p>
         </div>
@@ -1016,8 +1021,7 @@ function Footer() {
       <div className="footer-inner">
         <div className="footer-brand">
           <div className="footer-logo">
-            <PawIcon size={28} className="text-sage" />
-            {s.navBrand}
+            <img src="/yopawlogo.png" alt="Studio Yopaw" className="footer-logo-img" />
           </div>
           <p>{s.footerTaglineL1}<br />{s.footerTaglineL2}</p>
           <div className="footer-social">
