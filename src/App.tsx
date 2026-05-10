@@ -2,6 +2,10 @@ import { useState, useEffect, useLayoutEffect, useRef, useMemo, type FormEvent }
 import './App.css'
 import type { Lang } from './i18n/siteStrings'
 import { interpolate, useI18n } from './i18n/LanguageProvider'
+import { Navbar } from './components/Navbar'
+import { Footer } from './components/Footer'
+import { BookingWaiverModal } from './components/BookingWaiverModal'
+import { RefundPolicyPage } from './pages/RefundPolicyPage'
 
 // ── SVG Icons ──────────────────────────────────────────────
 
@@ -55,80 +59,17 @@ const CLASS_IMAGES = [
   '/magnific_change-the-dog-to-a-frenc_2935952488.png',
   '/magnific_change-the-dog-to-a-labra_2935977057.png',
   '/IMG_2299_2.webp',
+  '/magnific_change-the-dog-to-a-poodl_2935981941.png',
 ]
 
-// ── Sections ───────────────────────────────────────────────
+/** URL hashes that should scroll the booking card to the vertical center of the viewport */
+const BOOKING_FORM_SCROLL_HASHES = new Set(['book', 'booking', 'pricing', 'corporate'])
 
-function Navbar({ scrolled }: { scrolled: boolean }) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const { lang, s, toggleLang } = useI18n()
-  const toggleLabel = lang === 'en' ? 'FR' : 'EN'
-  const toggleAria = lang === 'en' ? s.navSwitchToFrAria : s.navSwitchToEnAria
-
-  return (
-    <>
-      <nav className={`navbar${scrolled ? ' scrolled' : ''}`}>
-        <div className="navbar-inner">
-          <a href="#hero" className="navbar-logo">
-            <img src="/yopawlogo.png" alt="Studio Yopaw" className="navbar-logo-img" />
-          </a>
-          <ul className="navbar-links">
-            <li><a href="#experience">{s.navLinks.howItWorks}</a></li>
-            <li><a href="#classes">{s.navLinks.classes}</a></li>
-            <li><a href="#testimonials">{s.navLinks.reviews}</a></li>
-            <li><a href="#pricing">{s.navLinks.pricing}</a></li>
-            <li><a href="#corporate">{s.navLinks.corporate}</a></li>
-            <li><a href="#faq">{s.navLinks.faq}</a></li>
-          </ul>
-          <div className="navbar-actions">
-            <button
-              type="button"
-              className="lang-switch"
-              onClick={toggleLang}
-              aria-label={toggleAria}
-              title={s.navLangOtherHint}
-            >
-              {toggleLabel}
-            </button>
-            <a href="#book" className="btn-primary">{s.navBook}</a>
-          </div>
-          <button
-            className="hamburger"
-            onClick={() => setMenuOpen(o => !o)}
-            aria-label={s.navToggle}
-          >
-            <span /><span /><span />
-          </button>
-        </div>
-      </nav>
-
-      {menuOpen && (
-        <div className="mobile-menu">
-          <a href="#experience" onClick={() => setMenuOpen(false)}>{s.navLinks.howItWorks}</a>
-          <a href="#classes" onClick={() => setMenuOpen(false)}>{s.navLinks.classes}</a>
-          <a href="#testimonials" onClick={() => setMenuOpen(false)}>{s.navLinks.reviews}</a>
-          <a href="#pricing" onClick={() => setMenuOpen(false)}>{s.navLinks.pricing}</a>
-          <a href="#corporate" onClick={() => setMenuOpen(false)}>{s.navLinks.corporate}</a>
-          <a href="#faq" onClick={() => setMenuOpen(false)}>{s.navLinks.faq}</a>
-          <div className="mobile-menu-actions">
-            <button
-              type="button"
-              className="lang-switch"
-              onClick={() => { toggleLang(); setMenuOpen(false); }}
-              aria-label={toggleAria}
-              title={s.navLangOtherHint}
-            >
-              {toggleLabel}
-            </button>
-            <a href="#book" className="btn-primary mobile-menu-book" onClick={() => setMenuOpen(false)}>
-              {s.navMobileBook}
-            </a>
-          </div>
-        </div>
-      )}
-    </>
-  )
+function scrollBookingFormIntoView(behavior: ScrollBehavior = 'smooth') {
+  document.getElementById('book')?.scrollIntoView({ behavior, block: 'center', inline: 'nearest' })
 }
+
+// ── Sections ───────────────────────────────────────────────
 
 function HeroSection() {
   const { s } = useI18n()
@@ -212,9 +153,13 @@ function ClassesSection() {
       <div className="section-header">
         <span className="section-badge">{s.classesBadge}</span>
         <h2>{s.classesHeading}<em>{s.classesHeadingEm}</em>.</h2>
-        <p>{s.classesSub}</p>
+        {s.classesSub ? <p>{s.classesSub}</p> : null}
       </div>
-      <div className={`classes-grid${inView ? ' visible' : ''}`} ref={ref}>
+      <div
+        className={`classes-grid${inView ? ' visible' : ''}`}
+        ref={ref}
+        data-class-count={s.classCards.length}
+      >
         {s.classCards.map((cls, i) => (
           <div
             key={cls.title}
@@ -233,7 +178,7 @@ function ClassesSection() {
         ))}
       </div>
       <div style={{ marginTop: '2.75rem', width: '100%', textAlign: 'center' }}>
-        <a href="#booking" className="btn-primary btn-lg">
+        <a href="#book" className="btn-primary btn-lg">
           {s.classesBook}
         </a>
       </div>
@@ -251,7 +196,7 @@ function ExperienceSection() {
   return (
     <section className="experience-section" id="experience">
       <div className="section-header">
-        <span className="section-badge">{s.experienceBadge}</span>
+        {s.experienceBadge ? <span className="section-badge">{s.experienceBadge}</span> : null}
         <h2>
           {s.experienceHeadingPre}
           <em>{s.experienceHeadingEm}</em>
@@ -283,11 +228,45 @@ function ExperienceSection() {
   )
 }
 
-const WEEKEND_SPOTS_PATTERN = [18, 12, 0, 7, 0, 15] as const
-
 type YogaStyle = 'yin' | 'gentle'
 
-type WeekendSession = { iso: string; spotsRemaining: number }
+type WeekendSession = { iso: string }
+
+/** Weekend session times (20 spots each); same schedule every Saturday & Sunday offered in the picker. */
+const SESSION_TIME_SLOTS = [
+  { id: 't1030', h: 10, m: 30 },
+  { id: 't1200', h: 12, m: 0 },
+  { id: 't1330', h: 13, m: 30 },
+  { id: 't1500', h: 15, m: 0 },
+] as const
+
+const SPOTS_PER_TIME_SLOT = 20
+
+function sessionSlotKey(iso: string, slotId: string): string {
+  return `${iso}|${slotId}`
+}
+
+function formatSlotClock(h: number, m: number, lang: Lang): string {
+  const d = new Date(2000, 0, 1, h, m)
+  return d.toLocaleTimeString(lang === 'fr' ? 'fr-CA' : 'en-CA', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+function slotLabelFromId(slotId: string, lang: Lang): string {
+  const slot = SESSION_TIME_SLOTS.find(s => s.id === slotId)
+  if (!slot) return ''
+  return formatSlotClock(slot.h, slot.m, lang)
+}
+
+function isDateFullyBooked(iso: string, spotsByKey: Record<string, number>): boolean {
+  return SESSION_TIME_SLOTS.every(s => (spotsByKey[sessionSlotKey(iso, s.id)] ?? SPOTS_PER_TIME_SLOT) <= 0)
+}
+
+function getSpotRemaining(iso: string, slotId: string, spotsByKey: Record<string, number>): number {
+  return spotsByKey[sessionSlotKey(iso, slotId)] ?? SPOTS_PER_TIME_SLOT
+}
 
 function addDaysLocal(base: Date, days: number): Date {
   const d = new Date(base)
@@ -303,10 +282,8 @@ function buildNextWeekendSessions(): WeekendSession[] {
     const d = addDaysLocal(start, i)
     const wd = d.getDay()
     if (wd === 0 || wd === 6) {
-      const wi = Math.floor(out.length / 2)
-      const spotsRemaining = WEEKEND_SPOTS_PATTERN[wi % WEEKEND_SPOTS_PATTERN.length]
       const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      out.push({ iso, spotsRemaining })
+      out.push({ iso })
     }
   }
   return out
@@ -375,6 +352,9 @@ function PricingSection() {
 
   const [flow, setFlow] = useState<Flow>({ kind: 'chooseClass' })
   const [selectedSessionIso, setSelectedSessionIso] = useState<string | null>(null)
+  const [pendingSessionIso, setPendingSessionIso] = useState<string | null>(null)
+  const [selectedTimeSlotId, setSelectedTimeSlotId] = useState<string | null>(null)
+  const [spotsBySlotKey, setSpotsBySlotKey] = useState<Record<string, number>>({})
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -383,6 +363,8 @@ function PricingSection() {
   const [corpPhone, setCorpPhone] = useState('')
   const [groupSize, setGroupSize] = useState('')
   const [eventDetails, setEventDetails] = useState('')
+  const [waiverAccepted, setWaiverAccepted] = useState(false)
+  const [waiverModalOpen, setWaiverModalOpen] = useState(false)
 
   const pricingCardRef = useRef<HTMLDivElement>(null)
   const hasInteractedWithBookingFormRef = useRef(false)
@@ -403,26 +385,47 @@ function PricingSection() {
     pendingPricingStepScrollRef.current = true
   }
 
+  /** Mat + session-date steps: align card top with viewport (readable under navbar via scroll-margin). Other steps keep centered. */
+  const pricingCardScrollBlock = (): ScrollLogicalPosition => {
+    if (flow.kind === 'public' && (flow.step === 'mat' || flow.step === 'date')) return 'start'
+    return 'center'
+  }
+
   useEffect(() => {
     if (!hasInteractedWithBookingFormRef.current || !pendingPricingStepScrollRef.current) return
     const card = pricingCardRef.current
     if (!card || !hasInteractedWithBookingFormRef.current) return
     pendingPricingStepScrollRef.current = false
+    const block = pricingCardScrollBlock()
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         if (!hasInteractedWithBookingFormRef.current) return
-        card.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        card.scrollIntoView({ behavior: 'smooth', block, inline: 'nearest' })
       })
     })
-  }, [flowTransitionKey])
+  }, [flowTransitionKey, flow])
+
+  useEffect(() => {
+    if (pendingSessionIso === null) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPendingSessionIso(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [pendingSessionIso])
 
   const progressPercent = (): number => {
     if (flow.kind === 'chooseClass') return 25
     if (flow.kind === 'publicSuccess') return 100
     if (flow.kind === 'public') {
-      if (flow.step === 'mat') return 50
-      if (flow.step === 'date') return 75
-      return 100
+      if (flow.step === 'mat') return 45
+      if (flow.step === 'date') return 62
+      return 88
     }
     if (flow.kind === 'corporate' || flow.kind === 'corporateSuccess') return 100
     return 0
@@ -432,17 +435,27 @@ function PricingSection() {
     flow.kind !== 'publicSuccess' && flow.kind !== 'corporateSuccess'
 
   const goBack = () => {
+    if (pendingSessionIso !== null) {
+      setPendingSessionIso(null)
+      return
+    }
     if (flow.kind === 'public') {
       if (flow.step === 'mat') {
         setFlow({ kind: 'chooseClass' })
         return
       }
       if (flow.step === 'date') {
+        setPendingSessionIso(null)
         setFlow({ kind: 'public', step: 'mat', yoga: flow.yoga })
         setSelectedSessionIso(null)
+        setSelectedTimeSlotId(null)
         return
       }
+      setWaiverAccepted(false)
+      setWaiverModalOpen(false)
       setFlow({ kind: 'public', step: 'date', yoga: flow.yoga })
+      setSelectedSessionIso(null)
+      setSelectedTimeSlotId(null)
       return
     }
     if (flow.kind === 'corporate' && flow.step === 'form') {
@@ -458,11 +471,16 @@ function PricingSection() {
   const chooseClass = (id: (typeof bookingClassChoices)[number]['id']) => {
     requestScrollPricingCardAfterAdvance()
     if (id === 'corporate') {
+      setPendingSessionIso(null)
+      setSelectedSessionIso(null)
+      setSelectedTimeSlotId(null)
       setFlow({ kind: 'corporate', step: 'form' })
       return
     }
     setFlow({ kind: 'public', step: 'mat', yoga: id })
     setSelectedSessionIso(null)
+    setPendingSessionIso(null)
+    setSelectedTimeSlotId(null)
   }
 
   const pickMat = () => {
@@ -473,10 +491,20 @@ function PricingSection() {
         : prev
     )
     setSelectedSessionIso(null)
+    setPendingSessionIso(null)
+    setSelectedTimeSlotId(null)
   }
 
   const submitPublic = (e: FormEvent) => {
     e.preventDefault()
+    if (!waiverAccepted) return
+    if (selectedSessionIso && selectedTimeSlotId) {
+      const k = sessionSlotKey(selectedSessionIso, selectedTimeSlotId)
+      setSpotsBySlotKey(prev => ({
+        ...prev,
+        [k]: Math.max(0, (prev[k] ?? SPOTS_PER_TIME_SLOT) - 1),
+      }))
+    }
     requestScrollPricingCardAfterAdvance()
     setFlow({ kind: 'publicSuccess' })
   }
@@ -490,9 +518,13 @@ function PricingSection() {
   const restartPublicBooking = () => {
     setFlow({ kind: 'chooseClass' })
     setSelectedSessionIso(null)
+    setPendingSessionIso(null)
+    setSelectedTimeSlotId(null)
     setFullName('')
     setEmail('')
     setPhone('')
+    setWaiverAccepted(false)
+    setWaiverModalOpen(false)
   }
 
   const renderPublicSuccess = () => (
@@ -510,6 +542,7 @@ function PricingSection() {
           date: selectedSessionIso
             ? formatLongSessionDate(selectedSessionIso, lang)
             : s.pricingSuccessChosenDayFallback,
+          time: selectedTimeSlotId ? slotLabelFromId(selectedTimeSlotId, lang) : '—',
         })}
       </p>
       <p className="pricing-success-foot">{s.pricingSuccessPublicFoot}</p>
@@ -544,10 +577,8 @@ function PricingSection() {
     flow.kind === 'corporateSuccess'
 
   return (
+    <>
     <section className="pricing-section" id="pricing">
-      <span id="booking" style={{ display: 'block', height: 0, overflow: 'hidden' }} aria-hidden />
-      <span id="corporate" style={{ display: 'block', height: 0, overflow: 'hidden' }} aria-hidden />
-      <span id="book" style={{ display: 'block', height: 0, overflow: 'hidden' }} aria-hidden />
       <div className="pricing-inner">
         <div className="section-header">
           <span className="section-badge badge-light">{s.pricingSectionBadge}</span>
@@ -564,12 +595,13 @@ function PricingSection() {
               <>
                 {s.pricingHeadingPre}
                 <em style={{ color: '#F9A8D4', fontStyle: 'italic' }}>{s.pricingHeadingEm}</em>
+                {s.pricingHeadingMidTrail}
               </>
             )}
           </h2>
           <p style={{ color: 'rgba(255,255,255,0.65)' }}>{s.pricingSub}</p>
         </div>
-        <div ref={pricingCardRef} className="pricing-card">
+        <div ref={pricingCardRef} id="book" className="pricing-card">
           {showFullPricingCardHeader ? (
             <>
               <div className="pricing-amount">
@@ -578,11 +610,11 @@ function PricingSection() {
               </div>
               <div className="price-type">{s.pricingDropInRow}</div>
               <ul className="price-features">
-                <li>{s.pricingFeat1}</li>
-                <li>{s.pricingFeat2}</li>
-                <li>{s.pricingFeat3}</li>
-                <li>{s.pricingFeat4}</li>
-                <li>{s.pricingFeat5}</li>
+                {[s.pricingFeat1, s.pricingFeat2, s.pricingFeat3, s.pricingFeat4, s.pricingFeat5]
+                  .filter((line) => line.trim().length > 0)
+                  .map((line, i) => (
+                    <li key={i}>{line}</li>
+                  ))}
               </ul>
 
               <hr className="pricing-card-divider" />
@@ -644,30 +676,26 @@ function PricingSection() {
                 <h3 className="pricing-step-title">{s.pricingChooseSession}</h3>
                 <div className="pricing-session-list">
                   {weekendSessions.map(session => {
-                    const full = session.spotsRemaining <= 0
-                    const sel = selectedSessionIso === session.iso
+                    const dateFullyBooked = isDateFullyBooked(session.iso, spotsBySlotKey)
+                    const sel =
+                      pendingSessionIso === session.iso ||
+                      (selectedSessionIso === session.iso &&
+                        flow.kind === 'public' &&
+                        flow.step === 'contact')
                     return (
                       <button
                         key={session.iso}
                         type="button"
-                        className={`pricing-session-row${full ? ' is-disabled' : ''}${sel ? ' is-selected' : ''}`}
-                        disabled={full}
+                        className={`pricing-session-row${dateFullyBooked ? ' is-disabled' : ''}${sel ? ' is-selected' : ''}`}
+                        disabled={dateFullyBooked}
                         onClick={() => {
-                          if (full) return
-                          requestScrollPricingCardAfterAdvance()
-                          setSelectedSessionIso(session.iso)
-                          setFlow(prev =>
-                            prev.kind === 'public' && prev.step === 'date'
-                              ? { kind: 'public', step: 'contact', yoga: prev.yoga }
-                              : prev
-                          )
+                          if (dateFullyBooked) return
+                          setPendingSessionIso(session.iso)
                         }}
                       >
                         <span className="pricing-session-date">{formatShortSessionDate(session.iso, lang)}</span>
                         <span className="pricing-session-spots">
-                          {full
-                            ? s.pricingSpotFull
-                            : interpolate(s.pricingSpotsRemain, { count: String(session.spotsRemaining) })}
+                          {dateFullyBooked ? s.pricingSpotFull : s.pricingSessionPickTime}
                         </span>
                       </button>
                     )
@@ -677,6 +705,7 @@ function PricingSection() {
             )}
 
             {flow.kind === 'public' && flow.step === 'contact' && (
+              <>
               <form className="pricing-booking-form" onSubmit={submitPublic}>
                 <h3 className="pricing-step-title">{s.pricingContactHeading}</h3>
                 <div className="pricing-form-field">
@@ -727,10 +756,51 @@ function PricingSection() {
                     required
                   />
                 </div>
-                <button type="submit" className="btn-primary btn-lg pricing-submit">
-                  {s.pricingSubmitBookSpot}
-                </button>
+                <>
+                  <div className="pricing-form-field pricing-form-field--checkbox">
+                    <label htmlFor="pub-waiver" className="pricing-checkbox-row">
+                      <input
+                        id="pub-waiver"
+                        name="waiverAccepted"
+                        type="checkbox"
+                        className="pricing-checkbox"
+                        checked={waiverAccepted}
+                        onChange={e => setWaiverAccepted(e.target.checked)}
+                      />
+                      <span className="pricing-checkbox-text">
+                        {s.pricingWaiverConsentPrefix}
+                        <button
+                          type="button"
+                          className="pricing-waiver-inline-link"
+                          onClick={e => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            setWaiverModalOpen(true)
+                          }}
+                        >
+                          {s.pricingWaiverConsentLinkText}
+                        </button>
+                        {s.pricingWaiverConsentSuffix}
+                      </span>
+                    </label>
+                  </div>
+                  <p className="pricing-waiver-age-note">{s.pricingWaiverAgeNote}</p>
+                  <button
+                    type="submit"
+                    className="btn-primary btn-lg pricing-submit"
+                    disabled={!waiverAccepted}
+                  >
+                    {s.pricingSubmitBookSpot}
+                  </button>
+                </>
               </form>
+              <BookingWaiverModal
+                lang={lang}
+                open={waiverModalOpen}
+                onClose={() => setWaiverModalOpen(false)}
+                closeAriaLabel={s.waiverModalCloseAria}
+              />
+              </>
             )}
 
             {flow.kind === 'publicSuccess' && renderPublicSuccess()}
@@ -826,6 +896,18 @@ function PricingSection() {
                     required
                   />
                 </div>
+                <div className="pricing-form-field pricing-form-field--checkbox">
+                  <label htmlFor="corp-terms" className="pricing-checkbox-row">
+                    <input
+                      id="corp-terms"
+                      name="corpTermsAccepted"
+                      type="checkbox"
+                      className="pricing-checkbox"
+                      required
+                    />
+                    <span className="pricing-checkbox-text">{s.pricingTermsCheckboxLabel}</span>
+                  </label>
+                </div>
                 <button type="submit" className="btn-primary btn-lg pricing-submit">
                   {s.pricingCorporateSubmit}
                 </button>
@@ -844,6 +926,69 @@ function PricingSection() {
         </div>
       </div>
     </section>
+
+    {pendingSessionIso !== null && (
+      <div
+        className="pricing-time-overlay"
+        role="presentation"
+        onClick={() => setPendingSessionIso(null)}
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="pricing-time-modal-title"
+          className="pricing-time-modal"
+          onClick={e => e.stopPropagation()}
+        >
+          <h3 id="pricing-time-modal-title" className="pricing-time-modal-title">
+            {s.pricingChooseTimeTitle}
+          </h3>
+          <p className="pricing-time-modal-date">{formatLongSessionDate(pendingSessionIso, lang)}</p>
+          <div className="pricing-time-slot-list">
+            {SESSION_TIME_SLOTS.map(slot => {
+              const rem = getSpotRemaining(pendingSessionIso, slot.id, spotsBySlotKey)
+              const full = rem <= 0
+              return (
+                <button
+                  key={slot.id}
+                  type="button"
+                  disabled={full}
+                  className={`pricing-time-slot-row${full ? ' is-disabled' : ''}`}
+                  onClick={() => {
+                    if (full) return
+                    const iso = pendingSessionIso
+                    setSelectedSessionIso(iso)
+                    setSelectedTimeSlotId(slot.id)
+                    setPendingSessionIso(null)
+                    requestScrollPricingCardAfterAdvance()
+                    setFlow(prev =>
+                      prev.kind === 'public' && prev.step === 'date'
+                        ? { kind: 'public', step: 'contact', yoga: prev.yoga }
+                        : prev
+                    )
+                  }}
+                >
+                  <span className="pricing-time-slot-label">{formatSlotClock(slot.h, slot.m, lang)}</span>
+                  <span className="pricing-session-spots">
+                    {full
+                      ? s.pricingSpotFull
+                      : interpolate(s.pricingSpotsRemain, { count: String(rem) })}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          <button
+            type="button"
+            className="btn-ghost pricing-time-modal-cancel"
+            onClick={() => setPendingSessionIso(null)}
+          >
+            {s.pricingTimeModalCancel}
+          </button>
+        </div>
+      </div>
+    )}
+    </>
   )
 }
 
@@ -979,9 +1124,42 @@ function TestimonialsSection() {
             />
           ))}
         </div>
+
+        <div className="testimonials-cta">
+          <a href="#book" className="btn-primary btn-lg">
+            {s.testimonialsCta}
+          </a>
+        </div>
       </div>
     </section>
   )
+}
+
+const FAQ_REFUND_POLICY_LINK_TOKEN = '<<REFUND_POLICY_LINK>>'
+
+function FaqAnswerBody({ text }: { text: string }) {
+  const { lang } = useI18n()
+  if (text.includes(FAQ_REFUND_POLICY_LINK_TOKEN)) {
+    const i = text.indexOf(FAQ_REFUND_POLICY_LINK_TOKEN)
+    const before = text.slice(0, i)
+    const after = text.slice(i + FAQ_REFUND_POLICY_LINK_TOKEN.length)
+    const linkLabel = lang === 'fr' ? 'Politique de remboursement' : 'Refund policy'
+    const refundHref = lang === 'fr' ? '/politique-remboursement' : '/refund-policy'
+    return (
+      <>
+        {before}
+        <a
+          href={refundHref}
+          className="faq-refund-policy-placeholder-link"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {linkLabel}
+        </a>
+        {after}
+      </>
+    )
+  }
+  return <>{text}</>
 }
 
 function FAQSection() {
@@ -1006,7 +1184,11 @@ function FAQSection() {
               <span>{faq.q}</span>
               <span className="faq-chevron">{open === i ? '−' : '+'}</span>
             </div>
-            {open === i && <div className="faq-answer">{faq.a}</div>}
+            {open === i && (
+              <div className="faq-answer">
+                <FaqAnswerBody text={faq.a} />
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -1014,81 +1196,55 @@ function FAQSection() {
   )
 }
 
-function Footer() {
-  const { s } = useI18n()
-  return (
-    <footer className="footer">
-      <div className="footer-inner">
-        <div className="footer-brand">
-          <div className="footer-logo">
-            <img src="/yopawlogo.png" alt="Studio Yopaw" className="footer-logo-img" />
-          </div>
-          <p>{s.footerTaglineL1}<br />{s.footerTaglineL2}</p>
-          <div className="footer-social">
-            <a href="https://instagram.com/studioyopaw" target="_blank" rel="noopener noreferrer" aria-label={s.footerIgAria}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-              </svg>
-            </a>
-            <a href="#" aria-label={s.footerFbAria}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-              </svg>
-            </a>
-          </div>
-        </div>
-
-        <div className="footer-links">
-          <h4>{s.footerNavigate}</h4>
-          <ul>
-            <li><a href="#experience">{s.navLinks.howItWorks}</a></li>
-            <li><a href="#classes">{s.navLinks.classes}</a></li>
-            <li><a href="#testimonials">{s.navLinks.reviews}</a></li>
-            <li><a href="#pricing">{s.navLinks.pricing}</a></li>
-            <li><a href="#corporate">{s.navLinks.corporate}</a></li>
-            <li><a href="#faq">{s.navLinks.faq}</a></li>
-          </ul>
-        </div>
-
-        <div className="footer-contact">
-          <h4>{s.footerFindUs}</h4>
-          <p>{s.footerAddressL1}<br />{s.footerAddressL2}</p>
-          <p>
-            <a href="mailto:Studioyopaw@gmail.com" style={{ color: 'rgba(255,255,255,0.65)' }}>
-              Studioyopaw@gmail.com
-            </a>
-          </p>
-          <p>
-            <a href="tel:5142424947" style={{ color: 'rgba(255,255,255,0.65)' }}>
-              514-242-4947
-            </a>
-          </p>
-          <p style={{ marginTop: 8 }}>
-            <a
-              href="https://www.studioyopaw.ca"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: 'var(--sage)' }}
-            >
-              {s.footerSite}
-            </a>
-          </p>
-        </div>
-      </div>
-      <div className="footer-bottom">
-        <p>{s.footerBottom}</p>
-      </div>
-    </footer>
-  )
-}
-
 // ── App ────────────────────────────────────────────────────
 
+function normalizeSitePathname(): string {
+  const raw = window.location.pathname.replace(/\/$/, '') || '/'
+  return raw
+}
+
 export default function App() {
+  const path = normalizeSitePathname()
+  if (path === '/refund-policy') return <RefundPolicyPage variant="en" />
+  if (path === '/politique-remboursement') return <RefundPolicyPage variant="fr" />
+
+  return <MarketingSite />
+}
+
+function MarketingSite() {
   const [scrolled, setScrolled] = useState(false)
 
   useLayoutEffect(() => {
+    const hash = window.location.hash.slice(1).split('?')[0]
+    if (BOOKING_FORM_SCROLL_HASHES.has(hash)) {
+      queueMicrotask(() => scrollBookingFormIntoView('instant'))
+      return
+    }
     window.scrollTo({ top: 0, behavior: 'instant' })
+  }, [])
+
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0) return
+      if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return
+      const el = e.target
+      if (!(el instanceof Element)) return
+      const a = el.closest('a[href^="#"]')
+      if (!a || !(a instanceof HTMLAnchorElement)) return
+      const href = a.getAttribute('href')
+      if (!href || href === '#') return
+      const hash = href.slice(1).split('?')[0]
+      if (!BOOKING_FORM_SCROLL_HASHES.has(hash)) return
+      if (!document.getElementById('book')) return
+      e.preventDefault()
+      scrollBookingFormIntoView('smooth')
+      const next = `#${hash}`
+      if (window.location.hash !== next) {
+        window.history.replaceState(null, '', next)
+      }
+    }
+    document.addEventListener('click', onDocClick, true)
+    return () => document.removeEventListener('click', onDocClick, true)
   }, [])
 
   useEffect(() => {
@@ -1104,8 +1260,8 @@ export default function App() {
       <MarqueeTicker />
       <ExperienceSection />
       <ClassesSection />
-      <TestimonialsSection />
       <PricingSection />
+      <TestimonialsSection />
       <GallerySection />
       <AboutSection />
       <FAQSection />
