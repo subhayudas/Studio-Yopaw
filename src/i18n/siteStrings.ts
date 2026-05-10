@@ -52,6 +52,8 @@ export interface SiteStrings {
     pricing: string
     corporate: string
     faq: string
+    /** About / values; shown in FR nav only (EN keeps Corporate in nav instead). */
+    values: string
   }
   langPickerEnglish: string
   langPickerFrench: string
@@ -111,12 +113,22 @@ export interface SiteStrings {
   pricingMatNo: string
   pricingMatHelper: string
   pricingChooseSession: string
+  pricingChooseTimeTitle: string
+  pricingTimeModalCancel: string
+  pricingSessionPickTime: string
   pricingSpotFull: string
   pricingSpotsRemain: string
   pricingContactHeading: string
   pricingLblFullName: string
   pricingLblEmail: string
   pricingLblPhone: string
+  pricingTermsCheckboxLabel: string
+  /** French public booking waiver label segments (empty for EN). */
+  pricingWaiverConsentPrefix: string
+  pricingWaiverConsentLinkText: string
+  pricingWaiverConsentSuffix: string
+  pricingWaiverAgeNote: string
+  waiverModalCloseAria: string
   pricingSubmitBookSpot: string
   pricingCorporateTitle: string
   pricingCorporateIntro: string
@@ -146,6 +158,7 @@ export interface SiteStrings {
   testimonialsPrevAria: string
   testimonialsNextAria: string
   testimonialsDotAria: string
+  testimonialsCta: string
   testimonialCards: TestimonialStrings[]
   faqBadge: string
   faqHeading: string
@@ -161,6 +174,7 @@ export interface SiteStrings {
   footerAddressL1: string
   footerAddressL2: string
   footerSite: string
+  footerRefundPolicy: string
   footerBottom: string
   commonBackAria: string
 }
@@ -171,12 +185,10 @@ const enMarqueeBodies = [
   'No Dog Required',
   'Saint-Lazare, QC',
   '60-Minute Sessions',
-  'RYT 200 Certified Instructor',
-  'Professional Dog Handler On-Site',
   'All Levels Welcome',
-  'Up To 20 Spots Per Class',
-  'Photo Opportunities Included',
-  'Yin & Gentle Flow',
+  'Up To 20 Spots Available Per Session',
+  'All the Photos You Want',
+  'Gentle Flow — Open to Everyone',
   'Stress Relief Guaranteed',
   'Namaste & Play',
   'Book Online In Minutes',
@@ -207,54 +219,54 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     langPickerEnglish: 'English',
     langPickerFrench: 'Français',
     heroTitleL1: 'Yoga. Puppies.',
-    heroTitleL2Prefix: 'No dog ',
-    heroTitleItalic: 'required.',
+    heroTitleL2Prefix: '',
+    heroTitleItalic: 'Happiness guaranteed.',
     heroSub:
-      'Show up, unroll your mat, and let the puppies do the rest. 60 minutes of gentle yoga with a room full of dogs, right here in Saint-Lazare.',
+      'Join us for yoga in a room full of puppies, right here in Saint-Lazare,',
     heroBook: 'Book a Session',
     heroClasses: 'Our Classes',
     heroScroll: 'Scroll',
     marqueeItems: buildMarquee([...enMarqueeBodies]),
     aboutBadge: 'Our Story',
     aboutHeadingL1: 'Yoga. Puppies.',
-    aboutHeadingEmPrefix: 'Pure ',
-    aboutHeadingItalic: 'Joy',
+    aboutHeadingEmPrefix: '',
+    aboutHeadingItalic: 'Happiness guaranteed',
     aboutP1:
-      'Studio Yopaw was born from a beautiful combination: a deep love for dogs and the well-being that yoga provides. Founded in 2026 by Joelle Castonguay in Saint-Lazare, QC, our studio exists to offer animal-assisted therapy to people of all backgrounds.',
+      'Studio Yopaw grew out of a love for dogs and the grounding calm that yoga brings. Founded in 2026 by Joëlle Castonguay in Saint-Lazare, our studio offers dog-assisted wellness that welcomes everyone.',
     aboutP2:
-      "Our RYT 200 certified instructors guide every 60-minute session with care and expertise. Whether you're stepping onto a mat for the first time or deepening a long-time practice, every class is made infinitely better by our four-legged co-instructors.",
+      'Our yoga teachers lead every session with care and skill—whether it is your first class or you have been practicing for years, our four-legged co-teachers make everything feel that much more magical.',
     aboutLink: 'Explore our classes →',
     aboutImgAlt: 'Studio Yopaw puppy yoga session',
-    classesBadge: 'What We Offer',
-    classesHeading: 'One Class. ',
-    classesHeadingEm: 'Infinite Joy',
-    classesSub: 'No dog required. Just show up, breathe, and let the puppies find you.',
-    classesBook: 'Book Your Class',
+    classesBadge: 'WHAT WE OFFER',
+    classesHeading: 'Less Stress. ',
+    classesHeadingEm: 'More Puppies',
+    classesSub: '',
+    classesBook: 'Reserve my spot',
     classCards: [
       {
-        title: 'Puppy Yoga: Yin',
+        title: 'Regular Class',
         duration: '60 min',
         description:
-          'A slow, meditative practice accompanied by adorable puppies. Designed for all levels, with the perfect balance of stillness, breathing, and puppy cuddles.',
+          'Accessible movement in a warm, welcoming space. Move at your own pace surrounded by puppies.',
       },
       {
-        title: 'Puppy Yoga: Gentle Flow',
-        duration: '60 min',
-        description:
-          'Beginner-friendly movement in a warm, welcoming atmosphere. Explore yoga at your own pace while our puppies bring endless joy to your mat.',
-      },
-      {
-        title: 'Private & Corporate',
+        title: 'Private Event',
         duration: 'Flexible',
         description:
-          'Planning a birthday, bachelorette, or team day? We bring the puppies, you bring the people. Groups up to 20.',
+          "Book a private puppy yoga session for your group. Birthdays, girls' night, retirement send-offs—any excuse works for an exclusive experience built around you.",
+      },
+      {
+        title: 'Corporate',
+        duration: 'Flexible',
+        description:
+          'Turn your next team-building day into a feel-good, puppy-filled experience people will actually remember.',
       },
     ],
-    experienceBadge: 'NO DOG REQUIRED · SAINT-LAZARE, QC',
-    experienceHeadingPre: '60 Minutes You ',
-    experienceHeadingEm: "Won't Stop Talking About",
-    experienceSub: 'Gentle yoga, a room full of puppies, and zero stress, no dog required.',
-    experienceBook: 'Book Your Spot',
+    experienceBadge: '',
+    experienceHeadingPre: 'The 60 most delightful ',
+    experienceHeadingEm: 'minutes of your week!',
+    experienceSub: 'Gentle yoga, a room full of puppies, zero stress.',
+    experienceBook: 'Reserve my spot',
     experienceSteps: [
       {
         logoAlt: 'Warm up',
@@ -266,48 +278,60 @@ export const siteStrings: Record<Lang, SiteStrings> = {
       {
         logoAlt: 'Flow with puppies',
         time: '15 min',
-        title: 'Flow With Pups',
+        title: 'Gentle flow with the pups',
         description:
-          "That's when the puppies arrive. Our certified handler releases the dogs and good luck keeping a straight face.",
+          "This is the puppies' big entrance—our team brings them out for you. Good luck staying focused and keeping a straight face!",
       },
       {
         logoAlt: 'Play and connect',
         time: '30 min',
         title: 'Play & Connect',
         description:
-          'Mats down, phones out. Free play, cuddles, and as many photos as your heart desires. Pure chaos. Pure joy.',
+          'Mats rolled away, phones out. Free play, cuddles, and as many photos as you want. Total chaos. Pure joy.',
       },
     ],
-    bookingChoiceYin: 'Puppy Yoga: Yin',
-    bookingChoiceGentle: 'Puppy Yoga: Gentle Flow',
-    bookingChoiceCorporate: 'Private / Corporate Event',
+    bookingChoiceYin: 'Regular Class',
+    bookingChoiceGentle: 'Private Event',
+    bookingChoiceCorporate: 'Corporate',
     pricingSectionBadge: 'Book Your Spot',
     pricingHeadingPre: 'Ready to Meet the ',
     pricingHeadingMidLead: '',
-    pricingHeadingEm: 'Pups?',
-    pricingHeadingMidTrail: '',
-    pricingSub: "Pick your class, choose a date, and we'll see you on the mat.",
+    pricingHeadingEm: 'Pups',
+    pricingHeadingMidTrail: ' ?',
+    pricingSub: 'Choose your session type, pick a date, and we will see you on the mat!',
     pricingAmount: '$46',
     pricingPlusTaxes: '+ taxes',
-    pricingDropInRow: 'Drop-In · Per Class',
-    pricingFeat1: '✓ 60-minute guided session',
-    pricingFeat2: '✓ RYT 200 certified instructor',
-    pricingFeat3: '✓ Professional dog handler on-site',
-    pricingFeat4: '✓ Photo opportunities included',
-    pricingFeat5: '✓ Yoga mat rental on-site ($5)',
-    pricingHeaderSummary: '$46 + taxes · Drop-in per class',
+    pricingDropInRow: '$46 + taxes per session',
+    pricingFeat1: '✓ 60-minute activity',
+    pricingFeat2: '✓ Gentle flow accessible to all',
+    pricingFeat3: '✓ Yoga mat rental on-site ($5)',
+    pricingFeat4: '',
+    pricingFeat5: '',
+    pricingHeaderSummary: '$46 + taxes · Per session',
     pricingAskClassType: 'What kind of class are you looking for?',
     pricingAskMat: 'Do you have your own yoga mat?',
     pricingMatYes: "Yes, I'll bring mine",
     pricingMatNo: "No, I'll rent one on-site",
     pricingMatHelper: 'Yoga mat rental available on-site for $5',
     pricingChooseSession: 'Choose your session',
+    pricingChooseTimeTitle: 'Choose a session time',
+    pricingTimeModalCancel: 'Cancel',
+    pricingSessionPickTime: 'Choose time',
     pricingSpotFull: 'Full',
     pricingSpotsRemain: '{count} spots remaining',
     pricingContactHeading: 'Almost there, how do we reach you?',
     pricingLblFullName: 'Full name',
     pricingLblEmail: 'Email address',
     pricingLblPhone: 'Phone number',
+    pricingTermsCheckboxLabel:
+      'By checking this box, I confirm that I have read and agree to the Terms & Conditions.',
+    pricingWaiverConsentPrefix: 'By checking this box, I consent to this ',
+    pricingWaiverConsentLinkText: 'waiver and release',
+    pricingWaiverConsentSuffix:
+      ', to the use of my likeness, and acknowledge and accept the risks associated with the activity.',
+    pricingWaiverAgeNote:
+      'The minimum age is 12. Children aged 8 and older may participate when accompanied by an adult.',
+    waiverModalCloseAria: 'Close waiver',
     pricingSubmitBookSpot: 'Book Your Spot',
     pricingCorporateTitle: "Let's plan your event",
     pricingCorporateIntro:
@@ -319,7 +343,8 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingPaymentNote: '💳 Payment at time of booking (online)',
     pricingCancelNote: '↩ 72-hour cancellation · Full refund or credit',
     pricingSuccessPublicTitle: "You're on the mat! 🐾",
-    pricingSuccessPublicBody: "We'll send your confirmation to {email}. See you on {date}.",
+    pricingSuccessPublicBody:
+      "We'll send your confirmation to {email}. See you on {date} at {time}.",
     pricingSuccessChosenDayFallback: 'your chosen day',
     pricingSuccessPublicFoot: 'Questions? Email us at studioyopaw@gmail.com',
     pricingSuccessRestart: 'Book another spot',
@@ -344,6 +369,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     testimonialsPrevAria: 'Previous review',
     testimonialsNextAria: 'Next review',
     testimonialsDotAria: 'Go to testimonial',
+    testimonialsCta: 'Reserve my session',
     testimonialCards: [
       {
         name: 'Sarah M.',
@@ -371,27 +397,27 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     faqItems: [
       {
         q: 'Do I need to own a dog to attend?',
-        a: "Not at all, that's the beauty of it. Our professional dog handler brings all the puppies. You just show up, unroll your mat, and the dogs come to you. No dog ownership required.",
+        a: 'Not at all—our team takes care of the puppies. You roll out your mat, and the pups come to you.',
       },
       {
         q: 'Do I need yoga experience?',
-        a: 'Zero experience needed. Our classes are yin and gentle flow: slow, accessible, and beginner-friendly. If you can breathe, you can do this.',
+        a: 'No yoga background needed. Gentle flow is slow, accessible, and perfect for beginners.',
       },
       {
-        q: 'Will the dogs interrupt my practice?',
-        a: "That's kind of the whole point. The dogs roam freely during the session, which means you might get a puppy on your mat, a lick on the face, or a cuddle mid-pose. Our certified handler supervises the whole time to keep things joyful and safe.",
+        q: 'Will the dogs distract me?',
+        a: "That's part of the magic! Puppies wander during class—a paw on your mat happens before you know it. Our team is right there to keep the session running smoothly and everyone—two-legged and four-legged—safe.",
       },
       {
         q: 'What should I bring?',
-        a: "Just yourself and comfortable clothing. Yoga mats are available to rent on-site for $5 if you don't have one. We recommend wearing clothes you don't mind getting a little dog hair on.",
+        a: "Wear something comfortable and bring a yoga mat. Puppies sometimes chew or scratch mats, so we also offer rentals for $5 if you'd rather use ours.",
       },
       {
         q: 'What is your cancellation policy?',
-        a: 'We require 72 hours notice for a full refund or credit toward a future session. Cancellations made less than 72 hours before the class are non-refundable.',
+        a: "For group classes, we require at least 72 hours' notice before your session starts for a full refund or credit toward a future class.\n\nFor private and corporate events, different terms apply. To read the complete refund policy, click here: <<REFUND_POLICY_LINK>>",
       },
     ],
-    footerTaglineL1: 'Animal-assisted therapy through yoga.',
-    footerTaglineL2: 'Where every pose is better with a pup.',
+    footerTaglineL1: 'Yoga and animal-assisted therapy—the perfect zero-stress blend.',
+    footerTaglineL2: 'Every pose is better with a puppy!',
     footerIgAria: 'Instagram',
     footerFbAria: 'Facebook',
     footerNavigate: 'Navigate',
@@ -399,15 +425,17 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     footerAddressL1: '1515A Des Marguerites St.',
     footerAddressL2: 'Saint-Lazare, QC J7T 2R8',
     footerSite: 'www.studioyopaw.ca',
+    footerRefundPolicy: 'Refund policy',
     footerBottom: '© 2026 Studio Yopaw · Saint-Lazare, QC · Made with 🐾',
     commonBackAria: 'Back',
     navLinks: {
       howItWorks: 'How It Works',
-      classes: 'Classes',
+      classes: 'Class Types',
       reviews: 'Reviews',
       pricing: 'Pricing',
       corporate: 'Corporate',
       faq: 'FAQ',
+      values: 'Our Values',
     },
   },
   fr: {
@@ -425,10 +453,10 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     langPickerEnglish: 'English',
     langPickerFrench: 'Français',
     heroTitleL1: 'Yoga. Chiots.',
-    heroTitleL2Prefix: 'Pas besoin ',
-    heroTitleItalic: "d'un chien.",
+    heroTitleL2Prefix: '',
+    heroTitleItalic: 'Bonheur garanti.',
     heroSub:
-      'Venez comme vous êtes, déroulez votre tapis et laissez les chiots faire le reste. 60 minutes de yoga doux avec une salle pleine de chiots, ici même à Saint-Lazare.',
+      'Venez avec nous faire du yoga dans une salle remplie de chiots, ici même à Saint-Lazare,',
     heroBook: 'Réserver une séance',
     heroClasses: 'Nos cours',
     heroScroll: 'Défiler',
@@ -436,12 +464,10 @@ export const siteStrings: Record<Lang, SiteStrings> = {
       'Aucun chien requis',
       'Saint-Lazare, QC',
       'Séances de 60 minutes',
-      'Instructrice certifiée RYT 200',
-      'Dresseuse professionnelle sur place',
       'Tous niveaux bienvenus',
-      "Jusqu'à 20 places par cours",
-      'Photos incluses',
-      'Yin et fluide doux',
+      "Jusqu'à 20 places disponibles par séance",
+      'Photos à volonté',
+      'Flow doux et accessible à tous',
       'Stress : on s’en occupe',
       'Namaste et jeu',
       'Réservation en ligne en quelques minutes',
@@ -450,44 +476,43 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     aboutBadge: 'Notre histoire',
     aboutHeadingL1: 'Yoga. Chiots.',
     aboutHeadingEmPrefix: '',
-    aboutHeadingItalic: 'Joie pure',
+    aboutHeadingItalic: 'Bonheur garanti',
     aboutP1:
-      "Studio Yopaw est né d’un beau mariage : l’amour des chiens et le bien-être que procure le yoga. Fondé en 2026 par Joelle Castonguay à Saint-Lazare, au Québec, notre studio propose une thérapie assistée par les animaux à toutes et tous.",
+      "Studio Yopaw est né de l'union de l'amour pour les chiens et le bien-être que procure le yoga. Fondé en 2026 par Joëlle Castonguay à Saint-Lazare, notre studio propose une thérapie assistée par les chiens accessible à tous et à toutes.",
     aboutP2:
-      "Nos instructrices certifiées RYT 200 encadrent chaque séance de 60 minutes avec soin et expertise. Que ce soit votre tout premier cours ou une pratique déjà bien ancrée, nos co-instructeurs à quatre pattes rendent tout plus magique.",
+      'Nos professeurs·es de yoga encadrent chaque séance avec soin et expertise. Que ce soit votre tout premier cours ou une pratique déjà bien ancrée, nos co-professeurs·es à quatre pattes rendent tout beaucoup plus magique.',
     aboutLink: 'Découvrir nos cours →',
     aboutImgAlt: 'Séance de yoga avec chiots Studio Yopaw',
-    classesBadge: 'Ce qu’on propose',
-    classesHeading: 'Un cours. ',
-    classesHeadingEm: 'Une joie infinie',
-    classesSub: "Pas besoin d'un chien : venez respirer et laissez les chiots vous trouver.",
-    classesBook: 'Réserver votre cours',
+    classesBadge: "CE QUE L'ON VOUS PROPOSE",
+    classesHeading: 'Moins de stress. ',
+    classesHeadingEm: 'Plus de chiots',
+    classesSub: '',
+    classesBook: 'Réservez ma séance',
     classCards: [
       {
-        title: 'Yoga chiots : Yin',
+        title: 'Cours régulier',
         duration: '60 min',
         description:
-          'Une pratique lente et méditative accompagnée d’adorables chiots. Pour tous les niveaux, entre calme, respiration et câlins.',
+          'Des mouvements accessibles dans une ambiance chaleureuse. Avancez à votre rythme entouré de chiots.',
       },
       {
-        title: 'Yoga chiots : Flux doux',
-        duration: '60 min',
-        description:
-          'Des mouvements accessibles dans une ambiance chaleureuse. Avancez à votre rythme pendant que nos chiots égayent votre tapis.',
-      },
-      {
-        title: 'Privé et corporatif',
+        title: 'Événement privé',
         duration: 'Flexible',
         description:
-          "Anniversaire, fête d'équipe ou EVJF ? On amène les chiots, vous amenez vos proches ou votre équipe. Jusqu'à 20 personnes.",
+          'Réservez une séance privée de yoga chiots. Anniversaire, soirée de filles ou départ à la retraite, toutes les raisons sont bonnes pour une expérience exclusive pensée pour votre groupe.',
+      },
+      {
+        title: 'Corporatif',
+        duration: 'Flexible',
+        description:
+          'Transformez votre prochaine activité de team building en une expérience bien-être unique et mémorable, entourée de chiots.',
       },
     ],
-    experienceBadge: "PAS BESOIN D'UN CHIEN · SAINT-LAZARE, QC",
-    experienceHeadingPre: '60 minutes dont vous ',
-    experienceHeadingEm: 'parlerez encore',
-    experienceSub:
-      'Du yoga tout en douceur, une salle pleine de chiots, zéro stress. Aucun chien requis.',
-    experienceBook: 'Réserver votre place',
+    experienceBadge: '',
+    experienceHeadingPre: 'Les 60 minutes ',
+    experienceHeadingEm: 'les plus adorables de votre semaine !',
+    experienceSub: 'Du yoga tout en douceur, une salle pleine de chiots, zéro stress.',
+    experienceBook: 'Réserver ma place',
     experienceSteps: [
       {
         logoAlt: 'Échauffement',
@@ -499,36 +524,36 @@ export const siteStrings: Record<Lang, SiteStrings> = {
       {
         logoAlt: 'En flux avec les chiots',
         time: '15 min',
-        title: 'En flux avec les chiots',
+        title: 'Flow doux avec les chiots',
         description:
-          "C'est l'entrée des chiots. Notre éducateur canin certifié les libère dans la salle. Bonne chance pour garder votre sérieux.",
+          "C'est l'entrée en scène des chiots. Notre équipe vous les présente enfin. Bonne chance pour demeurer concentré et garder votre sérieux !",
       },
       {
         logoAlt: 'Jeux et complicité',
         time: '30 min',
         title: 'Jeu et complicité',
         description:
-          'Tapis roulés, téléphones sortis : jeu libre, câlins et autant de photos que vous le voulez. Chaos total. Pure joie.',
+          'Tapis rangés, téléphones sortis : jeu libre, câlins et autant de photos que vous le voulez. Chaos total. Pure joie.',
       },
     ],
-    bookingChoiceYin: 'Yoga chiots : Yin',
-    bookingChoiceGentle: 'Yoga chiots : Flux doux',
-    bookingChoiceCorporate: 'Événement privé / corporatif',
+    bookingChoiceYin: 'Cours régulier',
+    bookingChoiceGentle: 'Événement privé',
+    bookingChoiceCorporate: 'Corporatif',
     pricingSectionBadge: 'Réservez votre place',
     pricingHeadingPre: 'Prêt·e à rencontrer',
     pricingHeadingMidLead: 'les ',
     pricingHeadingEm: 'chiots',
-    pricingHeadingMidTrail: '?',
+    pricingHeadingMidTrail: ' ?',
     pricingSub:
-      'Choisissez votre type de cours, une date de fin de semaine, et rendez-vous sur le tapis.',
+      "Choisissez votre type de séance ainsi qu'une date et rendez-vous sur le tapis !",
     pricingAmount: '46 $',
     pricingPlusTaxes: '+ taxes',
-    pricingDropInRow: 'À la séance · Par cours',
-    pricingFeat1: '✓ Séance guidée de 60 minutes',
-    pricingFeat2: '✓ Instructrice certifiée RYT 200',
-    pricingFeat3: '✓ Dresseuse professionnelle sur place',
-    pricingFeat4: '✓ Occasions photo incluses',
-    pricingFeat5: '✓ Location de tapis sur place (5 $)',
+    pricingDropInRow: '46 $ + taxes par séance',
+    pricingFeat1: "✓ Durée de l'activité : 60 minutes",
+    pricingFeat2: '✓ Flow doux accessible à tous',
+    pricingFeat3: '✓ Location de tapis sur place (5 $)',
+    pricingFeat4: '',
+    pricingFeat5: '',
     pricingHeaderSummary: '46 $ + taxes · À la séance',
     pricingAskClassType: 'Quel type de cours recherchez-vous ?',
     pricingAskMat: 'Avez-vous votre propre tapis de yoga ?',
@@ -536,12 +561,24 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingMatNo: 'Non, je louerai sur place',
     pricingMatHelper: 'Location de tapis sur place pour 5 $',
     pricingChooseSession: 'Choisissez votre séance',
+    pricingChooseTimeTitle: 'Choisissez un horaire',
+    pricingTimeModalCancel: 'Annuler',
+    pricingSessionPickTime: 'Choisir un horaire',
     pricingSpotFull: 'Complet',
     pricingSpotsRemain: '{count} places restantes',
     pricingContactHeading: 'Presque fini : comment vous joindre ?',
     pricingLblFullName: 'Nom complet',
     pricingLblEmail: 'Courriel',
     pricingLblPhone: 'Téléphone',
+    pricingTermsCheckboxLabel:
+      'En cochant cette case, je confirme avoir lu et accepté les conditions générales.',
+    pricingWaiverConsentPrefix: 'En cochant cette case, je consens à la ',
+    pricingWaiverConsentLinkText: 'présente décharge',
+    pricingWaiverConsentSuffix:
+      ", à l'utilisation de mon image et reconnais accepter les risques liés à l'activité.",
+    pricingWaiverAgeNote:
+      "L'âge minimum requis est de 12 ans. Les enfants de 8 ans et plus peuvent participer accompagnés d'un adulte.",
+    waiverModalCloseAria: 'Fermer la décharge',
     pricingSubmitBookSpot: 'Réserver ma place',
     pricingCorporateTitle: 'Planifions votre événement',
     pricingCorporateIntro:
@@ -555,7 +592,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingCancelNote: '↩ Annulation : 72 h · Remboursement complet ou crédit',
     pricingSuccessPublicTitle: 'Vous êtes sur le tapis ! 🐾',
     pricingSuccessPublicBody:
-      'Nous enverrons la confirmation à {email}. Rendez-vous le {date}.',
+      'Nous enverrons la confirmation à {email}. Rendez-vous le {date} à {time}.',
     pricingSuccessChosenDayFallback: 'votre date choisie',
     pricingSuccessPublicFoot: 'Questions ? Écrivez-nous à studioyopaw@gmail.com',
     pricingSuccessRestart: 'Réserver une autre place',
@@ -582,6 +619,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     testimonialsPrevAria: 'Témoignage précédent',
     testimonialsNextAria: 'Témoignage suivant',
     testimonialsDotAria: 'Aller au témoignage',
+    testimonialsCta: 'Réservez ma séance',
     testimonialCards: [
       {
         name: 'Sarah M.',
@@ -609,27 +647,31 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     faqItems: [
       {
         q: 'Faut-il posséder un chien pour participer ?',
-        a: 'Pas du tout : notre équipe ramène tous les chiots. Vous déroulez votre tapis et les toutous viennent vers vous — aucune propriété de chien requise.',
+        a: "Pas du tout : notre équipe s'occupe des chiots. Vous déroulez votre tapis et les toutous viennent vers vous.",
+      },
+      {
+        q: "Quel est l'âge minimum requis ?",
+        a: "L'âge minimum requis est de 12 ans. Les enfants de 8 ans et plus peuvent participer, à la condition d'être accompagnés d'un adulte.",
       },
       {
         q: 'Faut-il savoir faire du yoga ?',
-        a: 'Aucune expérience n’est nécessaire. Yin et flux doux : lent, accessible, débutants bienvenus. Si vous respirez, vous pouvez suivre.',
+        a: 'Aucune expérience de yoga requise. Flow doux : lent, accessible, parfait pour les débutants.',
       },
       {
         q: 'Est-ce que les chiens vont me déconcentrer ?',
-        a: 'C’est un peu tout l’effet magique ! Les chiots circulent pendant la séance ; un chiot sur votre tapis ou un coup de museau arrive tout le temps. Notre dresseuse certifiée veille au bon déroulé, joyeux et sécuritaire.',
+        a: "Ça fait partie de l'effet magique ! Les chiots circulent pendant la séance. Un coup de patte est si vite arrivé ! Notre équipe est évidemment sur place pour veiller au bon déroulement de l'activité et à la sécurité des chiots autant que des humains.",
       },
       {
         q: 'Que dois-je apporter ?',
-        a: 'Vous-même et une tenue confortable. Tapis de location à 5 $ si besoin — choisissez des vêtements dont vous ne mourrez pas s’ils ramassent un peu de poils.',
+        a: "Prévoyez porter une tenue confortable et un tapis de yoga. Il est possible que les chiots abîment votre tapis en le mordillant par exemple. C'est pourquoi nous vous offrons des tapis en location au coût de 5$ si vous préférez cette option.",
       },
       {
-        q: 'Politique d’annulation ?',
-        a: 'Préavis de 72 h pour un remboursement ou un crédit complet. Au-delà, les annulations tardives sont non remboursables.',
+        q: "Quelle est votre politique d'annulation ?",
+        a: "Pour les cours de groupe, nous demandons un préavis de minimum 72 heures avant le début de la séance pour obtenir un remboursement complet ou un crédit pour un futur cours.\n\nPour les événements privés et les événements corporatifs, d'autres conditions s'appliquent. Pour consulter la politique de remboursement complète, cliquez ici : <<REFUND_POLICY_LINK>>",
       },
     ],
-    footerTaglineL1: 'Thérapie assistée par les animaux avec le yoga.',
-    footerTaglineL2: 'Chaque posture est meilleure avec un chiot.',
+    footerTaglineL1: 'Yoga et zoothérapie, le parfait mélange zéro stress.',
+    footerTaglineL2: 'Chaque posture est meilleure avec un chiot !',
     footerIgAria: 'Instagram',
     footerFbAria: 'Facebook',
     footerNavigate: 'Navigation',
@@ -637,16 +679,18 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     footerAddressL1: '1515A, rue des Marguerites',
     footerAddressL2: 'Saint-Lazare, QC J7T 2R8',
     footerSite: 'www.studioyopaw.ca',
+    footerRefundPolicy: 'Politique de remboursement',
     footerBottom:
       '© 2026 Studio Yopaw · Saint-Lazare, QC · Fabriqué avec 🐾',
     commonBackAria: 'Retour',
     navLinks: {
-      howItWorks: 'Fonctionnement',
-      classes: 'Cours',
+      howItWorks: 'Déroulement',
+      classes: 'Type de cours',
       reviews: 'Avis',
       pricing: 'Tarifs',
       corporate: 'Corporatif',
       faq: 'FAQ',
+      values: 'Nos valeurs',
     },
   },
 }
