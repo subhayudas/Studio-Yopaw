@@ -9,17 +9,6 @@ import {
 } from 'react'
 import { LANG_STORAGE_KEY, type Lang, siteStrings, type SiteStrings } from './siteStrings'
 
-function LangPickerPaw({ size = 36 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="currentColor" className="lang-picker-logo-paw" aria-hidden>
-      <ellipse cx="50" cy="72" rx="24" ry="20" />
-      <ellipse cx="22" cy="48" rx="12" ry="14" />
-      <ellipse cx="78" cy="48" rx="12" ry="14" />
-      <ellipse cx="37" cy="28" rx="10" ry="12" />
-      <ellipse cx="63" cy="28" rx="10" ry="12" />
-    </svg>
-  )
-}
 
 type LanguageContextValue = {
   lang: Lang
@@ -96,7 +85,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         <div className="lang-picker-overlay" role="dialog" aria-modal="true" aria-labelledby="lang-picker-heading">
           <div className="lang-picker-modal">
             <div className="lang-picker-brand">
-              <LangPickerPaw size={40} />
+              <img src="/yopawlogo.png" alt="" className="lang-picker-logo-img" />
               <span className="lang-picker-brand-name">Studio Yopaw</span>
             </div>
             <p id="lang-picker-heading" className="lang-picker-prompt">
