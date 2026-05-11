@@ -803,6 +803,82 @@ h2 em { font-style: italic; color: var(--sage); }
   color: var(--text-muted);
 }
 
+.pricing-private-qty-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 3vw, 22px);
+  margin: 10px auto 0;
+  width: 100%;
+  max-width: 340px;
+}
+
+.pricing-private-qty-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: max(44px, 48px);
+  min-height: max(44px, 48px);
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 14px;
+  border: 1px solid rgba(244, 114, 182, 0.35);
+  background: rgba(255, 255, 255, 0.98);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 1.85rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  transition:
+    transform 0.15s ease,
+    border-color 0.18s ease,
+    background 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.pricing-private-qty-btn:hover:not(:disabled) {
+  border-color: var(--sage);
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.pricing-private-qty-btn:disabled {
+  opacity: 0.36;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pricing-private-qty-btn:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 3px;
+}
+
+.pricing-private-qty-value {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(2.875rem, 11vw, 4rem);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--text);
+  user-select: none;
+}
+
+.pricing-private-qty-max-hint {
+  margin: 14px 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  text-align: center;
+}
+
 .pricing-choice-stack {
   display: flex;
   flex-direction: column;
@@ -1067,6 +1143,13 @@ h2 em { font-style: italic; color: var(--sage); }
   color: var(--text-muted);
 }
 
+.pricing-private-event-submit-note {
+  margin: 0 0 0;
+  font-size: 0.90625rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
 .pricing-req-mark {
   text-decoration: none;
   font-weight: 700;
@@ -1121,6 +1204,13 @@ h2 em { font-style: italic; color: var(--sage); }
   background: var(--sage-light);
 }
 
+a.pricing-success-restart {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
+  box-sizing: border-box;
+}
+
 .pricing-booking-form .pricing-input {
   box-sizing: border-box;
   width: 100%;
@@ -1158,11 +1248,6 @@ h2 em { font-style: italic; color: var(--sage); }
   width: 100%;
   margin-top: 28px;
   white-space: normal;
-}
-
-.pricing-note {
-  margin-top: 24px; display: flex; flex-direction: column; gap: 8px;
-  font-size: 0.8125rem; color: var(--text-muted);
 }
 
 /* ── Booking waiver modal (public booking, EN + FR) ─────────── */

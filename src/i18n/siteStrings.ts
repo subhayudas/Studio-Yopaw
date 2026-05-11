@@ -112,6 +112,11 @@ export interface SiteStrings {
   pricingMatYes: string
   pricingMatNo: string
   pricingMatHelper: string
+  pricingAskPrivateGroupSize: string
+  pricingPrivateGroupMaxHint: string
+  pricingPrivateQtyDecAria: string
+  pricingPrivateQtyIncAria: string
+  pricingPrivateGroupContinue: string
   pricingChooseSession: string
   pricingChooseTimeTitle: string
   pricingTimeModalCancel: string
@@ -128,6 +133,8 @@ export interface SiteStrings {
   pricingWaiverConsentLinkText: string
   pricingWaiverConsentSuffix: string
   pricingWaiverAgeNote: string
+  /** Shown instead of waiver checkbox on private-event contact step. */
+  pricingPrivateEventSubmitNote: string
   waiverModalCloseAria: string
   pricingSubmitBookSpot: string
   pricingCorporateTitle: string
@@ -136,15 +143,15 @@ export interface SiteStrings {
   pricingLblEventDetails: string
   pricingCorpPlaceholder: string
   pricingCorporateSubmit: string
-  pricingPaymentNote: string
-  pricingCancelNote: string
   pricingSuccessPublicTitle: string
   pricingSuccessPublicBody: string
   pricingSuccessChosenDayFallback: string
   pricingSuccessPublicFoot: string
   pricingSuccessRestart: string
-  pricingSuccessCorpTitle: string
-  pricingSuccessCorpBody: string
+  pricingSuccessRequestReceivedTitle: string
+  pricingSuccessRequestReceivedBody: string
+  pricingSuccessRequestReachOutPhone: string
+  pricingSuccessBackHome: string
   abbrevRequiredTitle: string
   galleryBadge: string
   galleryHeading: string
@@ -293,7 +300,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     bookingChoiceYin: 'Regular Class',
     bookingChoiceGentle: 'Private Event',
     bookingChoiceCorporate: 'Corporate',
-    pricingSectionBadge: 'Book Your Spot',
+    pricingSectionBadge: 'Book your session',
     pricingHeadingPre: 'Ready to Meet the ',
     pricingHeadingMidLead: '',
     pricingHeadingEm: 'Pups',
@@ -313,7 +320,12 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingMatYes: "Yes, I'll bring mine",
     pricingMatNo: "No, I'll rent one on-site",
     pricingMatHelper: 'Yoga mat rental available on-site for $5',
-    pricingChooseSession: 'Choose your session',
+    pricingAskPrivateGroupSize: 'How many people will be included in your group?',
+    pricingPrivateGroupMaxHint: 'Maximum 20 participants per session.',
+    pricingPrivateQtyDecAria: 'Decrease number of participants',
+    pricingPrivateQtyIncAria: 'Increase number of participants',
+    pricingPrivateGroupContinue: 'Continue',
+    pricingChooseSession: 'Select your preferred time',
     pricingChooseTimeTitle: 'Choose a session time',
     pricingTimeModalCancel: 'Cancel',
     pricingSessionPickTime: 'Choose time',
@@ -331,8 +343,10 @@ export const siteStrings: Record<Lang, SiteStrings> = {
       ', to the use of my likeness, and acknowledge and accept the risks associated with the activity.',
     pricingWaiverAgeNote:
       'The minimum age is 12. Children aged 8 and older may participate when accompanied by an adult.',
+    pricingPrivateEventSubmitNote:
+      'Private events are fully customized. Please complete this form — we will contact you within 24 hours to confirm the details and plan your event together.',
     waiverModalCloseAria: 'Close waiver',
-    pricingSubmitBookSpot: 'Book Your Spot',
+    pricingSubmitBookSpot: 'Confirm booking',
     pricingCorporateTitle: "Let's plan your event",
     pricingCorporateIntro:
       "Private and corporate bookings are fully customized. Fill out the form below and we'll get back to you within 24 hours to plan everything.",
@@ -340,16 +354,17 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingLblEventDetails: 'Tell us about your event',
     pricingCorpPlaceholder: 'Type of event, preferred date,\nany special requests…',
     pricingCorporateSubmit: 'Send My Request',
-    pricingPaymentNote: '💳 Payment at time of booking (online)',
-    pricingCancelNote: '↩ 72-hour cancellation · Full refund or credit',
     pricingSuccessPublicTitle: "You're on the mat! 🐾",
     pricingSuccessPublicBody:
       "We'll send your confirmation to {email}. See you on {date} at {time}.",
     pricingSuccessChosenDayFallback: 'your chosen day',
     pricingSuccessPublicFoot: 'Questions? Email us at studioyopaw@gmail.com',
     pricingSuccessRestart: 'Book another spot',
-    pricingSuccessCorpTitle: 'Request received! 🐾',
-    pricingSuccessCorpBody: "We'll be in touch within 24 hours to plan your perfect event.",
+    pricingSuccessRequestReceivedTitle: 'Request received!',
+    pricingSuccessRequestReceivedBody:
+      "Thank you! We've received your request and will contact you within 24 hours to confirm the details and finalize your private session.",
+    pricingSuccessRequestReachOutPhone: "We'll call or text you at {phone}.",
+    pricingSuccessBackHome: 'Back to home',
     abbrevRequiredTitle: 'required',
     galleryBadge: 'The Studio',
     galleryHeading: 'Moments of ',
@@ -413,7 +428,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
       },
       {
         q: 'What is your cancellation policy?',
-        a: "For group classes, we require at least 72 hours' notice before your session starts for a full refund or credit toward a future class.\n\nFor private and corporate events, different terms apply. To read the complete refund policy, click here: <<REFUND_POLICY_LINK>>",
+        a: "For group classes, cancellations by you require at least 72 hours' notice before your session starts to receive a full refund.\n\nFor private and corporate events, different terms apply. To read the complete refund policy, click here: <<REFUND_POLICY_LINK>>",
       },
     ],
     footerTaglineL1: 'Yoga and animal-assisted therapy—the perfect zero-stress blend.',
@@ -539,7 +554,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     bookingChoiceYin: 'Cours régulier',
     bookingChoiceGentle: 'Événement privé',
     bookingChoiceCorporate: 'Corporatif',
-    pricingSectionBadge: 'Réservez votre place',
+    pricingSectionBadge: 'Réservez votre séance',
     pricingHeadingPre: 'Prêt·e à rencontrer',
     pricingHeadingMidLead: 'les ',
     pricingHeadingEm: 'chiots',
@@ -560,7 +575,13 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingMatYes: 'Oui, j’apporte le mien',
     pricingMatNo: 'Non, je louerai sur place',
     pricingMatHelper: 'Location de tapis sur place pour 5 $',
-    pricingChooseSession: 'Choisissez votre séance',
+    pricingAskPrivateGroupSize:
+      'Combien de personnes seront incluses dans votre groupe ?',
+    pricingPrivateGroupMaxHint: 'Maximum 20 participants par séance.',
+    pricingPrivateQtyDecAria: 'Diminuer le nombre de participants',
+    pricingPrivateQtyIncAria: 'Augmenter le nombre de participants',
+    pricingPrivateGroupContinue: 'Continuer',
+    pricingChooseSession: 'Sélectionnez votre horaire préféré',
     pricingChooseTimeTitle: 'Choisissez un horaire',
     pricingTimeModalCancel: 'Annuler',
     pricingSessionPickTime: 'Choisir un horaire',
@@ -578,8 +599,10 @@ export const siteStrings: Record<Lang, SiteStrings> = {
       ", à l'utilisation de mon image et reconnais accepter les risques liés à l'activité.",
     pricingWaiverAgeNote:
       "L'âge minimum requis est de 12 ans. Les enfants de 8 ans et plus peuvent participer accompagnés d'un adulte.",
+    pricingPrivateEventSubmitNote:
+      'Les événements privés sont entièrement personnalisés. Merci de remplir ce formulaire : nous vous contacterons dans les prochaines 24 heures pour confirmer les détails et planifier votre événement ensemble.',
     waiverModalCloseAria: 'Fermer la décharge',
-    pricingSubmitBookSpot: 'Réserver ma place',
+    pricingSubmitBookSpot: 'Confirmer la réservation',
     pricingCorporateTitle: 'Planifions votre événement',
     pricingCorporateIntro:
       'Les réservations privées et corporatives sont entièrement personnalisées. Remplissez le formulaire et nous communiquerons avec vous sous 24 h pour tout organiser.',
@@ -588,17 +611,18 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingCorpPlaceholder:
       'Type d’événement, date souhaitée,\ndemandes particulières…',
     pricingCorporateSubmit: 'Envoyer ma demande',
-    pricingPaymentNote: '💳 Paiement à la réservation (en ligne)',
-    pricingCancelNote: '↩ Annulation : 72 h · Remboursement complet ou crédit',
     pricingSuccessPublicTitle: 'Vous êtes sur le tapis ! 🐾',
     pricingSuccessPublicBody:
       'Nous enverrons la confirmation à {email}. Rendez-vous le {date} à {time}.',
     pricingSuccessChosenDayFallback: 'votre date choisie',
     pricingSuccessPublicFoot: 'Questions ? Écrivez-nous à studioyopaw@gmail.com',
     pricingSuccessRestart: 'Réserver une autre place',
-    pricingSuccessCorpTitle: 'Demande reçue ! 🐾',
-    pricingSuccessCorpBody:
-      'Nous communiquons avec vous dans les prochaines 24 h pour planifier votre événement idéal.',
+    pricingSuccessRequestReceivedTitle: 'Demande reçue !',
+    pricingSuccessRequestReceivedBody:
+      'Merci ! Nous avons bien reçu votre demande et communiquerons avec vous dans les prochaines 24 heures pour confirmer les détails et finaliser votre séance privée.',
+    pricingSuccessRequestReachOutPhone:
+      'Nous vous contacterons par téléphone ou texto au {phone}.',
+    pricingSuccessBackHome: "Retour à l'accueil",
     abbrevRequiredTitle: 'obligatoire',
     galleryBadge: 'Le studio',
     galleryHeading: 'Des moments ',
@@ -667,7 +691,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
       },
       {
         q: "Quelle est votre politique d'annulation ?",
-        a: "Pour les cours de groupe, nous demandons un préavis de minimum 72 heures avant le début de la séance pour obtenir un remboursement complet ou un crédit pour un futur cours.\n\nPour les événements privés et les événements corporatifs, d'autres conditions s'appliquent. Pour consulter la politique de remboursement complète, cliquez ici : <<REFUND_POLICY_LINK>>",
+        a: "Pour les cours de groupe, une annulation de votre part requiert un préavis minimal de 72 heures avant la séance pour obtenir un remboursement complet.\n\nPour les événements privés et les événements corporatifs, d'autres conditions s'appliquent. Pour consulter la politique de remboursement complète, cliquez ici : <<REFUND_POLICY_LINK>>",
       },
     ],
     footerTaglineL1: 'Yoga et zoothérapie, le parfait mélange zéro stress.',
