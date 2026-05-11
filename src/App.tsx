@@ -29,6 +29,23 @@ function StarIcon() {
   )
 }
 
+/** Clock motif for confirmation states that await follow-up */
+function PricingSuccessPendingClockIcon() {
+  return (
+    <svg width="44" height="44" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+      <circle cx="24" cy="24" r="22" stroke="var(--sage)" strokeWidth="2" opacity="0.35" />
+      <circle cx="24" cy="24" r="2.75" stroke="var(--sage-dark)" strokeWidth="1.75" />
+      <path
+        d="M24 15v10l9 7"
+        stroke="var(--sage-dark)"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 // ── Custom Hook ────────────────────────────────────────────
 
 function useInView(threshold = 0.2) {
@@ -345,9 +362,9 @@ function PricingSection() {
 
   type Flow =
     | { kind: 'chooseClass' }
-    | { kind: 'public'; step: 'mat' | 'date' | 'contact'; yoga: YogaStyle }
-    | { kind: 'publicSuccess' }
-    | { kind: 'corporate'; step: 'form' }
+    | { kind: 'public'; step: 'mat' | 'people' | 'date' | 'contact'; yoga: YogaStyle }
+    | { kind: 'publicSuccess'; source: 'regular' | 'private' }
+    | { kind: 'corporate'; step: 'people' | 'date' | 'contact' }
     | { kind: 'corporateSuccess' }
 
   const [flow, setFlow] = useState<Flow>({ kind: 'chooseClass' })
@@ -361,8 +378,7 @@ function PricingSection() {
   const [corpName, setCorpName] = useState('')
   const [corpEmail, setCorpEmail] = useState('')
   const [corpPhone, setCorpPhone] = useState('')
-  const [groupSize, setGroupSize] = useState('')
-  const [eventDetails, setEventDetails] = useState('')
+  const [privateGroupCount, setPrivateGroupCount] = useState('')
   const [waiverAccepted, setWaiverAccepted] = useState(false)
   const [waiverModalOpen, setWaiverModalOpen] = useState(false)
 
@@ -373,11 +389,11 @@ function PricingSection() {
     flow.kind === 'chooseClass'
       ? 'choose'
       : flow.kind === 'publicSuccess'
-        ? 'pub-success'
+        ? `pub-success-${flow.source}`
         : flow.kind === 'corporateSuccess'
           ? 'corp-success'
           : flow.kind === 'corporate'
-            ? 'corp-form'
+            ? `corp-${flow.step}`
             : `pub-${flow.step}-${flow.yoga}`
 
   const requestScrollPricingCardAfterAdvance = () => {
@@ -387,7 +403,11 @@ function PricingSection() {
 
   /** Mat + session-date steps: align card top with viewport (readable under navbar via scroll-margin). Other steps keep centered. */
   const pricingCardScrollBlock = (): ScrollLogicalPosition => {
-    if (flow.kind === 'public' && (flow.step === 'mat' || flow.step === 'date')) return 'start'
+    if (
+      (flow.kind === 'public' && (flow.step === 'mat' || flow.step === 'people' || flow.step === 'date')) ||
+      (flow.kind === 'corporate' && (flow.step === 'people' || flow.step === 'date'))
+    )
+      return 'start'
     return 'center'
   }
 
@@ -424,10 +444,16 @@ function PricingSection() {
     if (flow.kind === 'publicSuccess') return 100
     if (flow.kind === 'public') {
       if (flow.step === 'mat') return 45
+      if (flow.step === 'people') return 45
       if (flow.step === 'date') return 62
       return 88
     }
-    if (flow.kind === 'corporate' || flow.kind === 'corporateSuccess') return 100
+    if (flow.kind === 'corporate') {
+      if (flow.step === 'people') return 45
+      if (flow.step === 'date') return 62
+      return 88
+    }
+    if (flow.kind === 'corporateSuccess') return 100
     return 0
   }
 
@@ -444,9 +470,15 @@ function PricingSection() {
         setFlow({ kind: 'chooseClass' })
         return
       }
+      if (flow.step === 'people') {
+        setPrivateGroupCount('')
+        setFlow({ kind: 'chooseClass' })
+        return
+      }
       if (flow.step === 'date') {
         setPendingSessionIso(null)
-        setFlow({ kind: 'public', step: 'mat', yoga: flow.yoga })
+        const backStep: 'mat' | 'people' = flow.yoga === 'gentle' ? 'people' : 'mat'
+        setFlow({ kind: 'public', step: backStep, yoga: flow.yoga })
         setSelectedSessionIso(null)
         setSelectedTimeSlotId(null)
         return
@@ -458,13 +490,26 @@ function PricingSection() {
       setSelectedTimeSlotId(null)
       return
     }
-    if (flow.kind === 'corporate' && flow.step === 'form') {
-      setFlow({ kind: 'chooseClass' })
-      setCorpName('')
-      setCorpEmail('')
-      setCorpPhone('')
-      setGroupSize('')
-      setEventDetails('')
+    if (flow.kind === 'corporate') {
+      if (flow.step === 'people') {
+        setPrivateGroupCount('')
+        setCorpName('')
+        setCorpEmail('')
+        setCorpPhone('')
+        setFlow({ kind: 'chooseClass' })
+        return
+      }
+      if (flow.step === 'date') {
+        setPendingSessionIso(null)
+        setFlow({ kind: 'corporate', step: 'people' })
+        setSelectedSessionIso(null)
+        setSelectedTimeSlotId(null)
+        return
+      }
+      setFlow({ kind: 'corporate', step: 'date' })
+      setSelectedSessionIso(null)
+      setSelectedTimeSlotId(null)
+      return
     }
   }
 
@@ -474,10 +519,38 @@ function PricingSection() {
       setPendingSessionIso(null)
       setSelectedSessionIso(null)
       setSelectedTimeSlotId(null)
-      setFlow({ kind: 'corporate', step: 'form' })
+      setCorpName('')
+      setCorpEmail('')
+      setCorpPhone('')
+      setPrivateGroupCount('2')
+      setFlow({ kind: 'corporate', step: 'people' })
       return
     }
-    setFlow({ kind: 'public', step: 'mat', yoga: id })
+    const firstStep = id === 'gentle' ? 'people' : 'mat'
+    setFlow({ kind: 'public', step: firstStep, yoga: id })
+    if (id === 'gentle') setPrivateGroupCount('2')
+    else setPrivateGroupCount('')
+    setSelectedSessionIso(null)
+    setPendingSessionIso(null)
+    setSelectedTimeSlotId(null)
+  }
+
+  const bumpPrivatePeopleCount = (delta: number) => {
+    const n = parseInt(privateGroupCount, 10)
+    const base = Number.isNaN(n) ? 2 : n
+    setPrivateGroupCount(String(Math.min(20, Math.max(2, base + delta))))
+  }
+
+  const advanceInquiryPeopleStep = () => {
+    const parsed = parseInt(privateGroupCount, 10)
+    const n = Number.isNaN(parsed) ? 2 : Math.min(20, Math.max(2, parsed))
+    setPrivateGroupCount(String(n))
+    requestScrollPricingCardAfterAdvance()
+    setFlow(prev => {
+      if (prev.kind === 'public' && prev.step === 'people') return { ...prev, step: 'date' }
+      if (prev.kind === 'corporate' && prev.step === 'people') return { ...prev, step: 'date' }
+      return prev
+    })
     setSelectedSessionIso(null)
     setPendingSessionIso(null)
     setSelectedTimeSlotId(null)
@@ -497,7 +570,8 @@ function PricingSection() {
 
   const submitPublic = (e: FormEvent) => {
     e.preventDefault()
-    if (!waiverAccepted) return
+    const needsWaiver = flow.kind === 'public' && flow.step === 'contact' && flow.yoga !== 'gentle'
+    if (needsWaiver && !waiverAccepted) return
     if (selectedSessionIso && selectedTimeSlotId) {
       const k = sessionSlotKey(selectedSessionIso, selectedTimeSlotId)
       setSpotsBySlotKey(prev => ({
@@ -506,11 +580,22 @@ function PricingSection() {
       }))
     }
     requestScrollPricingCardAfterAdvance()
-    setFlow({ kind: 'publicSuccess' })
+    setFlow({
+      kind: 'publicSuccess',
+      source:
+        flow.kind === 'public' && flow.step === 'contact' && flow.yoga === 'gentle' ? 'private' : 'regular',
+    })
   }
 
   const submitCorporate = (e: FormEvent) => {
     e.preventDefault()
+    if (selectedSessionIso && selectedTimeSlotId) {
+      const k = sessionSlotKey(selectedSessionIso, selectedTimeSlotId)
+      setSpotsBySlotKey(prev => ({
+        ...prev,
+        [k]: Math.max(0, (prev[k] ?? SPOTS_PER_TIME_SLOT) - 1),
+      }))
+    }
     requestScrollPricingCardAfterAdvance()
     setFlow({ kind: 'corporateSuccess' })
   }
@@ -523,11 +608,12 @@ function PricingSection() {
     setFullName('')
     setEmail('')
     setPhone('')
+    setPrivateGroupCount('')
     setWaiverAccepted(false)
     setWaiverModalOpen(false)
   }
 
-  const renderPublicSuccess = () => (
+  const renderRegularClassPublicSuccess = () => (
     <div className="pricing-success">
       <div className="pricing-success-icon" aria-hidden>
         <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
@@ -552,29 +638,46 @@ function PricingSection() {
     </div>
   )
 
-  const renderCorporateSuccess = () => (
+  const renderPrivateOrCorporateRequestSuccess = (clientPhone: string) => (
     <div className="pricing-success">
       <div className="pricing-success-icon" aria-hidden>
-        <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
-          <circle cx="24" cy="24" r="22" stroke="var(--sage)" strokeWidth="2" opacity="0.35" />
-          <path d="M14 24l8 8 13-17" stroke="var(--sage-dark)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <PricingSuccessPendingClockIcon />
       </div>
-      <h3 className="pricing-step-title">{s.pricingSuccessCorpTitle}</h3>
-      <p className="pricing-success-body">{s.pricingSuccessCorpBody}</p>
+      <h3 className="pricing-step-title">{s.pricingSuccessRequestReceivedTitle}</h3>
+      <p className="pricing-success-body">{s.pricingSuccessRequestReceivedBody}</p>
+      {clientPhone.trim() !== '' && (
+        <p className="pricing-success-body">
+          {interpolate(s.pricingSuccessRequestReachOutPhone, { phone: clientPhone.trim() })}
+        </p>
+      )}
+      <p className="pricing-success-foot">{s.pricingSuccessPublicFoot}</p>
+      <a href="/" className="pricing-success-restart">
+        {s.pricingSuccessBackHome}
+      </a>
     </div>
   )
 
   let showBack = false
   if (flow.kind === 'public' && flow.step === 'mat') showBack = true
+  else if (flow.kind === 'public' && flow.step === 'people') showBack = true
   else if (flow.kind === 'public' && flow.step === 'date') showBack = true
   else if (flow.kind === 'public' && flow.step === 'contact') showBack = true
-  else if (flow.kind === 'corporate' && flow.step === 'form') showBack = true
+  else if (flow.kind === 'corporate' && flow.step === 'people') showBack = true
+  else if (flow.kind === 'corporate' && flow.step === 'date') showBack = true
+  else if (flow.kind === 'corporate' && flow.step === 'contact') showBack = true
 
-  const showFullPricingCardHeader =
-    flow.kind === 'chooseClass' ||
-    flow.kind === 'corporate' ||
-    flow.kind === 'corporateSuccess'
+  const isBookingSuccessScreen = flow.kind === 'publicSuccess' || flow.kind === 'corporateSuccess'
+  const showFullPricingCardHeader = flow.kind === 'chooseClass'
+
+  const inquiryPeopleStep =
+    (flow.kind === 'public' && flow.step === 'people') || (flow.kind === 'corporate' && flow.step === 'people')
+  let privatePeopleQtyDisplay = 2
+  if (inquiryPeopleStep) {
+    const q = parseInt(privateGroupCount, 10)
+    privatePeopleQtyDisplay = Number.isNaN(q) ? 2 : Math.min(20, Math.max(2, q))
+  }
+  const privatePeopleQtyAtMin = inquiryPeopleStep && privatePeopleQtyDisplay <= 2
+  const privatePeopleQtyAtMax = inquiryPeopleStep && privatePeopleQtyDisplay >= 20
 
   return (
     <>
@@ -620,7 +723,7 @@ function PricingSection() {
               <hr className="pricing-card-divider" />
             </>
           ) : (
-            <p className="pricing-header-summary">{s.pricingHeaderSummary}</p>
+            !isBookingSuccessScreen && <p className="pricing-header-summary">{s.pricingHeaderSummary}</p>
           )}
 
           <div className="pricing-multi-flow">
@@ -671,7 +774,50 @@ function PricingSection() {
               </div>
             )}
 
-            {flow.kind === 'public' && flow.step === 'date' && (
+            {inquiryPeopleStep && (
+              <div className="pricing-step-block">
+                <h3 className="pricing-step-title" id="pricing-private-group-heading">
+                  {s.pricingAskPrivateGroupSize}
+                </h3>
+                <div
+                  className="pricing-private-qty-selector"
+                  role="group"
+                  aria-labelledby="pricing-private-group-heading"
+                  aria-describedby="pricing-private-group-max-hint"
+                >
+                  <button
+                    type="button"
+                    className="pricing-private-qty-btn"
+                    onClick={() => bumpPrivatePeopleCount(-1)}
+                    disabled={privatePeopleQtyAtMin}
+                    aria-label={s.pricingPrivateQtyDecAria}
+                  >
+                    <span aria-hidden>−</span>
+                  </button>
+                  <div className="pricing-private-qty-value" aria-live="polite">
+                    {privatePeopleQtyDisplay}
+                  </div>
+                  <button
+                    type="button"
+                    className="pricing-private-qty-btn"
+                    onClick={() => bumpPrivatePeopleCount(1)}
+                    disabled={privatePeopleQtyAtMax}
+                    aria-label={s.pricingPrivateQtyIncAria}
+                  >
+                    <span aria-hidden>+</span>
+                  </button>
+                </div>
+                <p className="pricing-private-qty-max-hint" id="pricing-private-group-max-hint">
+                  {s.pricingPrivateGroupMaxHint}
+                </p>
+                <button type="button" className="btn-primary btn-lg pricing-submit" onClick={advanceInquiryPeopleStep}>
+                  {s.pricingPrivateGroupContinue}
+                </button>
+              </div>
+            )}
+
+            {((flow.kind === 'public' && flow.step === 'date') ||
+              (flow.kind === 'corporate' && flow.step === 'date')) && (
               <div className="pricing-step-block">
                 <h3 className="pricing-step-title">{s.pricingChooseSession}</h3>
                 <div className="pricing-session-list">
@@ -680,8 +826,8 @@ function PricingSection() {
                     const sel =
                       pendingSessionIso === session.iso ||
                       (selectedSessionIso === session.iso &&
-                        flow.kind === 'public' &&
-                        flow.step === 'contact')
+                        ((flow.kind === 'public' && flow.step === 'contact') ||
+                          (flow.kind === 'corporate' && flow.step === 'contact')))
                     return (
                       <button
                         key={session.iso}
@@ -756,59 +902,74 @@ function PricingSection() {
                     required
                   />
                 </div>
-                <>
-                  <div className="pricing-form-field pricing-form-field--checkbox">
-                    <label htmlFor="pub-waiver" className="pricing-checkbox-row">
-                      <input
-                        id="pub-waiver"
-                        name="waiverAccepted"
-                        type="checkbox"
-                        className="pricing-checkbox"
-                        checked={waiverAccepted}
-                        onChange={e => setWaiverAccepted(e.target.checked)}
-                      />
-                      <span className="pricing-checkbox-text">
-                        {s.pricingWaiverConsentPrefix}
-                        <button
-                          type="button"
-                          className="pricing-waiver-inline-link"
-                          onClick={e => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            setWaiverModalOpen(true)
-                          }}
-                        >
-                          {s.pricingWaiverConsentLinkText}
-                        </button>
-                        {s.pricingWaiverConsentSuffix}
-                      </span>
-                    </label>
-                  </div>
-                  <p className="pricing-waiver-age-note">{s.pricingWaiverAgeNote}</p>
-                  <button
-                    type="submit"
-                    className="btn-primary btn-lg pricing-submit"
-                    disabled={!waiverAccepted}
-                  >
-                    {s.pricingSubmitBookSpot}
-                  </button>
-                </>
+                {flow.yoga === 'gentle' ? (
+                  <>
+                    <p className="pricing-private-event-submit-note">{s.pricingPrivateEventSubmitNote}</p>
+                    <button type="submit" className="btn-primary btn-lg pricing-submit">
+                      {s.pricingCorporateSubmit}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="pricing-form-field pricing-form-field--checkbox">
+                      <label htmlFor="pub-waiver" className="pricing-checkbox-row">
+                        <input
+                          id="pub-waiver"
+                          name="waiverAccepted"
+                          type="checkbox"
+                          className="pricing-checkbox"
+                          checked={waiverAccepted}
+                          onChange={e => setWaiverAccepted(e.target.checked)}
+                        />
+                        <span className="pricing-checkbox-text">
+                          {s.pricingWaiverConsentPrefix}
+                          <button
+                            type="button"
+                            className="pricing-waiver-inline-link"
+                            onClick={e => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              setWaiverModalOpen(true)
+                            }}
+                          >
+                            {s.pricingWaiverConsentLinkText}
+                          </button>
+                          {s.pricingWaiverConsentSuffix}
+                        </span>
+                      </label>
+                    </div>
+                    <p className="pricing-waiver-age-note">{s.pricingWaiverAgeNote}</p>
+                    <button
+                      type="submit"
+                      className="btn-primary btn-lg pricing-submit"
+                      disabled={!waiverAccepted}
+                    >
+                      {s.pricingSubmitBookSpot}
+                    </button>
+                  </>
+                )}
               </form>
-              <BookingWaiverModal
-                lang={lang}
-                open={waiverModalOpen}
-                onClose={() => setWaiverModalOpen(false)}
-                closeAriaLabel={s.waiverModalCloseAria}
-              />
+              {flow.yoga !== 'gentle' && (
+                <BookingWaiverModal
+                  lang={lang}
+                  open={waiverModalOpen}
+                  onClose={() => setWaiverModalOpen(false)}
+                  closeAriaLabel={s.waiverModalCloseAria}
+                />
+              )}
               </>
             )}
 
-            {flow.kind === 'publicSuccess' && renderPublicSuccess()}
+            {flow.kind === 'publicSuccess' &&
+              flow.source === 'regular' &&
+              renderRegularClassPublicSuccess()}
+            {flow.kind === 'publicSuccess' &&
+              flow.source === 'private' &&
+              renderPrivateOrCorporateRequestSuccess(phone)}
 
-            {flow.kind === 'corporate' && flow.step === 'form' && (
+            {flow.kind === 'corporate' && flow.step === 'contact' && (
               <form className="pricing-booking-form" onSubmit={submitCorporate}>
-                <h3 className="pricing-step-title">{s.pricingCorporateTitle}</h3>
-                <p className="pricing-step-intro">{s.pricingCorporateIntro}</p>
+                <h3 className="pricing-step-title">{s.pricingContactHeading}</h3>
                 <div className="pricing-form-field">
                   <label className="pricing-form-label" htmlFor="corp-fullname">
                     {s.pricingLblFullName}{' '}
@@ -857,72 +1018,16 @@ function PricingSection() {
                     required
                   />
                 </div>
-                <div className="pricing-form-field">
-                  <label className="pricing-form-label" htmlFor="corp-group">
-                    {s.pricingLblGroupSize}{' '}
-                    <abbr className="pricing-req-mark" title={s.abbrevRequiredTitle}>*</abbr>
-                  </label>
-                  <input
-                    id="corp-group"
-                    type="number"
-                    name="groupSize"
-                    className="pricing-input"
-                    min={1}
-                    max={20}
-                    step={1}
-                    value={groupSize}
-                    onChange={e => {
-                      const v = e.target.value
-                      const n = parseInt(v, 10)
-                      if (v === '' || Number.isNaN(n)) setGroupSize('')
-                      else setGroupSize(String(Math.min(20, Math.max(1, n))))
-                    }}
-                    required
-                  />
-                </div>
-                <div className="pricing-form-field">
-                  <label className="pricing-form-label" htmlFor="corp-event">
-                    {s.pricingLblEventDetails}{' '}
-                    <abbr className="pricing-req-mark" title={s.abbrevRequiredTitle}>*</abbr>
-                  </label>
-                  <textarea
-                    id="corp-event"
-                    name="eventDetails"
-                    className="pricing-input pricing-input-textarea"
-                    rows={4}
-                    placeholder={s.pricingCorpPlaceholder}
-                    value={eventDetails}
-                    onChange={e => setEventDetails(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="pricing-form-field pricing-form-field--checkbox">
-                  <label htmlFor="corp-terms" className="pricing-checkbox-row">
-                    <input
-                      id="corp-terms"
-                      name="corpTermsAccepted"
-                      type="checkbox"
-                      className="pricing-checkbox"
-                      required
-                    />
-                    <span className="pricing-checkbox-text">{s.pricingTermsCheckboxLabel}</span>
-                  </label>
-                </div>
+                <p className="pricing-private-event-submit-note">{s.pricingPrivateEventSubmitNote}</p>
                 <button type="submit" className="btn-primary btn-lg pricing-submit">
                   {s.pricingCorporateSubmit}
                 </button>
               </form>
             )}
 
-            {flow.kind === 'corporateSuccess' && renderCorporateSuccess()}
+            {flow.kind === 'corporateSuccess' && renderPrivateOrCorporateRequestSuccess(corpPhone)}
           </div>
 
-          {flow.kind === 'public' && flow.step === 'contact' && (
-            <div className="pricing-note">
-              <span>{s.pricingPaymentNote}</span>
-              <span>{s.pricingCancelNote}</span>
-            </div>
-          )}
         </div>
       </div>
     </section>
@@ -961,11 +1066,13 @@ function PricingSection() {
                     setSelectedTimeSlotId(slot.id)
                     setPendingSessionIso(null)
                     requestScrollPricingCardAfterAdvance()
-                    setFlow(prev =>
-                      prev.kind === 'public' && prev.step === 'date'
-                        ? { kind: 'public', step: 'contact', yoga: prev.yoga }
-                        : prev
-                    )
+                    setFlow(prev => {
+                      if (prev.kind === 'public' && prev.step === 'date')
+                        return { kind: 'public', step: 'contact', yoga: prev.yoga }
+                      if (prev.kind === 'corporate' && prev.step === 'date')
+                        return { kind: 'corporate', step: 'contact' }
+                      return prev
+                    })
                   }}
                 >
                   <span className="pricing-time-slot-label">{formatSlotClock(slot.h, slot.m, lang)}</span>
@@ -1205,8 +1312,7 @@ function normalizeSitePathname(): string {
 
 export default function App() {
   const path = normalizeSitePathname()
-  if (path === '/refund-policy') return <RefundPolicyPage variant="en" />
-  if (path === '/politique-remboursement') return <RefundPolicyPage variant="fr" />
+  if (path === '/refund-policy' || path === '/politique-remboursement') return <RefundPolicyPage />
 
   return <MarketingSite />
 }
