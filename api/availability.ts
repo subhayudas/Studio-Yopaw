@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { square, getLocationId } from './_square'
-import { MAX_SEATS, ALLOWED_CLASS_TIMES, slotMontrealTime } from './_config'
+import { square, getLocationId } from './_square.js'
+import { MAX_SEATS, ALLOWED_CLASS_TIMES, slotMontrealTime } from './_config.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).end()
