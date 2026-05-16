@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef, useMemo, type FormEvent } from 'react'
+import { CreditCard, PaymentForm } from 'react-square-web-payments-sdk'
 import './App.css'
 import type { Lang } from './i18n/siteStrings'
 import { interpolate, useI18n } from './i18n/LanguageProvider'
@@ -6,6 +7,11 @@ import { Navbar } from './components/Navbar'
 import { Footer } from './components/Footer'
 import { BookingWaiverModal } from './components/BookingWaiverModal'
 import { RefundPolicyPage } from './pages/RefundPolicyPage'
+import { useSquareAvailability, type SquareSlot } from './hooks/useSquareAvailability'
+import { SQUARE_SERVICE_VARIATIONS } from './lib/squareServices'
+
+const SQUARE_APP_ID = (import.meta.env.VITE_SQUARE_APP_ID as string | undefined) ?? ''
+const SQUARE_LOCATION_ID = (import.meta.env.VITE_SQUARE_LOCATION_ID as string | undefined) ?? ''
 
 // ── SVG Icons ──────────────────────────────────────────────
 
@@ -84,6 +90,52 @@ const BOOKING_FORM_SCROLL_HASHES = new Set(['book', 'booking', 'pricing', 'corpo
 
 function scrollBookingFormIntoView(behavior: ScrollBehavior = 'smooth') {
   document.getElementById('book')?.scrollIntoView({ behavior, block: 'center', inline: 'nearest' })
+}
+
+// ── Date/time helpers ──────────────────────────────────────
+
+function formatLongSessionDate(iso: string, lang: Lang): string {
+  const [y, m, day] = iso.split('-').map(Number)
+  const d = new Date(y, m - 1, day)
+  const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
+  return d.toLocaleDateString(loc, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function formatShortSessionDate(iso: string, lang: Lang): string {
+  const [y, m, day] = iso.split('-').map(Number)
+  const d = new Date(y, m - 1, day)
+  const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
+  return d.toLocaleDateString(loc, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function formatSquareSlotTime(startAt: string | null, lang: Lang): string {
+  if (!startAt) return '—'
+  const d = new Date(startAt)
+  return d.toLocaleTimeString(lang === 'fr' ? 'fr-CA' : 'en-CA', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+function todayIso(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function plusDaysIso(days: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 // ── Sections ───────────────────────────────────────────────
@@ -247,89 +299,6 @@ function ExperienceSection() {
 
 type YogaStyle = 'yin' | 'gentle'
 
-type WeekendSession = { iso: string }
-
-/** Weekend session times (20 spots each); same schedule every Saturday & Sunday offered in the picker. */
-const SESSION_TIME_SLOTS = [
-  { id: 't1030', h: 10, m: 30 },
-  { id: 't1200', h: 12, m: 0 },
-  { id: 't1330', h: 13, m: 30 },
-  { id: 't1500', h: 15, m: 0 },
-] as const
-
-const SPOTS_PER_TIME_SLOT = 20
-
-function sessionSlotKey(iso: string, slotId: string): string {
-  return `${iso}|${slotId}`
-}
-
-function formatSlotClock(h: number, m: number, lang: Lang): string {
-  const d = new Date(2000, 0, 1, h, m)
-  return d.toLocaleTimeString(lang === 'fr' ? 'fr-CA' : 'en-CA', {
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-}
-
-function slotLabelFromId(slotId: string, lang: Lang): string {
-  const slot = SESSION_TIME_SLOTS.find(s => s.id === slotId)
-  if (!slot) return ''
-  return formatSlotClock(slot.h, slot.m, lang)
-}
-
-function isDateFullyBooked(iso: string, spotsByKey: Record<string, number>): boolean {
-  return SESSION_TIME_SLOTS.every(s => (spotsByKey[sessionSlotKey(iso, s.id)] ?? SPOTS_PER_TIME_SLOT) <= 0)
-}
-
-function getSpotRemaining(iso: string, slotId: string, spotsByKey: Record<string, number>): number {
-  return spotsByKey[sessionSlotKey(iso, slotId)] ?? SPOTS_PER_TIME_SLOT
-}
-
-function addDaysLocal(base: Date, days: number): Date {
-  const d = new Date(base)
-  d.setDate(d.getDate() + days)
-  return d
-}
-
-function buildNextWeekendSessions(): WeekendSession[] {
-  const start = new Date()
-  start.setHours(0, 0, 0, 0)
-  const out: WeekendSession[] = []
-  for (let i = 0; i < 200 && out.length < 12; i++) {
-    const d = addDaysLocal(start, i)
-    const wd = d.getDay()
-    if (wd === 0 || wd === 6) {
-      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      out.push({ iso })
-    }
-  }
-  return out
-}
-
-function formatLongSessionDate(iso: string, lang: Lang): string {
-  const [y, m, day] = iso.split('-').map(Number)
-  const d = new Date(y, m - 1, day)
-  const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
-  return d.toLocaleDateString(loc, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
-
-function formatShortSessionDate(iso: string, lang: Lang): string {
-  const [y, m, day] = iso.split('-').map(Number)
-  const d = new Date(y, m - 1, day)
-  const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
-  return d.toLocaleDateString(loc, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
-
 function PricingStepBack({ onClick }: { onClick: () => void }) {
   const { s } = useI18n()
   return (
@@ -349,7 +318,7 @@ function PricingStepBack({ onClick }: { onClick: () => void }) {
 
 function PricingSection() {
   const { lang, s } = useI18n()
-  const weekendSessions = useMemo(() => buildNextWeekendSessions(), [])
+
   const bookingClassChoices = useMemo(
     () =>
       [
@@ -362,16 +331,16 @@ function PricingSection() {
 
   type Flow =
     | { kind: 'chooseClass' }
-    | { kind: 'public'; step: 'mat' | 'people' | 'date' | 'contact'; yoga: YogaStyle }
+    | { kind: 'public'; step: 'mat' | 'people' | 'date' | 'contact' | 'payment'; yoga: YogaStyle }
     | { kind: 'publicSuccess'; source: 'regular' | 'private' }
-    | { kind: 'corporate'; step: 'people' | 'date' | 'contact' }
+    | { kind: 'corporate'; step: 'people' | 'date' | 'contact' | 'payment' }
     | { kind: 'corporateSuccess' }
 
   const [flow, setFlow] = useState<Flow>({ kind: 'chooseClass' })
   const [selectedSessionIso, setSelectedSessionIso] = useState<string | null>(null)
   const [pendingSessionIso, setPendingSessionIso] = useState<string | null>(null)
+  // Stores the full Square startAt ISO string (e.g. "2025-03-01T14:30:00Z") for the selected time slot
   const [selectedTimeSlotId, setSelectedTimeSlotId] = useState<string | null>(null)
-  const [spotsBySlotKey, setSpotsBySlotKey] = useState<Record<string, number>>({})
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -379,8 +348,46 @@ function PricingSection() {
   const [corpEmail, setCorpEmail] = useState('')
   const [corpPhone, setCorpPhone] = useState('')
   const [privateGroupCount, setPrivateGroupCount] = useState('')
+  const [needsMatRental, setNeedsMatRental] = useState(false)
   const [waiverAccepted, setWaiverAccepted] = useState(false)
   const [waiverModalOpen, setWaiverModalOpen] = useState(false)
+  const [bookingLoading, setBookingLoading] = useState(false)
+  const [bookingError, setBookingError] = useState<string | null>(null)
+
+  // Square availability
+  const startDate = useMemo(todayIso, [])
+  const endDate = useMemo(() => plusDaysIso(30), [])
+
+  const currentServiceVariationId = useMemo(() => {
+    if (flow.kind === 'public') return SQUARE_SERVICE_VARIATIONS[flow.yoga]?.serviceVariationId ?? ''
+    if (flow.kind === 'corporate') return SQUARE_SERVICE_VARIATIONS.corporate?.serviceVariationId ?? ''
+    return ''
+  }, [flow])
+
+  const currentTeamMemberId = useMemo(() => {
+    if (flow.kind === 'public') return SQUARE_SERVICE_VARIATIONS[flow.yoga]?.teamMemberId ?? ''
+    if (flow.kind === 'corporate') return SQUARE_SERVICE_VARIATIONS.corporate?.teamMemberId ?? ''
+    return ''
+  }, [flow])
+
+  const { slots: squareSlots, loading: availabilityLoading } = useSquareAvailability(
+    currentServiceVariationId,
+    startDate,
+    endDate,
+    currentTeamMemberId || undefined,
+  )
+
+  const slotsByDate = useMemo(() => {
+    const map: Record<string, SquareSlot[]> = {}
+    for (const slot of squareSlots) {
+      const date = slot.startAt.split('T')[0]
+      if (!map[date]) map[date] = []
+      map[date].push(slot)
+    }
+    return map
+  }, [squareSlots])
+
+  const availableDates = useMemo(() => Object.keys(slotsByDate).sort(), [slotsByDate])
 
   const pricingCardRef = useRef<HTMLDivElement>(null)
   const hasInteractedWithBookingFormRef = useRef(false)
@@ -446,12 +453,14 @@ function PricingSection() {
       if (flow.step === 'mat') return 45
       if (flow.step === 'people') return 45
       if (flow.step === 'date') return 62
-      return 88
+      if (flow.step === 'contact') return 80
+      if (flow.step === 'payment') return 95
     }
     if (flow.kind === 'corporate') {
       if (flow.step === 'people') return 45
       if (flow.step === 'date') return 62
-      return 88
+      if (flow.step === 'contact') return 80
+      if (flow.step === 'payment') return 95
     }
     if (flow.kind === 'corporateSuccess') return 100
     return 0
@@ -483,12 +492,19 @@ function PricingSection() {
         setSelectedTimeSlotId(null)
         return
       }
-      setWaiverAccepted(false)
-      setWaiverModalOpen(false)
-      setFlow({ kind: 'public', step: 'date', yoga: flow.yoga })
-      setSelectedSessionIso(null)
-      setSelectedTimeSlotId(null)
-      return
+      if (flow.step === 'contact') {
+        setWaiverAccepted(false)
+        setWaiverModalOpen(false)
+        setFlow({ kind: 'public', step: 'date', yoga: flow.yoga })
+        setSelectedSessionIso(null)
+        setSelectedTimeSlotId(null)
+        return
+      }
+      if (flow.step === 'payment') {
+        setBookingError(null)
+        setFlow({ kind: 'public', step: 'contact', yoga: flow.yoga })
+        return
+      }
     }
     if (flow.kind === 'corporate') {
       if (flow.step === 'people') {
@@ -506,10 +522,17 @@ function PricingSection() {
         setSelectedTimeSlotId(null)
         return
       }
-      setFlow({ kind: 'corporate', step: 'date' })
-      setSelectedSessionIso(null)
-      setSelectedTimeSlotId(null)
-      return
+      if (flow.step === 'contact') {
+        setFlow({ kind: 'corporate', step: 'date' })
+        setSelectedSessionIso(null)
+        setSelectedTimeSlotId(null)
+        return
+      }
+      if (flow.step === 'payment') {
+        setBookingError(null)
+        setFlow({ kind: 'corporate', step: 'contact' })
+        return
+      }
     }
   }
 
@@ -556,7 +579,8 @@ function PricingSection() {
     setSelectedTimeSlotId(null)
   }
 
-  const pickMat = () => {
+  const pickMat = (renting: boolean) => {
+    setNeedsMatRental(renting)
     requestScrollPricingCardAfterAdvance()
     setFlow(prev =>
       prev.kind === 'public' && prev.step === 'mat'
@@ -568,36 +592,92 @@ function PricingSection() {
     setSelectedTimeSlotId(null)
   }
 
-  const submitPublic = (e: FormEvent) => {
+  const submitPublic = async (e: FormEvent) => {
     e.preventDefault()
-    const needsWaiver = flow.kind === 'public' && flow.step === 'contact' && flow.yoga !== 'gentle'
+    if (flow.kind !== 'public') return
+
+    const needsWaiver = flow.yoga !== 'gentle'
     if (needsWaiver && !waiverAccepted) return
-    if (selectedSessionIso && selectedTimeSlotId) {
-      const k = sessionSlotKey(selectedSessionIso, selectedTimeSlotId)
-      setSpotsBySlotKey(prev => ({
-        ...prev,
-        [k]: Math.max(0, (prev[k] ?? SPOTS_PER_TIME_SLOT) - 1),
-      }))
-    }
+
+    // Both yin and gentle advance to Square payment step
     requestScrollPricingCardAfterAdvance()
-    setFlow({
-      kind: 'publicSuccess',
-      source:
-        flow.kind === 'public' && flow.step === 'contact' && flow.yoga === 'gentle' ? 'private' : 'regular',
-    })
+    setFlow({ kind: 'public', step: 'payment', yoga: flow.yoga })
   }
 
   const submitCorporate = (e: FormEvent) => {
     e.preventDefault()
-    if (selectedSessionIso && selectedTimeSlotId) {
-      const k = sessionSlotKey(selectedSessionIso, selectedTimeSlotId)
-      setSpotsBySlotKey(prev => ({
-        ...prev,
-        [k]: Math.max(0, (prev[k] ?? SPOTS_PER_TIME_SLOT) - 1),
-      }))
-    }
     requestScrollPricingCardAfterAdvance()
-    setFlow({ kind: 'corporateSuccess' })
+    setFlow({ kind: 'corporate', step: 'payment' })
+  }
+
+  const submitBookingWithPayment = async (nonce: string) => {
+    if (flow.kind !== 'public' && flow.kind !== 'corporate') return
+    setBookingLoading(true)
+    setBookingError(null)
+
+    let serviceInfo: typeof SQUARE_SERVICE_VARIATIONS[keyof typeof SQUARE_SERVICE_VARIATIONS]
+    let givenName: string, familyName: string, bookingEmail: string, bookingPhone: string
+    let amountCents: number
+
+    if (flow.kind === 'corporate') {
+      serviceInfo = SQUARE_SERVICE_VARIATIONS.corporate
+      const parts = corpName.trim().split(' ')
+      givenName = parts[0] ?? corpName
+      familyName = parts.slice(1).join(' ') || givenName
+      bookingEmail = corpEmail
+      bookingPhone = corpPhone
+      const groupSize = Math.max(2, parseInt(privateGroupCount, 10) || 2)
+      amountCents = serviceInfo.amountCents * groupSize
+    } else {
+      serviceInfo = SQUARE_SERVICE_VARIATIONS[flow.yoga]
+      const parts = fullName.trim().split(' ')
+      givenName = parts[0] ?? fullName
+      familyName = parts.slice(1).join(' ') || givenName
+      bookingEmail = email
+      bookingPhone = phone
+      if (flow.yoga === 'gentle') {
+        const groupSize = Math.max(2, parseInt(privateGroupCount, 10) || 2)
+        amountCents = serviceInfo.amountCents * groupSize
+      } else {
+        amountCents = serviceInfo.amountCents + (needsMatRental ? 500 : 0)
+      }
+    }
+
+    try {
+      const res = await fetch('/api/booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          givenName,
+          familyName,
+          email: bookingEmail,
+          phone: bookingPhone,
+          serviceVariationId: serviceInfo.serviceVariationId,
+          serviceVariationVersion: serviceInfo.serviceVariationVersion,
+          teamMemberId: serviceInfo.teamMemberId,
+          startAt: selectedTimeSlotId,
+          cardNonce: nonce,
+          amountCents,
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setBookingError((data as { error?: string }).error ?? 'Booking failed. Please try again.')
+        return
+      }
+
+      requestScrollPricingCardAfterAdvance()
+      if (flow.kind === 'corporate') {
+        setFlow({ kind: 'corporateSuccess' })
+      } else {
+        setFlow({ kind: 'publicSuccess', source: flow.yoga === 'gentle' ? 'private' : 'regular' })
+      }
+    } catch {
+      setBookingError('Network error. Please try again.')
+    } finally {
+      setBookingLoading(false)
+    }
   }
 
   const restartPublicBooking = () => {
@@ -609,8 +689,10 @@ function PricingSection() {
     setEmail('')
     setPhone('')
     setPrivateGroupCount('')
+    setNeedsMatRental(false)
     setWaiverAccepted(false)
     setWaiverModalOpen(false)
+    setBookingError(null)
   }
 
   const renderRegularClassPublicSuccess = () => (
@@ -628,7 +710,7 @@ function PricingSection() {
           date: selectedSessionIso
             ? formatLongSessionDate(selectedSessionIso, lang)
             : s.pricingSuccessChosenDayFallback,
-          time: selectedTimeSlotId ? slotLabelFromId(selectedTimeSlotId, lang) : '—',
+          time: formatSquareSlotTime(selectedTimeSlotId, lang),
         })}
       </p>
       <p className="pricing-success-foot">{s.pricingSuccessPublicFoot}</p>
@@ -662,6 +744,7 @@ function PricingSection() {
   else if (flow.kind === 'public' && flow.step === 'people') showBack = true
   else if (flow.kind === 'public' && flow.step === 'date') showBack = true
   else if (flow.kind === 'public' && flow.step === 'contact') showBack = true
+  else if (flow.kind === 'public' && flow.step === 'payment') showBack = true
   else if (flow.kind === 'corporate' && flow.step === 'people') showBack = true
   else if (flow.kind === 'corporate' && flow.step === 'date') showBack = true
   else if (flow.kind === 'corporate' && flow.step === 'contact') showBack = true
@@ -678,6 +761,10 @@ function PricingSection() {
   }
   const privatePeopleQtyAtMin = inquiryPeopleStep && privatePeopleQtyDisplay <= 2
   const privatePeopleQtyAtMax = inquiryPeopleStep && privatePeopleQtyDisplay >= 20
+
+  const isDateStep =
+    (flow.kind === 'public' && flow.step === 'date') ||
+    (flow.kind === 'corporate' && flow.step === 'date')
 
   return (
     <>
@@ -763,10 +850,10 @@ function PricingSection() {
               <div className="pricing-step-block">
                 <h3 className="pricing-step-title">{s.pricingAskMat}</h3>
                 <div className="pricing-choice-stack pricing-choice-stack--pair">
-                    <button type="button" className="pricing-choice-card" onClick={pickMat}>
+                    <button type="button" className="pricing-choice-card" onClick={() => pickMat(true)}>
                     {s.pricingMatYes}
                   </button>
-                  <button type="button" className="pricing-choice-card" onClick={pickMat}>
+                  <button type="button" className="pricing-choice-card" onClick={() => pickMat(false)}>
                     {s.pricingMatNo}
                   </button>
                 </div>
@@ -816,33 +903,31 @@ function PricingSection() {
               </div>
             )}
 
-            {((flow.kind === 'public' && flow.step === 'date') ||
-              (flow.kind === 'corporate' && flow.step === 'date')) && (
+            {isDateStep && (
               <div className="pricing-step-block">
                 <h3 className="pricing-step-title">{s.pricingChooseSession}</h3>
+                {availabilityLoading && (
+                  <p className="pricing-helper-text">Loading available sessions…</p>
+                )}
+                {!availabilityLoading && availableDates.length === 0 && (
+                  <p className="pricing-helper-text">No sessions available right now. Please check back soon.</p>
+                )}
                 <div className="pricing-session-list">
-                  {weekendSessions.map(session => {
-                    const dateFullyBooked = isDateFullyBooked(session.iso, spotsBySlotKey)
+                  {availableDates.map(dateIso => {
                     const sel =
-                      pendingSessionIso === session.iso ||
-                      (selectedSessionIso === session.iso &&
+                      pendingSessionIso === dateIso ||
+                      (selectedSessionIso === dateIso &&
                         ((flow.kind === 'public' && flow.step === 'contact') ||
                           (flow.kind === 'corporate' && flow.step === 'contact')))
                     return (
                       <button
-                        key={session.iso}
+                        key={dateIso}
                         type="button"
-                        className={`pricing-session-row${dateFullyBooked ? ' is-disabled' : ''}${sel ? ' is-selected' : ''}`}
-                        disabled={dateFullyBooked}
-                        onClick={() => {
-                          if (dateFullyBooked) return
-                          setPendingSessionIso(session.iso)
-                        }}
+                        className={`pricing-session-row${sel ? ' is-selected' : ''}`}
+                        onClick={() => setPendingSessionIso(dateIso)}
                       >
-                        <span className="pricing-session-date">{formatShortSessionDate(session.iso, lang)}</span>
-                        <span className="pricing-session-spots">
-                          {dateFullyBooked ? s.pricingSpotFull : s.pricingSessionPickTime}
-                        </span>
+                        <span className="pricing-session-date">{formatShortSessionDate(dateIso, lang)}</span>
+                        <span className="pricing-session-spots">{s.pricingSessionPickTime}</span>
                       </button>
                     )
                   })}
@@ -904,9 +989,13 @@ function PricingSection() {
                 </div>
                 {flow.yoga === 'gentle' ? (
                   <>
-                    <p className="pricing-private-event-submit-note">{s.pricingPrivateEventSubmitNote}</p>
+                    <p className="pricing-helper-text">
+                      {lang === 'fr'
+                        ? `Total : ${parseInt(privateGroupCount || '2', 10)} × 46 $ = ${parseInt(privateGroupCount || '2', 10) * 46} $ + taxes`
+                        : `Total: ${parseInt(privateGroupCount || '2', 10)} × $46 = $${parseInt(privateGroupCount || '2', 10) * 46} + taxes`}
+                    </p>
                     <button type="submit" className="btn-primary btn-lg pricing-submit">
-                      {s.pricingCorporateSubmit}
+                      {lang === 'fr' ? 'Passer au paiement' : 'Proceed to payment'}
                     </button>
                   </>
                 ) : (
@@ -958,6 +1047,40 @@ function PricingSection() {
                 />
               )}
               </>
+            )}
+
+            {flow.kind === 'public' && flow.step === 'payment' && (
+              <div className="pricing-step-block">
+                <h3 className="pricing-step-title">
+                  {lang === 'fr' ? 'Paiement sécurisé' : 'Secure Payment'}
+                </h3>
+                {bookingError && (
+                  <p style={{ color: 'var(--rose, #e11d48)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                    {bookingError}
+                  </p>
+                )}
+                {SQUARE_APP_ID ? (
+                  <PaymentForm
+                    applicationId={SQUARE_APP_ID}
+                    locationId={SQUARE_LOCATION_ID}
+                    cardTokenizeResponseReceived={(token) => {
+                      if (token.status === 'OK' && token.token) {
+                        void submitBookingWithPayment(token.token)
+                      }
+                    }}
+                  >
+                    <CreditCard>
+                      {bookingLoading
+                        ? (lang === 'fr' ? 'Traitement…' : 'Processing…')
+                        : s.pricingSubmitBookSpot}
+                    </CreditCard>
+                  </PaymentForm>
+                ) : (
+                  <p className="pricing-helper-text">
+                    Square credentials not configured. Add <code>VITE_SQUARE_APP_ID</code> to your environment.
+                  </p>
+                )}
+              </div>
             )}
 
             {flow.kind === 'publicSuccess' &&
@@ -1018,14 +1141,76 @@ function PricingSection() {
                     required
                   />
                 </div>
-                <p className="pricing-private-event-submit-note">{s.pricingPrivateEventSubmitNote}</p>
+                <p className="pricing-helper-text">
+                  {lang === 'fr'
+                    ? `Total : ${parseInt(privateGroupCount || '2', 10)} × 46 $ = ${parseInt(privateGroupCount || '2', 10) * 46} $ + taxes`
+                    : `Total: ${parseInt(privateGroupCount || '2', 10)} × $46 = $${parseInt(privateGroupCount || '2', 10) * 46} + taxes`}
+                </p>
                 <button type="submit" className="btn-primary btn-lg pricing-submit">
-                  {s.pricingCorporateSubmit}
+                  {lang === 'fr' ? 'Passer au paiement' : 'Proceed to payment'}
                 </button>
               </form>
             )}
 
-            {flow.kind === 'corporateSuccess' && renderPrivateOrCorporateRequestSuccess(corpPhone)}
+            {flow.kind === 'corporate' && flow.step === 'payment' && (
+              <div className="pricing-step-block">
+                <h3 className="pricing-step-title">
+                  {lang === 'fr' ? 'Paiement sécurisé' : 'Secure Payment'}
+                </h3>
+                <p className="pricing-helper-text" style={{ marginBottom: '1rem' }}>
+                  {lang === 'fr'
+                    ? `Total : ${parseInt(privateGroupCount || '2', 10)} × 46 $ = ${parseInt(privateGroupCount || '2', 10) * 46} $ + taxes`
+                    : `Total: ${parseInt(privateGroupCount || '2', 10)} × $46 = $${parseInt(privateGroupCount || '2', 10) * 46} + taxes`}
+                </p>
+                {bookingError && (
+                  <p style={{ color: 'var(--rose, #e11d48)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                    {bookingError}
+                  </p>
+                )}
+                {SQUARE_APP_ID ? (
+                  <PaymentForm
+                    applicationId={SQUARE_APP_ID}
+                    locationId={SQUARE_LOCATION_ID}
+                    cardTokenizeResponseReceived={(token) => {
+                      if (token.status === 'OK' && token.token) {
+                        void submitBookingWithPayment(token.token)
+                      }
+                    }}
+                  >
+                    <CreditCard>
+                      {bookingLoading
+                        ? (lang === 'fr' ? 'Traitement…' : 'Processing…')
+                        : s.pricingSubmitBookSpot}
+                    </CreditCard>
+                  </PaymentForm>
+                ) : (
+                  <p className="pricing-helper-text">Square credentials not configured.</p>
+                )}
+              </div>
+            )}
+
+            {flow.kind === 'corporateSuccess' && (
+              <div className="pricing-success">
+                <div className="pricing-success-icon" aria-hidden>
+                  <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
+                    <circle cx="24" cy="24" r="22" stroke="var(--sage)" strokeWidth="2" opacity="0.35" />
+                    <path d="M14 24l8 8 13-17" stroke="var(--sage-dark)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <h3 className="pricing-step-title">{s.pricingSuccessPublicTitle}</h3>
+                <p className="pricing-success-body">
+                  {interpolate(s.pricingSuccessPublicBody, {
+                    email: corpEmail,
+                    date: selectedSessionIso ? formatLongSessionDate(selectedSessionIso, lang) : s.pricingSuccessChosenDayFallback,
+                    time: formatSquareSlotTime(selectedTimeSlotId, lang),
+                  })}
+                </p>
+                <p className="pricing-success-foot">{s.pricingSuccessPublicFoot}</p>
+                <button type="button" className="pricing-success-restart" onClick={restartPublicBooking}>
+                  {s.pricingSuccessRestart}
+                </button>
+              </div>
+            )}
           </div>
 
         </div>
@@ -1050,40 +1235,30 @@ function PricingSection() {
           </h3>
           <p className="pricing-time-modal-date">{formatLongSessionDate(pendingSessionIso, lang)}</p>
           <div className="pricing-time-slot-list">
-            {SESSION_TIME_SLOTS.map(slot => {
-              const rem = getSpotRemaining(pendingSessionIso, slot.id, spotsBySlotKey)
-              const full = rem <= 0
-              return (
-                <button
-                  key={slot.id}
-                  type="button"
-                  disabled={full}
-                  className={`pricing-time-slot-row${full ? ' is-disabled' : ''}`}
-                  onClick={() => {
-                    if (full) return
-                    const iso = pendingSessionIso
-                    setSelectedSessionIso(iso)
-                    setSelectedTimeSlotId(slot.id)
-                    setPendingSessionIso(null)
-                    requestScrollPricingCardAfterAdvance()
-                    setFlow(prev => {
-                      if (prev.kind === 'public' && prev.step === 'date')
-                        return { kind: 'public', step: 'contact', yoga: prev.yoga }
-                      if (prev.kind === 'corporate' && prev.step === 'date')
-                        return { kind: 'corporate', step: 'contact' }
-                      return prev
-                    })
-                  }}
-                >
-                  <span className="pricing-time-slot-label">{formatSlotClock(slot.h, slot.m, lang)}</span>
-                  <span className="pricing-session-spots">
-                    {full
-                      ? s.pricingSpotFull
-                      : interpolate(s.pricingSpotsRemain, { count: String(rem) })}
-                  </span>
-                </button>
-              )
-            })}
+            {(slotsByDate[pendingSessionIso] ?? []).map(slot => (
+              <button
+                key={slot.startAt}
+                type="button"
+                className="pricing-time-slot-row"
+                onClick={() => {
+                  const iso = pendingSessionIso
+                  setSelectedSessionIso(iso)
+                  setSelectedTimeSlotId(slot.startAt)
+                  setPendingSessionIso(null)
+                  requestScrollPricingCardAfterAdvance()
+                  setFlow(prev => {
+                    if (prev.kind === 'public' && prev.step === 'date')
+                      return { kind: 'public', step: 'contact', yoga: prev.yoga }
+                    if (prev.kind === 'corporate' && prev.step === 'date')
+                      return { kind: 'corporate', step: 'contact' }
+                    return prev
+                  })
+                }}
+              >
+                <span className="pricing-time-slot-label">{formatSquareSlotTime(slot.startAt, lang)}</span>
+                <span className="pricing-session-spots">{interpolate(s.pricingSpotsRemain, { count: String(slot.seatsRemaining) })}</span>
+              </button>
+            ))}
           </div>
           <button
             type="button"
