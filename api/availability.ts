@@ -5,7 +5,11 @@ import { MAX_SEATS, ALLOWED_CLASS_TIMES, slotMontrealTime } from './_config'
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).end()
 
-  const { serviceVariationId, startDate, endDate, teamMemberId } = req.query as Record<string, string>
+  const q = req.query as Record<string, string>
+  const serviceVariationId = q.serviceVariationId?.replace(/^﻿/, '').trim()
+  const startDate = q.startDate?.trim()
+  const endDate = q.endDate?.trim()
+  const teamMemberId = q.teamMemberId?.replace(/^﻿/, '').trim() || undefined
 
   if (!serviceVariationId || !startDate || !endDate) {
     return res.status(400).json({ error: 'serviceVariationId, startDate, endDate are required' })
@@ -37,7 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ])
 
     const bookingCounts = new Map<string, number>()
-    for (const booking of bookingsResult.bookings ?? []) {
+    for (const booking of bookingsResult.data ?? []) {
       if (booking.startAt && booking.status !== 'CANCELLED') {
         bookingCounts.set(booking.startAt, (bookingCounts.get(booking.startAt) ?? 0) + 1)
       }
