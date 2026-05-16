@@ -85,6 +85,16 @@ const CLASS_IMAGES = [
   '/magnific_change-the-dog-to-a-poodl_2935981941.png',
 ]
 
+/** Breed name displayed alongside each session date on the booking calendar */
+const SESSION_BREEDS: Record<string, { en: string; fr: string }> = {
+  '2026-06-14': { en: 'Fox Red Labrador', fr: 'Labrador rouge renard' },
+  '2026-06-21': { en: 'Silver Labrador', fr: 'Labrador argenté' },
+  '2026-06-28': { en: 'Medium Goldendoodle', fr: 'Goldendoodle moyen' },
+  '2026-07-04': { en: 'Goldendoodle', fr: 'Goldendoodle' },
+  '2026-07-05': { en: 'Goldendoodle', fr: 'Goldendoodle' },
+}
+
+
 /** URL hashes that should scroll the booking card to the vertical center of the viewport */
 const BOOKING_FORM_SCROLL_HASHES = new Set(['book', 'booking', 'pricing', 'corporate'])
 
@@ -356,7 +366,7 @@ function PricingSection() {
 
   // Square availability
   const startDate = useMemo(todayIso, [])
-  const endDate = useMemo(() => plusDaysIso(30), [])
+  const endDate = useMemo(() => plusDaysIso(50), [])
 
   const currentServiceVariationId = useMemo(() => {
     if (flow.kind === 'public') return SQUARE_SERVICE_VARIATIONS[flow.yoga]?.serviceVariationId ?? ''
@@ -387,7 +397,8 @@ function PricingSection() {
     return map
   }, [squareSlots])
 
-  const availableDates = useMemo(() => Object.keys(slotsByDate).sort(), [slotsByDate])
+  const effectiveSlotsByDate = slotsByDate
+  const effectiveDates = useMemo(() => Object.keys(effectiveSlotsByDate).sort(), [effectiveSlotsByDate])
 
   const pricingCardRef = useRef<HTMLDivElement>(null)
   const hasInteractedWithBookingFormRef = useRef(false)
@@ -909,16 +920,17 @@ function PricingSection() {
                 {availabilityLoading && (
                   <p className="pricing-helper-text">Loading available sessions…</p>
                 )}
-                {!availabilityLoading && availableDates.length === 0 && (
+                {!availabilityLoading && effectiveDates.length === 0 && (
                   <p className="pricing-helper-text">No sessions available right now. Please check back soon.</p>
                 )}
                 <div className="pricing-session-list">
-                  {availableDates.map(dateIso => {
+                  {effectiveDates.map(dateIso => {
                     const sel =
                       pendingSessionIso === dateIso ||
                       (selectedSessionIso === dateIso &&
                         ((flow.kind === 'public' && flow.step === 'contact') ||
                           (flow.kind === 'corporate' && flow.step === 'contact')))
+                    const breed = SESSION_BREEDS[dateIso]
                     return (
                       <button
                         key={dateIso}
@@ -926,7 +938,14 @@ function PricingSection() {
                         className={`pricing-session-row${sel ? ' is-selected' : ''}`}
                         onClick={() => setPendingSessionIso(dateIso)}
                       >
-                        <span className="pricing-session-date">{formatShortSessionDate(dateIso, lang)}</span>
+                        <span className="pricing-session-date">
+                          {formatShortSessionDate(dateIso, lang)}
+                          {breed && (
+                            <span className="pricing-session-breed">
+                              {lang === 'fr' ? breed.fr : breed.en}
+                            </span>
+                          )}
+                        </span>
                         <span className="pricing-session-spots">{s.pricingSessionPickTime}</span>
                       </button>
                     )
@@ -1026,6 +1045,15 @@ function PricingSection() {
                           {s.pricingWaiverConsentSuffix}
                         </span>
                       </label>
+                      {waiverAccepted && (
+                        <div className="pricing-waiver-accepted-badge">
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                            <circle cx="8" cy="8" r="8" fill="#16a34a" />
+                            <path d="M4.5 8l2.5 2.5 4.5-5" stroke="#fff" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          {lang === 'fr' ? 'Accepté' : 'Agreed'}
+                        </div>
+                      )}
                     </div>
                     <p className="pricing-waiver-age-note">{s.pricingWaiverAgeNote}</p>
                     <button
@@ -1054,6 +1082,63 @@ function PricingSection() {
                 <h3 className="pricing-step-title">
                   {lang === 'fr' ? 'Paiement sécurisé' : 'Secure Payment'}
                 </h3>
+                <div className="pricing-payment-summary">
+                  <div className="pricing-payment-summary-row">
+                    <span className="pricing-payment-summary-label">
+                      {flow.yoga === 'gentle'
+                        ? (lang === 'fr'
+                            ? `${parseInt(privateGroupCount || '2', 10)} × Événement privé`
+                            : `${parseInt(privateGroupCount || '2', 10)} × Private Event`)
+                        : (lang === 'fr' ? '1 × Cours de yoga avec chiots' : '1 × Puppy Yoga Class')}
+                    </span>
+                    <span className="pricing-payment-summary-amount">
+                      {flow.yoga === 'gentle'
+                        ? (lang === 'fr'
+                            ? `${parseInt(privateGroupCount || '2', 10) * 46} $`
+                            : `$${parseInt(privateGroupCount || '2', 10) * 46}`)
+                        : (lang === 'fr' ? '46 $' : '$46')}
+                    </span>
+                  </div>
+                  {flow.yoga !== 'gentle' && needsMatRental && (
+                    <div className="pricing-payment-summary-row">
+                      <span className="pricing-payment-summary-label">
+                        {lang === 'fr' ? '1 × Location de tapis' : '1 × Mat rental'}
+                      </span>
+                      <span className="pricing-payment-summary-amount">
+                        {lang === 'fr' ? '5 $' : '$5'}
+                      </span>
+                    </div>
+                  )}
+                  <div className="pricing-payment-summary-row pricing-payment-summary-total">
+                    <span className="pricing-payment-summary-label">
+                      {lang === 'fr' ? 'Total (+ taxes applicables)' : 'Total (+ applicable taxes)'}
+                    </span>
+                    <span className="pricing-payment-summary-amount">
+                      {flow.yoga === 'gentle'
+                        ? (lang === 'fr'
+                            ? `${parseInt(privateGroupCount || '2', 10) * 46} $ + taxes`
+                            : `$${parseInt(privateGroupCount || '2', 10) * 46} + taxes`)
+                        : (lang === 'fr'
+                            ? `${46 + (needsMatRental ? 5 : 0)} $ + taxes`
+                            : `$${46 + (needsMatRental ? 5 : 0)} + taxes`)}
+                    </span>
+                  </div>
+                  {selectedSessionIso && (
+                    <p className="pricing-payment-summary-meta">
+                      {formatLongSessionDate(selectedSessionIso, lang)}
+                      {selectedTimeSlotId && ` · ${formatSquareSlotTime(selectedTimeSlotId, lang)}`}
+                    </p>
+                  )}
+                </div>
+                <div className="pricing-payment-security">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.5C16.5 22.15 20 17.25 20 12V6l-8-4z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
+                    <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  {lang === 'fr'
+                    ? 'Paiement sécurisé par Square. Nous ne conservons jamais vos informations de carte.'
+                    : 'Payment secured by Square. We never store your card information.'}
+                </div>
                 {bookingError && (
                   <p style={{ color: 'var(--rose, #e11d48)', marginBottom: '1rem', fontSize: '0.9rem' }}>
                     {bookingError}
@@ -1157,11 +1242,45 @@ function PricingSection() {
                 <h3 className="pricing-step-title">
                   {lang === 'fr' ? 'Paiement sécurisé' : 'Secure Payment'}
                 </h3>
-                <p className="pricing-helper-text" style={{ marginBottom: '1rem' }}>
+                <div className="pricing-payment-summary">
+                  <div className="pricing-payment-summary-row">
+                    <span className="pricing-payment-summary-label">
+                      {lang === 'fr'
+                        ? `${parseInt(privateGroupCount || '2', 10)} × Expérience corporative`
+                        : `${parseInt(privateGroupCount || '2', 10)} × Corporate Experience`}
+                    </span>
+                    <span className="pricing-payment-summary-amount">
+                      {lang === 'fr'
+                        ? `${parseInt(privateGroupCount || '2', 10) * 46} $`
+                        : `$${parseInt(privateGroupCount || '2', 10) * 46}`}
+                    </span>
+                  </div>
+                  <div className="pricing-payment-summary-row pricing-payment-summary-total">
+                    <span className="pricing-payment-summary-label">
+                      {lang === 'fr' ? 'Total (+ taxes applicables)' : 'Total (+ applicable taxes)'}
+                    </span>
+                    <span className="pricing-payment-summary-amount">
+                      {lang === 'fr'
+                        ? `${parseInt(privateGroupCount || '2', 10) * 46} $ + taxes`
+                        : `$${parseInt(privateGroupCount || '2', 10) * 46} + taxes`}
+                    </span>
+                  </div>
+                  {selectedSessionIso && (
+                    <p className="pricing-payment-summary-meta">
+                      {formatLongSessionDate(selectedSessionIso, lang)}
+                      {selectedTimeSlotId && ` · ${formatSquareSlotTime(selectedTimeSlotId, lang)}`}
+                    </p>
+                  )}
+                </div>
+                <div className="pricing-payment-security">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.5C16.5 22.15 20 17.25 20 12V6l-8-4z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
+                    <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                   {lang === 'fr'
-                    ? `Total : ${parseInt(privateGroupCount || '2', 10)} × 46 $ = ${parseInt(privateGroupCount || '2', 10) * 46} $ + taxes`
-                    : `Total: ${parseInt(privateGroupCount || '2', 10)} × $46 = $${parseInt(privateGroupCount || '2', 10) * 46} + taxes`}
-                </p>
+                    ? 'Paiement sécurisé par Square. Nous ne conservons jamais vos informations de carte.'
+                    : 'Payment secured by Square. We never store your card information.'}
+                </div>
                 {bookingError && (
                   <p style={{ color: 'var(--rose, #e11d48)', marginBottom: '1rem', fontSize: '0.9rem' }}>
                     {bookingError}
@@ -1235,7 +1354,7 @@ function PricingSection() {
           </h3>
           <p className="pricing-time-modal-date">{formatLongSessionDate(pendingSessionIso, lang)}</p>
           <div className="pricing-time-slot-list">
-            {(slotsByDate[pendingSessionIso] ?? []).map(slot => (
+            {(effectiveSlotsByDate[pendingSessionIso] ?? []).map(slot => (
               <button
                 key={slot.startAt}
                 type="button"

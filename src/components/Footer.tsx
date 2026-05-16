@@ -54,7 +54,7 @@ export function Footer() {
           </p>
           <p style={{ marginTop: 8 }}>
             <a
-              href="https://www.studioyopaw.ca"
+              href="https://www.yopaw.ca"
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: 'var(--sage)' }}
