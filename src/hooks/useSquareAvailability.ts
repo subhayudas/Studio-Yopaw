@@ -31,7 +31,7 @@ export function useSquareAvailability(
       })
       .catch(() => setSlots([]))
       .finally(() => setLoading(false))
-  }, [serviceVariationId, startDate, endDate])
+  }, [serviceVariationId, startDate, endDate, teamMemberId])
 
   return { slots, loading }
 }
