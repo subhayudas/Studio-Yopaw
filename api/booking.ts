@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { randomUUID } from 'crypto'
 import { Resend } from 'resend'
-import { square, getLocationId, stripBom } from './_square'
-import { MAX_SEATS } from './_config'
+import { square, getLocationId, stripBom } from './_square.js'
+import { MAX_SEATS } from './_config.js'
 
 const resend = new Resend(stripBom(process.env.RESEND_API_KEY ?? ''))
 
@@ -58,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       startAtMin: startAt,
       startAtMax: slotEnd,
     })
-    const taken = (slotBookings.bookings ?? []).filter(
+    const taken = (slotBookings.data ?? []).filter(
       b => b.startAt === startAt && b.status !== 'CANCELLED'
     ).length
     if (taken >= MAX_SEATS) {

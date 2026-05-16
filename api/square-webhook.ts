@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import crypto from 'crypto'
 import { Resend } from 'resend'
-import { stripBom } from './_square'
+import { stripBom } from './_square.js'
 
 const resend = new Resend(stripBom(process.env.RESEND_API_KEY ?? ''))
 
