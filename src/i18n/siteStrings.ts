@@ -234,14 +234,14 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     heroClasses: 'Our Classes',
     heroScroll: 'Scroll',
     marqueeItems: buildMarquee([...enMarqueeBodies]),
-    aboutBadge: 'Our Story',
-    aboutHeadingL1: 'Yoga. Puppies.',
+    aboutBadge: 'Our Values',
+    aboutHeadingL1: 'Health. Safety.',
     aboutHeadingEmPrefix: '',
-    aboutHeadingItalic: 'Happiness guaranteed',
+    aboutHeadingItalic: 'Well-being first',
     aboutP1:
-      'Studio Yopaw grew out of a love for dogs and the grounding calm that yoga brings. Founded in 2026 by Joëlle Castonguay in Saint-Lazare, our studio offers dog-assisted wellness that welcomes everyone.',
+      'At Yopaw Studio, the health, safety, and well-being of our puppies are our top priority. We are committed to providing a safe, clean, and respectful environment, in collaboration with responsible breeders who care deeply for each puppy\'s needs.',
     aboutP2:
-      'Our yoga teachers lead every session with care and skill—whether it is your first class or you have been practicing for years, our four-legged co-teachers make everything feel that much more magical.',
+      'All puppies are vaccinated and are given adequate time to rest, eat, and hydrate between each session to ensure their comfort and well-being at all times.',
     aboutLink: 'Explore our classes →',
     aboutImgAlt: 'Studio Yopaw puppy yoga session',
     classesBadge: 'WHAT WE OFFER',
@@ -337,12 +337,12 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingLblPhone: 'Phone number',
     pricingTermsCheckboxLabel:
       'By checking this box, I confirm that I have read and agree to the Terms & Conditions.',
-    pricingWaiverConsentPrefix: 'By checking this box, I consent to this ',
-    pricingWaiverConsentLinkText: 'waiver and release',
+    pricingWaiverConsentPrefix: 'By checking this box, I agree to this ',
+    pricingWaiverConsentLinkText: 'waiver and refund policy',
     pricingWaiverConsentSuffix:
-      ', to the use of my likeness, and acknowledge and accept the risks associated with the activity.',
+      ', consent to the use of my image, and acknowledge and accept the risks associated with the activity.',
     pricingWaiverAgeNote:
-      'The minimum age is 12. Children aged 8 and older may participate when accompanied by an adult.',
+      'The minimum required age is 12 years old. Children aged 8 and older may participate provided they are accompanied by an adult.',
     pricingPrivateEventSubmitNote:
       'Private events are fully customized. Please complete this form — we will contact you within 24 hours to confirm the details and plan your event together.',
     waiverModalCloseAria: 'Close waiver',
@@ -415,6 +415,10 @@ export const siteStrings: Record<Lang, SiteStrings> = {
         a: 'Not at all—our team takes care of the puppies. You roll out your mat, and the pups come to you.',
       },
       {
+        q: 'What is the minimum age to participate?',
+        a: 'The minimum required age is 12 years old. Children aged 8 and older may participate provided they are accompanied by an adult.',
+      },
+      {
         q: 'Do I need yoga experience?',
         a: 'No yoga background needed. Gentle flow is slow, accessible, and perfect for beginners.',
       },
@@ -439,8 +443,8 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     footerFindUs: 'Find Us',
     footerAddressL1: '1515A Des Marguerites St.',
     footerAddressL2: 'Saint-Lazare, QC J7T 2R8',
-    footerSite: 'www.studioyopaw.ca',
-    footerRefundPolicy: 'Refund policy',
+    footerSite: 'www.yopaw.ca',
+    footerRefundPolicy: 'Waiver & Refund Policy',
     footerBottom: '© 2026 Studio Yopaw · Saint-Lazare, QC · Made with 🐾',
     commonBackAria: 'Back',
     navLinks: {
@@ -488,14 +492,14 @@ export const siteStrings: Record<Lang, SiteStrings> = {
       'Réservation en ligne en quelques minutes',
       'Politique d’annulation : 72 heures',
     ]),
-    aboutBadge: 'Notre histoire',
-    aboutHeadingL1: 'Yoga. Chiots.',
+    aboutBadge: 'Nos valeurs',
+    aboutHeadingL1: 'Santé. Sécurité.',
     aboutHeadingEmPrefix: '',
-    aboutHeadingItalic: 'Bonheur garanti',
+    aboutHeadingItalic: "Bien-être d'abord",
     aboutP1:
-      "Studio Yopaw est né de l'union de l'amour pour les chiens et le bien-être que procure le yoga. Fondé en 2026 par Joëlle Castonguay à Saint-Lazare, notre studio propose une thérapie assistée par les chiens accessible à tous et à toutes.",
+      "Chez Studio Yopaw, la santé, la sécurité et le bien-être des chiots sont notre priorité. Nous veillons à offrir un environnement sécuritaire, propre et respectueux, en collaboration avec des éleveurs responsables et attentifs aux besoins de chaque chiot.",
     aboutP2:
-      'Nos professeurs·es de yoga encadrent chaque séance avec soin et expertise. Que ce soit votre tout premier cours ou une pratique déjà bien ancrée, nos co-professeurs·es à quatre pattes rendent tout beaucoup plus magique.',
+      "Tous les chiots sont vaccinés et disposent de temps suffisant pour se reposer, manger et s'hydrater entre chaque séance afin d'assurer leur confort et leur bien-être en tout temps.",
     aboutLink: 'Découvrir nos cours →',
     aboutImgAlt: 'Séance de yoga avec chiots Studio Yopaw',
     classesBadge: "CE QUE L'ON VOUS PROPOSE",
@@ -593,12 +597,12 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingLblPhone: 'Téléphone',
     pricingTermsCheckboxLabel:
       'En cochant cette case, je confirme avoir lu et accepté les conditions générales.',
-    pricingWaiverConsentPrefix: 'En cochant cette case, je consens à la ',
-    pricingWaiverConsentLinkText: 'présente décharge',
+    pricingWaiverConsentPrefix: "En cochant cette case, j'accepte la ",
+    pricingWaiverConsentLinkText: 'décharge et la politique de remboursement',
     pricingWaiverConsentSuffix:
-      ", à l'utilisation de mon image et reconnais accepter les risques liés à l'activité.",
+      ", consens à l'utilisation de mon image et reconnais accepter les risques liés à l'activité.",
     pricingWaiverAgeNote:
-      "L'âge minimum requis est de 12 ans. Les enfants de 8 ans et plus peuvent participer accompagnés d'un adulte.",
+      "L'âge minimum requis est de 12 ans. Les enfants de 8 ans et plus peuvent participer à condition d'être accompagnés d'un adulte.",
     pricingPrivateEventSubmitNote:
       'Les événements privés sont entièrement personnalisés. Merci de remplir ce formulaire : nous vous contacterons dans les prochaines 24 heures pour confirmer les détails et planifier votre événement ensemble.',
     waiverModalCloseAria: 'Fermer la décharge',
@@ -702,8 +706,8 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     footerFindUs: 'Nous joindre',
     footerAddressL1: '1515A, rue des Marguerites',
     footerAddressL2: 'Saint-Lazare, QC J7T 2R8',
-    footerSite: 'www.studioyopaw.ca',
-    footerRefundPolicy: 'Politique de remboursement',
+    footerSite: 'www.yopaw.ca',
+    footerRefundPolicy: 'Décharge et remboursement',
     footerBottom:
       '© 2026 Studio Yopaw · Saint-Lazare, QC · Fabriqué avec 🐾',
     commonBackAria: 'Retour',
