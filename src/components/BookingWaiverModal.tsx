@@ -134,7 +134,7 @@ function WaiverContentEn() {
       <section className="waiver-modal-section">
         <h3 className="waiver-modal-section-title">1. Acknowledgment of Risks</h3>
         <p>
-          I acknowledge that my participation in activities organized by Yopaw Studio, including but not limited to puppy yoga, interactions with animals, and any related activities, involves certain inherent, foreseeable, or unforeseeable risks.
+          I acknowledge that my participation in activities organized by Studio Topaw, including but not limited to puppy yoga, interactions with animals, and any related activities, involves certain inherent, foreseeable, or unforeseeable risks.
         </p>
         <p>These risks include, but are not limited to:</p>
         <ul className="waiver-modal-list">
@@ -146,7 +146,7 @@ function WaiverContentEn() {
           <li>possible transmission of illnesses or bacteria despite sanitary measures in place</li>
         </ul>
         <p>
-          I understand that, despite all reasonable precautions taken by Yopaw Studio, it is impossible to completely eliminate all risks.
+          I understand that, despite all reasonable precautions taken by Studio Topaw, it is impossible to completely eliminate all risks.
         </p>
       </section>
 
@@ -161,20 +161,20 @@ function WaiverContentEn() {
         <h3 className="waiver-modal-section-title">3. Compliance with Rules and Instructions</h3>
         <p>I agree to comply at all times with:</p>
         <ul className="waiver-modal-list">
-          <li>the instructions provided by Yopaw Studio</li>
+          <li>the instructions provided by Studio Topaw</li>
           <li>all safety rules</li>
           <li>all animal welfare guidelines</li>
           <li>all interaction limits imposed regarding the puppies</li>
         </ul>
         <p>
-          I understand that Yopaw Studio may immediately terminate my participation without refund if my behavior is deemed dangerous, disrespectful, or inappropriate.
+          I understand that Studio Topaw may immediately terminate my participation without refund if my behavior is deemed dangerous, disrespectful, or inappropriate.
         </p>
       </section>
 
       <section className="waiver-modal-section">
         <h3 className="waiver-modal-section-title">4. Release of Liability</h3>
         <p>
-          In consideration of my participation in activities organized by Yopaw Studio, I voluntarily waive and release any claim, lawsuit, action, or demand against Yopaw Studio, its owners, directors, employees, instructors, volunteers, partners, breeders, and representatives for any damage, injury, loss, accident, or harm that may occur during or as a result of my participation.
+          In consideration of my participation in activities organized by Studio Topaw, I voluntarily waive and release any claim, lawsuit, action, or demand against Studio Topaw, its owners, directors, employees, instructors, volunteers, partners, breeders, and representatives for any damage, injury, loss, accident, or harm that may occur during or as a result of my participation.
         </p>
         <p>This release applies, in particular, to:</p>
         <ul className="waiver-modal-list">
@@ -186,7 +186,7 @@ function WaiverContentEn() {
           <li>accidents occurring at the activity location</li>
         </ul>
         <p>
-          However, this waiver does not apply in cases of gross negligence or willful misconduct by Yopaw Studio.
+          However, this waiver does not apply in cases of gross negligence or willful misconduct by Studio Topaw.
         </p>
       </section>
 
@@ -204,7 +204,7 @@ function WaiverContentEn() {
       <section className="waiver-modal-section">
         <h3 className="waiver-modal-section-title">6. Emergency Medical Authorization</h3>
         <p>
-          In the event of an emergency, I authorize Yopaw Studio to contact emergency medical services and to take any reasonable measures necessary to ensure my safety.
+          In the event of an emergency, I authorize Studio Topaw to contact emergency medical services and to take any reasonable measures necessary to ensure my safety.
         </p>
         <p>Any medical or transportation costs remain my responsibility.</p>
       </section>
@@ -212,7 +212,7 @@ function WaiverContentEn() {
       <section className="waiver-modal-section">
         <h3 className="waiver-modal-section-title">7. Use of Image and Likeness</h3>
         <p>
-          I authorize Yopaw Studio to use any photographs or videos taken during the activity for promotional, advertising, or social media purposes, without financial compensation.
+          I authorize Studio Topaw to use any photographs or videos taken during the activity for promotional, advertising, or social media purposes, without financial compensation.
         </p>
       </section>
 
