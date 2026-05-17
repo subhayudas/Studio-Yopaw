@@ -61,9 +61,9 @@ const COPY: Record<'en' | 'fr', PolicyCopy> = {
     s6h: 'Acceptation',
     s6p:
       'En procédant au paiement ou à la réservation, vous reconnaissez avoir lu, compris et accepté la présente politique.',
-    s7h: 'Demande de remboursement',
+    s7h: 'Une question ?',
     s7p:
-      "Pour les cours réguliers annulés 72h à l'avance, aucune action n'est requise de votre part — tout est traité automatiquement. Pour toute autre situation, contactez-nous :",
+      "Pour toute situation exceptionnelle non couverte ci-dessus, n'hésitez pas à nous contacter — nous serons heureux de vous aider :",
     s7btn: 'Envoyer un courriel',
     docTitle: 'Politique de remboursement | Studio Yopaw',
   },
@@ -93,9 +93,9 @@ const COPY: Record<'en' | 'fr', PolicyCopy> = {
     s6h: 'Acceptance',
     s6p:
       'By completing payment or booking a session, you acknowledge that you have read, understood, and accepted this refund policy.',
-    s7h: 'Refund Requests',
+    s7h: 'Need help?',
     s7p:
-      'For regular classes cancelled 72h in advance, no action is required — everything is handled automatically. For any other situation, reach out:',
+      'For any exceptional situation not covered above, feel free to reach out — we\'re happy to assist:',
     s7btn: 'Send us an email',
     docTitle: 'Refund Policy | Studio Yopaw',
   },

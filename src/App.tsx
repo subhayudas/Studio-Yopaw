@@ -87,7 +87,7 @@ const CLASS_IMAGES = [
 
 /** Breed name displayed alongside each session date on the booking calendar */
 const SESSION_BREEDS: Record<string, { en: string; fr: string }> = {
-  '2026-06-14': { en: 'Fox Red Labrador', fr: 'Labrador rouge renard' },
+  '2026-06-14': { en: 'Fox Red Labrador', fr: 'Labrador roux' },
   '2026-06-21': { en: 'Silver Labrador', fr: 'Labrador argenté' },
   '2026-06-28': { en: 'Medium Goldendoodle', fr: 'Goldendoodle moyen' },
   '2026-07-04': { en: 'Goldendoodle', fr: 'Goldendoodle' },
@@ -134,6 +134,7 @@ function formatSquareSlotTime(startAt: string | null, lang: Lang): string {
   return d.toLocaleTimeString(lang === 'fr' ? 'fr-CA' : 'en-CA', {
     hour: 'numeric',
     minute: '2-digit',
+    timeZone: 'America/Toronto',
   })
 }
 

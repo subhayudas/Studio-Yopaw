@@ -244,7 +244,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     aboutP2:
       'Our yoga teachers lead every session with care and skill—whether it is your first class or you have been practicing for years, our four-legged co-teachers make everything feel that much more magical.',
     aboutP3:
-      'At Yopaw Studio, the health, safety, and well-being of our puppies are our top priority. We are committed to providing a safe, clean, and respectful environment, in collaboration with responsible breeders who care deeply for each puppy\'s needs. All puppies are vaccinated and are given adequate time to rest, eat, and hydrate between each session to ensure their comfort and well-being at all times.',
+      'At Studio Yopaw, the health, safety, and well-being of our puppies are our top priority. We are committed to providing a safe, clean, and respectful environment, in collaboration with responsible breeders who care deeply for each puppy\'s needs. All puppies are vaccinated and are given adequate time to rest, eat, and hydrate between each session to ensure their comfort and well-being at all times.',
     aboutLink: 'Explore our classes →',
     aboutImgAlt: 'Studio Yopaw puppy yoga session',
     classesBadge: 'WHAT WE OFFER',
