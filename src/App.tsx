@@ -60,7 +60,7 @@ function useInView(threshold = 0.2) {
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) setInView(true) },
-      { threshold }
+      { threshold, rootMargin: '0px 0px 150px 0px' }
     )
     if (ref.current) observer.observe(ref.current)
     return () => observer.disconnect()
@@ -211,6 +211,7 @@ function AboutSection() {
           </h2>
           <p>{s.aboutP1}</p>
           <p>{s.aboutP2}</p>
+          <p>{s.aboutP3}</p>
           <a href="#classes" className="link-arrow">{s.aboutLink}</a>
         </div>
         <div className="about-image">

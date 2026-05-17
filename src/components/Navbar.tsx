@@ -54,28 +54,31 @@ export function Navbar({
       </nav>
 
       {menuOpen && (
-        <div className="mobile-menu">
-          <a href="/#experience" onClick={() => setMenuOpen(false)}>{s.navLinks.howItWorks}</a>
-          <a href="/#classes" onClick={() => setMenuOpen(false)}>{s.navLinks.classes}</a>
-          <a href="/#pricing" onClick={() => setMenuOpen(false)}>{s.navLinks.pricing}</a>
-          <a href="/#about" onClick={() => setMenuOpen(false)}>{s.navLinks.values}</a>
-          <a href="/#faq" onClick={() => setMenuOpen(false)}>{s.navLinks.faq}</a>
-          <a href="/#testimonials" onClick={() => setMenuOpen(false)}>{s.navLinks.reviews}</a>
-          <div className="mobile-menu-actions">
-            <button
-              type="button"
-              className="lang-switch"
-              onClick={() => { toggleLang(); setMenuOpen(false); }}
-              aria-label={toggleAria}
-              title={s.navLangOtherHint}
-            >
-              {toggleLabel}
-            </button>
-            <a href="/#book" className="btn-primary mobile-menu-book" onClick={() => setMenuOpen(false)}>
-              {s.navMobileBook}
-            </a>
+        <>
+          <div className="mobile-menu-backdrop" onClick={() => setMenuOpen(false)} aria-hidden="true" />
+          <div className="mobile-menu">
+            <a href="/#experience" onClick={() => setMenuOpen(false)}>{s.navLinks.howItWorks}</a>
+            <a href="/#classes" onClick={() => setMenuOpen(false)}>{s.navLinks.classes}</a>
+            <a href="/#pricing" onClick={() => setMenuOpen(false)}>{s.navLinks.pricing}</a>
+            <a href="/#about" onClick={() => setMenuOpen(false)}>{s.navLinks.values}</a>
+            <a href="/#faq" onClick={() => setMenuOpen(false)}>{s.navLinks.faq}</a>
+            <a href="/#testimonials" onClick={() => setMenuOpen(false)}>{s.navLinks.reviews}</a>
+            <div className="mobile-menu-actions">
+              <button
+                type="button"
+                className="lang-switch"
+                onClick={() => { toggleLang(); setMenuOpen(false); }}
+                aria-label={toggleAria}
+                title={s.navLangOtherHint}
+              >
+                {toggleLabel}
+              </button>
+              <a href="/#book" className="btn-primary mobile-menu-book" onClick={() => setMenuOpen(false)}>
+                {s.navMobileBook}
+              </a>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </>
   )
