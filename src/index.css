@@ -1646,8 +1646,8 @@ a.pricing-success-restart {
 }
 .faq-item.open {
   background: rgba(255,255,255,0.82);
-  border-color: rgba(107,143,113,0.25);
-  box-shadow: 0 8px 32px rgba(107,143,113,0.12);
+  border-color: rgba(244,114,182,0.25);
+  box-shadow: 0 8px 32px rgba(244,114,182,0.12);
 }
 .faq-question {
   display: flex; justify-content: space-between; align-items: center;
@@ -1661,18 +1661,18 @@ a.pricing-success-restart {
 }
 .faq-answer {
   margin-top: 16px; padding-top: 16px;
-  border-top: 1px solid rgba(107,143,113,0.15);
+  border-top: 1px solid rgba(244,114,182,0.15);
   color: var(--text-muted); line-height: 1.7; font-size: 0.95rem;
   animation: fade-rise 0.25s ease both;
   white-space: pre-line;
 }
 .faq-refund-policy-placeholder-link {
-  color: rgb(107, 143, 113);
+  color: var(--sage-dark);
   text-decoration: underline;
   font-weight: 500;
 }
 .faq-refund-policy-placeholder-link:hover {
-  color: rgb(84, 118, 88);
+  color: var(--sage);
 }
 
 /* ── Footer ──────────────────────────────────────────────── */
@@ -1706,7 +1706,7 @@ a.pricing-success-restart {
   display: flex; align-items: center; justify-content: center;
   color: rgba(255,255,255,0.55); transition: border-color 0.2s, color 0.2s, background 0.2s;
 }
-.footer-social a:hover { border-color: var(--sage); color: var(--sage); background: rgba(107,143,113,0.1); }
+.footer-social a:hover { border-color: var(--sage); color: var(--sage); background: rgba(244,114,182,0.1); }
 
 .footer-links h4, .footer-contact h4 {
   font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em;
