@@ -2,7 +2,7 @@ export const MAX_SEATS = 20
 
 // Only show these class start times (Montreal / ET timezone).
 // Handles DST automatically via Intl — no hardcoded UTC offsets.
-export const ALLOWED_CLASS_TIMES = new Set(['10:00', '10:30', '12:00', '13:30', '15:00', '17:30'])
+export const ALLOWED_CLASS_TIMES = new Set(['10:30', '12:00', '13:30', '15:00'])
 
 // Scheduled puppy yoga session dates (YYYY-MM-DD, Montreal local).
 // Update this list whenever new sessions are added in the Square Dashboard.
