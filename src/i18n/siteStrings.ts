@@ -72,6 +72,7 @@ export interface SiteStrings {
   aboutHeadingItalic: string
   aboutP1: string
   aboutP2: string
+  aboutP3: string
   aboutLink: string
   aboutImgAlt: string
   classesBadge: string
@@ -235,13 +236,15 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     heroScroll: 'Scroll',
     marqueeItems: buildMarquee([...enMarqueeBodies]),
     aboutBadge: 'Our Values',
-    aboutHeadingL1: 'Health. Safety.',
+    aboutHeadingL1: 'Yoga. Puppies.',
     aboutHeadingEmPrefix: '',
-    aboutHeadingItalic: 'Well-being first',
+    aboutHeadingItalic: 'Happiness guaranteed',
     aboutP1:
-      'At Yopaw Studio, the health, safety, and well-being of our puppies are our top priority. We are committed to providing a safe, clean, and respectful environment, in collaboration with responsible breeders who care deeply for each puppy\'s needs.',
+      'Studio Yopaw grew out of a love for dogs and the grounding calm that yoga brings. Founded in 2026 by Joëlle Castonguay in Saint-Lazare, our studio offers dog-assisted wellness that welcomes everyone.',
     aboutP2:
-      'All puppies are vaccinated and are given adequate time to rest, eat, and hydrate between each session to ensure their comfort and well-being at all times.',
+      'Our yoga teachers lead every session with care and skill—whether it is your first class or you have been practicing for years, our four-legged co-teachers make everything feel that much more magical.',
+    aboutP3:
+      'At Yopaw Studio, the health, safety, and well-being of our puppies are our top priority. We are committed to providing a safe, clean, and respectful environment, in collaboration with responsible breeders who care deeply for each puppy\'s needs. All puppies are vaccinated and are given adequate time to rest, eat, and hydrate between each session to ensure their comfort and well-being at all times.',
     aboutLink: 'Explore our classes →',
     aboutImgAlt: 'Studio Yopaw puppy yoga session',
     classesBadge: 'WHAT WE OFFER',
@@ -493,13 +496,15 @@ export const siteStrings: Record<Lang, SiteStrings> = {
       'Politique d’annulation : 72 heures',
     ]),
     aboutBadge: 'Nos valeurs',
-    aboutHeadingL1: 'Santé. Sécurité.',
+    aboutHeadingL1: 'Yoga. Chiots.',
     aboutHeadingEmPrefix: '',
-    aboutHeadingItalic: "Bien-être d'abord",
+    aboutHeadingItalic: 'Bonheur garanti',
     aboutP1:
-      "Chez Studio Yopaw, la santé, la sécurité et le bien-être des chiots sont notre priorité. Nous veillons à offrir un environnement sécuritaire, propre et respectueux, en collaboration avec des éleveurs responsables et attentifs aux besoins de chaque chiot.",
+      "Studio Yopaw est né de l'union de l'amour pour les chiens et le bien-être que procure le yoga. Fondé en 2026 par Joëlle Castonguay à Saint-Lazare, notre studio propose une thérapie assistée par les chiens accessible à tous et à toutes.",
     aboutP2:
-      "Tous les chiots sont vaccinés et disposent de temps suffisant pour se reposer, manger et s'hydrater entre chaque séance afin d'assurer leur confort et leur bien-être en tout temps.",
+      "Nos professeurs·es de yoga encadrent chaque séance avec soin et expertise. Que ce soit votre tout premier cours ou une pratique déjà bien ancrée, nos co-professeurs·es à quatre pattes rendent tout beaucoup plus magique.",
+    aboutP3:
+      "Chez Studio Yopaw, la santé, la sécurité et le bien-être des chiots sont notre priorité. Nous veillons à offrir un environnement sécuritaire, propre et respectueux, en collaboration avec des éleveurs responsables et attentifs aux besoins de chaque chiot. Tous les chiots sont vaccinés et disposent de temps suffisant pour se reposer, manger et s'hydrater entre chaque séance afin d'assurer leur confort et leur bien-être en tout temps.",
     aboutLink: 'Découvrir nos cours →',
     aboutImgAlt: 'Séance de yoga avec chiots Studio Yopaw',
     classesBadge: "CE QUE L'ON VOUS PROPOSE",
