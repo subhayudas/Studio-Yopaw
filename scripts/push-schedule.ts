@@ -40,6 +40,7 @@ interface ClassSchedule {
   dates: string[]
   times: string[]
   maxSeats: number
+  breeds?: Record<string, { en: string; fr: string }>
 }
 
 async function main() {
