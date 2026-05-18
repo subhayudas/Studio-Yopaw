@@ -9,6 +9,7 @@ import { BookingWaiverModal } from './components/BookingWaiverModal'
 import { RefundPolicyPage } from './pages/RefundPolicyPage'
 import { WaiverPage } from './pages/WaiverPage'
 import { useSquareAvailability, type SquareSlot } from './hooks/useSquareAvailability'
+import { useBreedSchedule } from './hooks/useBreedSchedule'
 import { SQUARE_SERVICE_VARIATIONS } from './lib/squareServices'
 
 const SQUARE_APP_ID = (import.meta.env.VITE_SQUARE_APP_ID as string | undefined) ?? ''
@@ -85,15 +86,6 @@ const CLASS_IMAGES = [
   '/IMG_2299_2.webp',
   '/magnific_change-the-dog-to-a-poodl_2935981941.png',
 ]
-
-/** Breed name displayed alongside each session date on the booking calendar */
-const SESSION_BREEDS: Record<string, { en: string; fr: string }> = {
-  '2026-06-14': { en: 'Fox Red Labrador', fr: 'Labrador roux' },
-  '2026-06-21': { en: 'Silver Labrador', fr: 'Labrador argenté' },
-  '2026-06-28': { en: 'Medium Goldendoodle', fr: 'Goldendoodle moyen' },
-  '2026-07-04': { en: 'Goldendoodle', fr: 'Goldendoodle' },
-  '2026-07-05': { en: 'Goldendoodle', fr: 'Goldendoodle' },
-}
 
 
 /** URL hashes that should scroll the booking card to the vertical center of the viewport */
@@ -400,8 +392,18 @@ function PricingSection() {
     return map
   }, [squareSlots])
 
+  const { schedule: breedSchedule } = useBreedSchedule(startDate, endDate)
+
   const effectiveSlotsByDate = slotsByDate
-  const effectiveDates = useMemo(() => Object.keys(effectiveSlotsByDate).sort(), [effectiveSlotsByDate])
+  const effectiveDates = useMemo(() => {
+    return Object.keys(effectiveSlotsByDate)
+      .filter(date => {
+        const entries = breedSchedule[date]
+        if (!entries || entries.length === 0) return false
+        return entries.some(e => e.serviceIds.includes(currentServiceVariationId))
+      })
+      .sort()
+  }, [effectiveSlotsByDate, breedSchedule, currentServiceVariationId])
 
   const pricingCardRef = useRef<HTMLDivElement>(null)
   const hasInteractedWithBookingFormRef = useRef(false)
@@ -933,7 +935,11 @@ function PricingSection() {
                       (selectedSessionIso === dateIso &&
                         ((flow.kind === 'public' && flow.step === 'contact') ||
                           (flow.kind === 'corporate' && flow.step === 'contact')))
-                    const breed = SESSION_BREEDS[dateIso]
+                    const breedEntries = breedSchedule[dateIso] ?? []
+                    const breedForService = breedEntries
+                      .filter(e => e.serviceIds.includes(currentServiceVariationId))
+                      .map(e => lang === 'fr' ? e.breed.fr : e.breed.en)
+                      .join(', ')
                     return (
                       <button
                         key={dateIso}
@@ -943,10 +949,8 @@ function PricingSection() {
                       >
                         <span className="pricing-session-date">
                           {formatShortSessionDate(dateIso, lang)}
-                          {breed && (
-                            <span className="pricing-session-breed">
-                              {lang === 'fr' ? breed.fr : breed.en}
-                            </span>
+                          {breedForService && (
+                            <span className="pricing-session-breed">({breedForService})</span>
                           )}
                         </span>
                         <span className="pricing-session-spots">{s.pricingSessionPickTime}</span>
