@@ -6,6 +6,33 @@
     "2026-07-04",
     "2026-07-05"
   ],
-  "times": ["10:30", "12:00", "13:30", "15:00"],
-  "maxSeats": 20
+  "times": [
+    "10:30",
+    "12:00",
+    "13:30",
+    "15:00"
+  ],
+  "maxSeats": 20,
+  "breeds": {
+    "2026-06-14": {
+      "en": "Red Labrador",
+      "fr": "Labrador roux"
+    },
+    "2026-06-21": {
+      "en": "Silver Labrador",
+      "fr": "Labrador argenté"
+    },
+    "2026-06-28": {
+      "en": "Medium Goldendoodle",
+      "fr": "Goldendoodle moyen"
+    },
+    "2026-07-04": {
+      "en": "Goldendoodle",
+      "fr": "Goldendoodle"
+    },
+    "2026-07-05": {
+      "en": "Goldendoodle",
+      "fr": "Goldendoodle"
+    }
+  }
 }

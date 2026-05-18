@@ -480,7 +480,7 @@ function PricingSection() {
       .filter(date => {
         const entries = breedSchedule[date]
         if (!entries || entries.length === 0) return false
-        return entries.some(e => e.serviceIds.includes(currentServiceVariationId))
+        return entries.some(e => e.serviceIds.length === 0 || e.serviceIds.includes(currentServiceVariationId))
       })
       .sort()
   }, [effectiveSlotsByDate, breedSchedule, currentServiceVariationId])
@@ -985,7 +985,7 @@ function PricingSection() {
                           (flow.kind === 'corporate' && flow.step === 'contact')))
                     const breedEntries = breedSchedule[dateIso] ?? []
                     const breedForService = breedEntries
-                      .filter(e => e.serviceIds.includes(currentServiceVariationId))
+                      .filter(e => e.serviceIds.length === 0 || e.serviceIds.includes(currentServiceVariationId))
                       .map(e => lang === 'fr' ? e.breed.fr : e.breed.en)
                       .join(', ')
                     return (
