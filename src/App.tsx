@@ -30,13 +30,6 @@ function PawIcon({ size = 32, className = '' }: { size?: number; className?: str
   )
 }
 
-function StarIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-    </svg>
-  )
-}
 
 /** Clock motif for confirmation states that await follow-up */
 function PricingSuccessPendingClockIcon() {
@@ -1470,113 +1463,6 @@ function GallerySection() {
   )
 }
 
-function TestimonialCarouselArrow({
-  dir,
-}: {
-  dir: 'prev' | 'next'
-}) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d={dir === 'prev' ? 'M15 6l-6 6 6 6' : 'M9 6l6 6-6 6'}
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-function TestimonialsSection() {
-  const { s } = useI18n()
-  const [active, setActive] = useState(0)
-  const cards = s.testimonialCards
-  const len = cards.length
-
-  useEffect(() => {
-    const id = setInterval(() => setActive(a => (a + 1) % len), 4500)
-    return () => clearInterval(id)
-  }, [len])
-
-  const goPrev = () => setActive(a => (a - 1 + len) % len)
-  const goNext = () => setActive(a => (a + 1) % len)
-
-  return (
-    <section className="testimonials-section" id="testimonials">
-      <div
-        className="testimonials-bg"
-        style={{ backgroundImage: "url('/magnific_change-the-dog-to-a-poodl_2935981941.png')" }}
-        aria-hidden
-      />
-      <div className="testimonials-overlay" aria-hidden />
-      <div className="testimonials-inner">
-        <div className="section-header">
-          <span className="section-badge">{s.testimonialsBadge}</span>
-          <h2 style={{ color: '#fff' }}>
-            {s.testimonialsHeadingPre}
-            <em style={{ color: '#F9A8D4', fontStyle: 'italic' }}>{s.testimonialsHeadingEm}</em>
-          </h2>
-          <p style={{ color: 'rgba(255,255,255,0.65)' }}>{s.testimonialsSub}</p>
-        </div>
-
-        <div className="testimonial-carousel">
-          <button
-            type="button"
-            className="testimonial-arrow testimonial-arrow--prev"
-            onClick={goPrev}
-            aria-label={s.testimonialsPrevAria}
-          >
-            <TestimonialCarouselArrow dir="prev" />
-          </button>
-
-          <div className="testimonial-track-shell">
-            <div className="testimonial-track">
-              {cards.map((t, i) => (
-                <div key={t.name} className={`testimonial-card${i === active ? ' active' : ''}`}>
-                  <div className="stars">
-                    {Array.from({ length: 5 }).map((_, j) => <StarIcon key={j} />)}
-                  </div>
-                  <blockquote>&ldquo;{t.quote}&rdquo;</blockquote>
-                  <div className="testimonial-author">
-                    <strong>{t.name}</strong>
-                    <span>{t.since}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <button
-            type="button"
-            className="testimonial-arrow testimonial-arrow--next"
-            onClick={goNext}
-            aria-label={s.testimonialsNextAria}
-          >
-            <TestimonialCarouselArrow dir="next" />
-          </button>
-        </div>
-
-        <div className="testimonial-dots">
-          {cards.map((_, i) => (
-            <button
-              key={i}
-              className={`dot${i === active ? ' active' : ''}`}
-              onClick={() => setActive(i)}
-              aria-label={`${s.testimonialsDotAria} ${i + 1}`}
-            />
-          ))}
-        </div>
-
-        <div className="testimonials-cta">
-          <a href="#book" className="btn-primary btn-lg">
-            {s.testimonialsCta}
-          </a>
-        </div>
-      </div>
-    </section>
-  )
-}
 
 const FAQ_REFUND_POLICY_LINK_TOKEN = '<<REFUND_POLICY_LINK>>'
 
