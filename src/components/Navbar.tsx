@@ -29,7 +29,6 @@ export function Navbar({
             <li><a href="/#pricing">{s.navLinks.pricing}</a></li>
             <li><a href="/#about">{s.navLinks.values}</a></li>
             <li><a href="/#faq">{s.navLinks.faq}</a></li>
-            <li><a href="/#testimonials">{s.navLinks.reviews}</a></li>
           </ul>
           <div className="navbar-actions">
             <button
@@ -62,7 +61,6 @@ export function Navbar({
             <a href="/#pricing" onClick={() => setMenuOpen(false)}>{s.navLinks.pricing}</a>
             <a href="/#about" onClick={() => setMenuOpen(false)}>{s.navLinks.values}</a>
             <a href="/#faq" onClick={() => setMenuOpen(false)}>{s.navLinks.faq}</a>
-            <a href="/#testimonials" onClick={() => setMenuOpen(false)}>{s.navLinks.reviews}</a>
             <div className="mobile-menu-actions">
               <button
                 type="button"

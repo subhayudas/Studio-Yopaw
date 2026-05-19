@@ -35,7 +35,6 @@ export function Footer() {
             <li><a href="/#pricing">{s.navLinks.pricing}</a></li>
             <li><a href="/#about">{s.navLinks.values}</a></li>
             <li><a href="/#faq">{s.navLinks.faq}</a></li>
-            <li><a href="/#testimonials">{s.navLinks.reviews}</a></li>
             <li><a href={waiverHref}>{s.footerWaiver}</a></li>
             <li><a href={refundHref}>{s.footerRefundPolicy}</a></li>
           </ul>
