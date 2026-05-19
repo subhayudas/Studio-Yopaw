@@ -2,6 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { square, getLocationId } from './_square.js'
 import { getMaxSeats, getClassTimes, slotMontrealTime } from './_config.js'
 
+const normalizeStartAt = (s: string) => s.replace(/\.\d+Z$/, 'Z')
+
 const SCHEDULE_CATEGORY = 'class schedule'
 const SCHEDULE_ITEM = 'Class Session Dates'
 
@@ -107,10 +109,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const bookingCounts = new Map<string, number>()
     for (const result of bookingChunkResults) {
-      for (const booking of result.data ?? []) {
-        if (booking.startAt && booking.status === 'ACCEPTED') {
-          bookingCounts.set(booking.startAt, (bookingCounts.get(booking.startAt) ?? 0) + 1)
-        }
+      for await (const booking of result) {
+        if (!booking.startAt) continue
+        const st = booking.status ?? ''
+        if (st === 'CANCELLED_BY_SELLER' || st === 'CANCELLED_BY_CUSTOMER' || st === 'DECLINED') continue
+        const key = normalizeStartAt(booking.startAt)
+        bookingCounts.set(key, (bookingCounts.get(key) ?? 0) + 1)
       }
     }
 
@@ -122,7 +126,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!slot.startAt) continue
       if (allowedDates && !allowedDates.has(slot.startAt.slice(0, 10))) continue
       if (!allowedTimes.has(slotMontrealTime(slot.startAt))) continue
-      const booked = bookingCounts.get(slot.startAt) ?? 0
+      const booked = bookingCounts.get(normalizeStartAt(slot.startAt)) ?? 0
       squareSlotMap.set(slot.startAt, maxSeats - booked)
     }
 
@@ -167,7 +171,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const corrected = new Date(utcGuess.getTime() + offsetMinutes * 60_000)
           const syntheticStartAt = corrected.toISOString().replace(/\.\d{3}Z$/, 'Z')
 
-          const booked = bookingCounts.get(syntheticStartAt) ?? 0
+          const booked = bookingCounts.get(normalizeStartAt(syntheticStartAt)) ?? 0
           const remaining = maxSeats - booked
           if (remaining > 0) {
             availabilities.push({ startAt: syntheticStartAt, seatsRemaining: remaining })
@@ -176,6 +180,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    res.setHeader('Cache-Control', 'no-store')
     return res.status(200).json({ availabilities })
   } catch (err) {
     console.error('availability error', err)
