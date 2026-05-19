@@ -63,8 +63,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       startAtMin: startAt,
       startAtMax: slotEnd,
     })
+    const norm = (s: string) => s.replace(/\.\d+Z$/, 'Z')
     const taken = (slotBookings.data ?? []).filter(
-      b => b.startAt === startAt && b.status !== 'CANCELLED'
+      b => norm(b.startAt ?? '') === norm(startAt) &&
+           b.status !== 'CANCELLED_BY_SELLER' &&
+           b.status !== 'CANCELLED_BY_CUSTOMER',
     ).length
     if (taken >= getMaxSeats()) {
       return res.status(409).json({ error: 'This class is full' })
