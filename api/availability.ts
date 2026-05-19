@@ -25,7 +25,7 @@ async function getAllowedDates(): Promise<Set<string> | null> {
     itemObjects.push(obj)
   }
   const item = itemObjects.find(
-    o =>
+    (o): o is Extract<CatalogObject, { type: 'ITEM' }> =>
       o.type === 'ITEM' &&
       !o.isDeleted &&
       o.itemData?.name === SCHEDULE_ITEM &&
