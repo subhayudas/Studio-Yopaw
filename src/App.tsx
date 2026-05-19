@@ -1704,7 +1704,6 @@ function MarketingSite() {
       <ExperienceSection />
       <ClassesSection />
       <PricingSection />
-      <TestimonialsSection />
       <GallerySection />
       <AboutSection />
       <FAQSection />
