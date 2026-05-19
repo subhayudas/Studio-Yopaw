@@ -1,7 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { readFileSync } from 'node:fs'
-import { join, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 
 interface ClassSchedule {
   dates: string[]
@@ -11,8 +10,7 @@ interface ClassSchedule {
 }
 
 function loadSchedule(): ClassSchedule {
-  const dir = dirname(fileURLToPath(import.meta.url))
-  const raw = readFileSync(join(dir, '..', 'class-schedule.json'), 'utf8')
+  const raw = readFileSync(join(process.cwd(), 'class-schedule.json'), 'utf8')
   return JSON.parse(raw) as ClassSchedule
 }
 
