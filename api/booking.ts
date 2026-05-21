@@ -57,7 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         phoneNumber: phone,
       })
       customerId = customer!.id!
-      fetch(ZAPIER_NEW_CONTACT_URL, {
+      await fetch(ZAPIER_NEW_CONTACT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ firstName: givenName, lastName: familyName, email, phone, source: 'booking' }),
@@ -144,8 +144,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ...(orderId ? { orderId } : {}),
     })
 
-    // 6. Fire Zapier new-booking webhook (fire-and-forget)
-    fetch(ZAPIER_NEW_BOOKING_URL, {
+    // 6. Fire Zapier new-booking webhook
+    await fetch(ZAPIER_NEW_BOOKING_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

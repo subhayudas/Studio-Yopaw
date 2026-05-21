@@ -37,7 +37,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `,
     })
 
-    fetch(ZAPIER_NEW_CONTACT_URL, {
+    await fetch(ZAPIER_NEW_CONTACT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fullName, email, phone, classType, source: 'inquiry' }),
