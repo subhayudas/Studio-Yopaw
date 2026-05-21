@@ -4,6 +4,9 @@ import { Resend } from 'resend'
 import { square, getLocationId, stripBom } from './_square.js'
 import { getMaxSeats } from './_config.js'
 
+const ZAPIER_NEW_CONTACT_URL = 'https://hooks.zapier.com/hooks/catch/23258168/4oigr6o/'
+const ZAPIER_NEW_BOOKING_URL = 'https://hooks.zapier.com/hooks/catch/23258168/4oig0ml/'
+
 const resend = new Resend(stripBom(process.env.RESEND_API_KEY ?? ''))
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -54,6 +57,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         phoneNumber: phone,
       })
       customerId = customer!.id!
+      fetch(ZAPIER_NEW_CONTACT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ firstName: givenName, lastName: familyName, email, phone, source: 'booking' }),
+      }).catch(() => {})
     }
 
     // 2. Guard: reject if class is already full (race condition protection)
@@ -136,7 +144,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ...(orderId ? { orderId } : {}),
     })
 
-    // 6. Send lead notification email
+    // 6. Fire Zapier new-booking webhook (fire-and-forget)
+    fetch(ZAPIER_NEW_BOOKING_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        firstName: givenName,
+        lastName: familyName,
+        email,
+        phone,
+        bookingId: booking!.id,
+        startAt,
+        serviceName,
+        totalCents: Number(chargeAmount),
+        paymentStatus: payment!.status,
+      }),
+    }).catch(() => {})
+
+    // 7. Send lead notification email
     const totalDollars = (Number(chargeAmount) / 100).toFixed(2)
     const baseDollars = (baseAmountCents / 100).toFixed(2)
     const taxDollars = ((Number(chargeAmount) - baseAmountCents) / 100).toFixed(2)

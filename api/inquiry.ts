@@ -2,6 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { Resend } from 'resend'
 import { stripBom } from './_square.js'
 
+const ZAPIER_NEW_CONTACT_URL = 'https://hooks.zapier.com/hooks/catch/23258168/4oigr6o/'
+
 const resend = new Resend(stripBom(process.env.RESEND_API_KEY ?? ''))
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -34,6 +36,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         <p><strong>Group size:</strong> ${groupSize ?? '—'}</p>
       `,
     })
+
+    fetch(ZAPIER_NEW_CONTACT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullName, email, phone, classType, source: 'inquiry' }),
+    }).catch(() => {})
 
     return res.status(200).json({ ok: true })
   } catch (err) {
