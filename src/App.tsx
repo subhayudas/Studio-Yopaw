@@ -678,6 +678,21 @@ function PricingSection() {
       gtag('event', 'conversion', { send_to: 'AW-18168099243/YPflCLS3wLAcEKvjnNdD' })
     }
 
+    // Fire Zapier lead capture the moment the contact form is submitted
+    fetch('/api/inquiry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fullName,
+        email,
+        phone,
+        classType: flow.yoga === 'gentle' ? 'Private Event' : 'Regular Class',
+        preferredDate: selectedSessionIso ?? '',
+        preferredTime: selectedTimeSlotId ?? '',
+        groupSize: flow.yoga === 'gentle' ? privateGroupCount : '',
+      }),
+    }).catch(() => {})
+
     // Both yin and gentle advance to Square payment step
     requestScrollPricingCardAfterAdvance()
     setFlow({ kind: 'public', step: 'payment', yoga: flow.yoga })
@@ -685,6 +700,22 @@ function PricingSection() {
 
   const submitCorporate = (e: FormEvent) => {
     e.preventDefault()
+
+    // Fire Zapier lead capture the moment the corporate contact form is submitted
+    fetch('/api/inquiry', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fullName: corpName,
+        email: corpEmail,
+        phone: corpPhone,
+        classType: 'Corporate',
+        preferredDate: selectedSessionIso ?? '',
+        preferredTime: selectedTimeSlotId ?? '',
+        groupSize: privateGroupCount,
+      }),
+    }).catch(() => {})
+
     requestScrollPricingCardAfterAdvance()
     setFlow({ kind: 'corporate', step: 'payment' })
   }
