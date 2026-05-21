@@ -37,11 +37,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `,
     })
 
+    const [firstName, ...rest] = fullName.trim().split(/\s+/)
+    const lastName = rest.join(' ')
     await fetch(ZAPIER_NEW_CONTACT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fullName, email, phone, classType, source: 'inquiry' }),
-    }).catch(() => {})
+      body: JSON.stringify({
+        firstName,
+        lastName,
+        fullName,
+        email,
+        phone,
+        classType,
+        preferredDate: preferredDate ?? '',
+        preferredTime: preferredTime ?? '',
+        groupSize: groupSize ?? '',
+        source: 'inquiry',
+      }),
+    }).catch((err) => console.error('[Zapier] new-contact webhook failed:', err))
 
     return res.status(200).json({ ok: true })
   } catch (err) {
