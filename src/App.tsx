@@ -671,14 +671,7 @@ function PricingSection() {
     e.preventDefault()
     if (flow.kind !== 'public') return
 
-    const needsWaiver = flow.yoga !== 'gentle'
-    if (needsWaiver && !waiverAccepted) return
-
-    if (typeof gtag !== 'undefined') {
-      gtag('event', 'conversion', { send_to: 'AW-18168099243/YPflCLS3wLAcEKvjnNdD' })
-    }
-
-    // Fire Zapier lead capture the moment the contact form is submitted
+    // Capture lead in Zapier as soon as the form is submitted — before waiver gate
     fetch('/api/inquiry', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -692,6 +685,13 @@ function PricingSection() {
         groupSize: flow.yoga === 'gentle' ? privateGroupCount : '',
       }),
     }).catch(() => {})
+
+    const needsWaiver = flow.yoga !== 'gentle'
+    if (needsWaiver && !waiverAccepted) return
+
+    if (typeof gtag !== 'undefined') {
+      gtag('event', 'conversion', { send_to: 'AW-18168099243/YPflCLS3wLAcEKvjnNdD' })
+    }
 
     // Both yin and gentle advance to Square payment step
     requestScrollPricingCardAfterAdvance()
