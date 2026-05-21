@@ -88,26 +88,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(409).json({ error: 'This class is full' })
     }
 
-    // 3. Create the booking
-    const { booking } = await square.bookings.create({
-      idempotencyKey: randomUUID(),
-      booking: {
-        locationId: getLocationId(),
-        customerId,
-        startAt,
-        appointmentSegments: [
-          {
-            serviceVariationId,
-            serviceVariationVersion: BigInt(serviceVariationVersion),
-            teamMemberId,
-          },
-        ],
-      },
-    })
-
-    // 4. Create Order (with taxes when configured) so Square computes the authoritative total
+    // 3. Create Order (with taxes when configured) so Square computes the authoritative total
     let chargeAmount: bigint
     let orderId: string | undefined
+    const orderRef = randomUUID()
 
     if (gstTaxId && qstTaxId) {
       const { order } = await square.orders.create({
@@ -115,7 +99,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         order: {
           locationId: getLocationId(),
           customerId,
-          referenceId: booking!.id,
+          referenceId: orderRef,
           lineItems: [
             {
               quantity: '1',
@@ -140,16 +124,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       chargeAmount = BigInt(baseAmountCents)
     }
 
-    // 5. Process payment
+    // 4. Process payment — must succeed before the appointment is created
     const { payment } = await square.payments.create({
       idempotencyKey: randomUUID(),
       sourceId: cardNonce,
       amountMoney: { amount: chargeAmount, currency: 'CAD' },
       locationId: getLocationId(),
       customerId,
-      referenceId: booking!.id,
+      referenceId: orderRef,
       ...(orderId ? { orderId } : {}),
     })
+
+    if (payment!.status !== 'COMPLETED' && payment!.status !== 'APPROVED') {
+      throw new Error(`Payment not approved (status: ${payment!.status})`)
+    }
+
+    // 5. Create the booking — only reached when payment is confirmed.
+    // If booking creation fails after a successful charge, refund automatically.
+    let booking: Awaited<ReturnType<typeof square.bookings.create>>['booking']
+    try {
+      const result = await square.bookings.create({
+        idempotencyKey: randomUUID(),
+        booking: {
+          locationId: getLocationId(),
+          customerId,
+          startAt,
+          appointmentSegments: [
+            {
+              serviceVariationId,
+              serviceVariationVersion: BigInt(serviceVariationVersion),
+              teamMemberId,
+            },
+          ],
+        },
+      })
+      booking = result.booking
+    } catch (bookingErr) {
+      // Payment was charged but booking failed — refund the customer immediately.
+      console.error('Booking creation failed after successful payment — attempting refund', {
+        paymentId: payment!.id,
+        bookingErr,
+      })
+      try {
+        await square.refunds.refundPayment({
+          idempotencyKey: randomUUID(),
+          paymentId: payment!.id!,
+          amountMoney: { amount: chargeAmount, currency: 'CAD' },
+          reason: 'Booking creation failed',
+        })
+      } catch (refundErr) {
+        console.error('CRITICAL: Payment charged, booking failed, AND refund failed — manual recovery required', {
+          paymentId: payment!.id,
+          chargeAmount: chargeAmount.toString(),
+          refundErr,
+        })
+      }
+      throw bookingErr
+    }
 
     // 6. Fire Zapier new-booking webhook
     await fetch(ZAPIER_NEW_BOOKING_URL, {
