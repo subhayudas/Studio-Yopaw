@@ -226,7 +226,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ bookingId: booking!.id, paymentStatus: payment!.status })
   } catch (err) {
     console.error('booking error', err)
-    const message = err instanceof Error ? err.message : 'Booking failed'
-    return res.status(500).json({ error: message })
+    return res.status(500).json({ error: friendlyPaymentError(err) })
   }
+}
+
+function friendlyPaymentError(err: unknown): string {
+  if (!(err instanceof Error)) return 'Booking failed. Please try again.'
+
+  // Square SDK errors: "Status code: 4xx Body: { "errors": [...] }"
+  const bodyMatch = err.message.match(/Body:\s*(\{[\s\S]*\})\s*$/)
+  if (bodyMatch) {
+    try {
+      const parsed = JSON.parse(bodyMatch[1]) as {
+        errors?: Array<{ code?: string; category?: string }>
+      }
+      const code = parsed.errors?.[0]?.code ?? ''
+      const category = parsed.errors?.[0]?.category ?? ''
+
+      if (code === 'GENERIC_DECLINE' || code === 'CARD_DECLINED')
+        return 'Your card was declined. Please check your details or try a different card.'
+      if (code === 'INSUFFICIENT_FUNDS')
+        return 'Insufficient funds. Please try a different card.'
+      if (code === 'CARD_EXPIRED')
+        return 'Your card has expired. Please use a different card.'
+      if (code === 'CVV_FAILURE')
+        return 'The security code (CVV) is incorrect. Please try again.'
+      if (code === 'ADDRESS_VERIFICATION_FAILURE')
+        return 'Address verification failed. Please check your billing address.'
+      if (code === 'INVALID_CARD')
+        return 'The card number is invalid. Please check and try again.'
+      if (category === 'PAYMENT_METHOD_ERROR')
+        return 'Payment declined. Please check your card details and try again.'
+      if (category === 'RATE_LIMIT_ERROR')
+        return 'Too many attempts. Please wait a moment and try again.'
+    } catch {
+      // JSON parse failed — fall through to generic message
+    }
+  }
+
+  return 'Booking failed. Please try again.'
 }
