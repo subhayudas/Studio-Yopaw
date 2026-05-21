@@ -88,98 +88,99 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(409).json({ error: 'This class is full' })
     }
 
-    // 3. Create Order (with taxes when configured) so Square computes the authoritative total
-    let chargeAmount: bigint
-    let orderId: string | undefined
-    const orderRef = randomUUID()
-
-    if (gstTaxId && qstTaxId) {
-      const { order } = await square.orders.create({
-        idempotencyKey: randomUUID(),
-        order: {
-          locationId: getLocationId(),
-          customerId,
-          referenceId: orderRef,
-          lineItems: [
-            {
-              quantity: '1',
-              name: serviceName,
-              basePriceMoney: { amount: BigInt(baseAmountCents), currency: 'CAD' },
-              appliedTaxes: [
-                { taxUid: 'gst' },
-                { taxUid: 'qst' },
-              ],
-            },
-          ],
-          taxes: [
-            { uid: 'gst', catalogObjectId: gstTaxId, scope: 'LINE_ITEM' },
-            { uid: 'qst', catalogObjectId: qstTaxId, scope: 'LINE_ITEM' },
-          ],
-        },
-      })
-      chargeAmount = order!.totalMoney!.amount!
-      orderId = order!.id
-    } else {
-      // Tax IDs not yet configured — charge base amount only
-      chargeAmount = BigInt(baseAmountCents)
-    }
-
-    // 4. Process payment — must succeed before the appointment is created
-    const { payment } = await square.payments.create({
+    // 3. Create the booking first so we have an ID to link the order and payment against.
+    //    This is what makes Square's calendar display the booking as paid rather than "balance due".
+    const { booking } = await square.bookings.create({
       idempotencyKey: randomUUID(),
-      sourceId: cardNonce,
-      amountMoney: { amount: chargeAmount, currency: 'CAD' },
-      locationId: getLocationId(),
-      customerId,
-      referenceId: orderRef,
-      ...(orderId ? { orderId } : {}),
+      booking: {
+        locationId: getLocationId(),
+        customerId,
+        startAt,
+        appointmentSegments: [
+          {
+            serviceVariationId,
+            serviceVariationVersion: BigInt(serviceVariationVersion),
+            teamMemberId,
+          },
+        ],
+      },
     })
 
-    if (payment!.status !== 'COMPLETED' && payment!.status !== 'APPROVED') {
-      throw new Error(`Payment not approved (status: ${payment!.status})`)
-    }
+    // Steps 4 & 5 are wrapped so that if either fails we immediately cancel the booking,
+    // preventing a ghost appointment from sitting in the calendar unpaid.
+    let chargeAmount: bigint
+    let orderId: string | undefined
+    let payment: Awaited<ReturnType<typeof square.payments.create>>['payment']
 
-    // 5. Create the booking — only reached when payment is confirmed.
-    // If booking creation fails after a successful charge, refund automatically.
-    let booking: Awaited<ReturnType<typeof square.bookings.create>>['booking']
     try {
-      const result = await square.bookings.create({
+      // 4. Create Order (with taxes when configured) referencing the booking ID.
+      //    Square reads this referenceId to link the payment to the booking in Appointments.
+      if (gstTaxId && qstTaxId) {
+        const { order } = await square.orders.create({
+          idempotencyKey: randomUUID(),
+          order: {
+            locationId: getLocationId(),
+            customerId,
+            referenceId: booking!.id,
+            lineItems: [
+              {
+                quantity: '1',
+                name: serviceName,
+                basePriceMoney: { amount: BigInt(baseAmountCents), currency: 'CAD' },
+                appliedTaxes: [
+                  { taxUid: 'gst' },
+                  { taxUid: 'qst' },
+                ],
+              },
+            ],
+            taxes: [
+              { uid: 'gst', catalogObjectId: gstTaxId, scope: 'LINE_ITEM' },
+              { uid: 'qst', catalogObjectId: qstTaxId, scope: 'LINE_ITEM' },
+            ],
+          },
+        })
+        chargeAmount = order!.totalMoney!.amount!
+        orderId = order!.id
+      } else {
+        // Tax IDs not yet configured — charge base amount only
+        chargeAmount = BigInt(baseAmountCents)
+      }
+
+      // 5. Process payment, referencing both the order and the booking ID.
+      const result = await square.payments.create({
         idempotencyKey: randomUUID(),
-        booking: {
-          locationId: getLocationId(),
-          customerId,
-          startAt,
-          appointmentSegments: [
-            {
-              serviceVariationId,
-              serviceVariationVersion: BigInt(serviceVariationVersion),
-              teamMemberId,
-            },
-          ],
-        },
+        sourceId: cardNonce,
+        amountMoney: { amount: chargeAmount, currency: 'CAD' },
+        locationId: getLocationId(),
+        customerId,
+        referenceId: booking!.id,
+        ...(orderId ? { orderId } : {}),
       })
-      booking = result.booking
-    } catch (bookingErr) {
-      // Payment was charged but booking failed — refund the customer immediately.
-      console.error('Booking creation failed after successful payment — attempting refund', {
-        paymentId: payment!.id,
-        bookingErr,
+      payment = result.payment
+
+      if (payment!.status !== 'COMPLETED' && payment!.status !== 'APPROVED') {
+        throw new Error(`Payment not approved (status: ${payment!.status})`)
+      }
+    } catch (paymentErr) {
+      // Payment or order creation failed — cancel the booking so it doesn't
+      // sit in the calendar as an unpaid ghost appointment.
+      console.error('Payment failed — cancelling booking', {
+        bookingId: booking!.id,
+        error: paymentErr instanceof Error ? paymentErr.message : paymentErr,
       })
       try {
-        await square.refunds.refundPayment({
+        await square.bookings.cancel({
+          bookingId: booking!.id!,
           idempotencyKey: randomUUID(),
-          paymentId: payment!.id!,
-          amountMoney: { amount: chargeAmount, currency: 'CAD' },
-          reason: 'Booking creation failed',
+          bookingVersion: booking!.version,
         })
-      } catch (refundErr) {
-        console.error('CRITICAL: Payment charged, booking failed, AND refund failed — manual recovery required', {
-          paymentId: payment!.id,
-          chargeAmount: chargeAmount.toString(),
-          refundErr,
+      } catch (cancelErr) {
+        console.error('CRITICAL: Payment failed AND booking cancellation failed — manual cleanup required', {
+          bookingId: booking!.id,
+          cancelErr,
         })
       }
-      throw bookingErr
+      throw paymentErr
     }
 
     // 6. Fire Zapier new-booking webhook
