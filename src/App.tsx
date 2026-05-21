@@ -12,6 +12,8 @@ import { useSquareAvailability, type SquareSlot } from './hooks/useSquareAvailab
 import { useBreedSchedule } from './hooks/useBreedSchedule'
 import { SQUARE_SERVICE_VARIATIONS, computeTaxBreakdown } from './lib/squareServices'
 
+declare function gtag(...args: unknown[]): void
+
 const stripEnv = (v: string | undefined): string => (v ?? '').replace(/^\uFEFF/, '').trim()
 const SQUARE_APP_ID = stripEnv(import.meta.env.VITE_SQUARE_APP_ID as string | undefined)
 const SQUARE_LOCATION_ID = stripEnv(import.meta.env.VITE_SQUARE_LOCATION_ID as string | undefined)
@@ -671,6 +673,10 @@ function PricingSection() {
 
     const needsWaiver = flow.yoga !== 'gentle'
     if (needsWaiver && !waiverAccepted) return
+
+    if (typeof gtag !== 'undefined') {
+      gtag('event', 'conversion', { send_to: 'AW-18168099243/YPflCLS3wLAcEKvjnNdD' })
+    }
 
     // Both yin and gentle advance to Square payment step
     requestScrollPricingCardAfterAdvance()
