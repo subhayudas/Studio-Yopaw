@@ -60,8 +60,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await fetch(ZAPIER_NEW_CONTACT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ firstName: givenName, lastName: familyName, email, phone, source: 'booking' }),
-      }).catch(() => {})
+        body: JSON.stringify({
+          firstName: givenName,
+          lastName: familyName,
+          fullName: `${givenName} ${familyName}`,
+          email,
+          phone,
+          source: 'booking',
+        }),
+      }).catch((err) => console.error('[Zapier] new-contact webhook failed:', err))
     }
 
     // 2. Guard: reject if class is already full (race condition protection)
@@ -151,15 +158,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify({
         firstName: givenName,
         lastName: familyName,
+        fullName: `${givenName} ${familyName}`,
         email,
         phone,
         bookingId: booking!.id,
         startAt,
         serviceName,
         totalCents: Number(chargeAmount),
+        totalDollars: (Number(chargeAmount) / 100).toFixed(2),
         paymentStatus: payment!.status,
       }),
-    }).catch(() => {})
+    }).catch((err) => console.error('[Zapier] new-booking webhook failed:', err))
 
     // 7. Send lead notification email
     const totalDollars = (Number(chargeAmount) / 100).toFixed(2)
