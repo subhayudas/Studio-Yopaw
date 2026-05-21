@@ -317,9 +317,15 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingHeaderSummary: '$46 + taxes · Per session',
     pricingAskClassType: 'What kind of class are you looking for?',
     pricingAskMat: 'Do you have your own yoga mat?',
+<<<<<<< Updated upstream
     pricingMatYes: "Yes, I'll bring mine",
     pricingMatNo: "No, I'll rent one on-site",
     pricingMatHelper: 'Yoga mat rental available on-site for $5',
+=======
+    pricingMatYes: "Yes, I'll bring my own",
+    pricingMatNo: 'No, I will rent one on-site',
+    pricingMatHelper: 'Mats are available at the studio for $5 + taxes.',
+>>>>>>> Stashed changes
     pricingAskPrivateGroupSize: 'How many people will be included in your group?',
     pricingPrivateGroupMaxHint: 'Maximum 20 participants per session.',
     pricingPrivateQtyDecAria: 'Decrease number of participants',
@@ -573,8 +579,13 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingAskClassType: 'Quel type de cours recherchez-vous ?',
     pricingAskMat: 'Avez-vous votre propre tapis de yoga ?',
     pricingMatYes: 'Oui, j’apporte le mien',
+<<<<<<< Updated upstream
     pricingMatNo: 'Non, je louerai sur place',
     pricingMatHelper: 'Location de tapis sur place pour 5 $',
+=======
+    pricingMatNo: 'Non, je louerai un tapis sur place',
+    pricingMatHelper: 'Des tapis sont disponibles au studio pour 5 $ + taxes.',
+>>>>>>> Stashed changes
     pricingAskPrivateGroupSize:
       'Combien de personnes seront incluses dans votre groupe ?',
     pricingPrivateGroupMaxHint: 'Maximum 20 participants par séance.',
