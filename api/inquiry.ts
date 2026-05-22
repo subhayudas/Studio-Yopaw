@@ -3,6 +3,7 @@ import { Resend } from 'resend'
 import { stripBom } from './_square.js'
 
 const ZAPIER_NEW_CONTACT_URL = 'https://hooks.zapier.com/hooks/catch/23258168/4oigr6o/'
+const ZAPIER_FORM_URL = 'https://hooks.zapier.com/hooks/catch/23258168/4ok9t5x/'
 
 const resend = new Resend(stripBom(process.env.RESEND_API_KEY ?? ''))
 
@@ -39,6 +40,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const [firstName, ...rest] = fullName.trim().split(/\s+/)
     const lastName = rest.join(' ')
+    await fetch(ZAPIER_FORM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        firstName,
+        lastName,
+        phone,
+        email,
+        dateWanted: preferredDate ?? '',
+        eventType: classType,
+        peopleCount: groupSize ?? '',
+      }),
+    }).catch((err) => console.error('[Zapier] form-submission webhook failed:', err))
     await fetch(ZAPIER_NEW_CONTACT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -6,6 +6,7 @@ import { getMaxSeats } from './_config.js'
 
 const ZAPIER_NEW_CONTACT_URL = 'https://hooks.zapier.com/hooks/catch/23258168/4oigr6o/'
 const ZAPIER_NEW_BOOKING_URL = 'https://hooks.zapier.com/hooks/catch/23258168/4oig0ml/'
+const ZAPIER_FORM_URL = 'https://hooks.zapier.com/hooks/catch/23258168/4ok9t5x/'
 
 const resend = new Resend(stripBom(process.env.RESEND_API_KEY ?? ''))
 
@@ -24,6 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     cardNonce,
     baseAmountCents,
     serviceName,
+    groupSize,
   } = req.body as {
     givenName: string
     familyName: string
@@ -36,6 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     cardNonce: string
     baseAmountCents: number
     serviceName: string
+    groupSize?: string
   }
 
   const gstTaxId = stripBom(process.env.SQUARE_GST_TAX_ID ?? '')
@@ -201,6 +204,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         paymentStatus: payment!.status,
       }),
     }).catch((err) => console.error('[Zapier] new-booking webhook failed:', err))
+
+    await fetch(ZAPIER_FORM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        firstName: givenName,
+        lastName: familyName,
+        phone,
+        email,
+        dateWanted: startAt,
+        eventType: serviceName,
+        peopleCount: groupSize ?? '1',
+      }),
+    }).catch((err) => console.error('[Zapier] form-submission webhook failed:', err))
 
     // 7. Send lead notification email
     const totalDollars = (Number(chargeAmount) / 100).toFixed(2)
