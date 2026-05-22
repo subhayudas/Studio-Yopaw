@@ -788,6 +788,10 @@ function PricingSection() {
           cardNonce: nonce,
           baseAmountCents,
           serviceName: serviceInfo.serviceName,
+          groupSize:
+            flow.kind === 'corporate' || (flow.kind === 'public' && flow.yoga === 'gentle')
+              ? privateGroupCount
+              : '1',
         }),
       })
 
