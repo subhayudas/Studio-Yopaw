@@ -109,6 +109,10 @@ export interface SiteStrings {
   pricingFeat5: string
   pricingHeaderSummary: string
   pricingAskClassType: string
+  pricingAskMat: string
+  pricingMatYes: string
+  pricingMatNo: string
+  pricingMatHelper: string
   pricingAskPrivateGroupSize: string
   pricingPrivateGroupMaxHint: string
   pricingPrivateQtyDecAria: string
@@ -316,6 +320,10 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingFeat5: '',
     pricingHeaderSummary: '$46 + taxes · Per session',
     pricingAskClassType: 'What kind of class are you looking for?',
+    pricingAskMat: 'Do you have your own yoga mat?',
+    pricingMatYes: "Yes, I'll bring my own",
+    pricingMatNo: 'No, I will rent one on-site',
+    pricingMatHelper: 'Mats are available at the studio for $5 + taxes.',
     pricingAskPrivateGroupSize: 'How many people will be included in your group?',
     pricingPrivateGroupMaxHint: 'Maximum 20 participants per session.',
     pricingPrivateQtyDecAria: 'Decrease number of participants',
@@ -574,6 +582,10 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingFeat5: '',
     pricingHeaderSummary: '46 $ + taxes · À la séance',
     pricingAskClassType: 'Quel type de cours recherchez-vous ?',
+    pricingAskMat: 'Avez-vous votre propre tapis de yoga ?',
+    pricingMatYes: "Oui, j'apporte le mien",
+    pricingMatNo: 'Non, je louerai un tapis sur place',
+    pricingMatHelper: 'Des tapis sont disponibles au studio pour 5 $ + taxes.',
     pricingAskPrivateGroupSize:
       'Combien de personnes seront incluses dans votre groupe ?',
     pricingPrivateGroupMaxHint: 'Maximum 20 participants par séance.',
