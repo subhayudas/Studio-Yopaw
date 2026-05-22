@@ -541,6 +541,7 @@ function PricingSection() {
     if (flow.kind === 'chooseClass') return 25
     if (flow.kind === 'publicSuccess') return 100
     if (flow.kind === 'public') {
+      if (flow.step === 'mat') return 35
       if (flow.step === 'people') return 45
       if (flow.step === 'date') return 62
       if (flow.step === 'contact') return 80
@@ -565,6 +566,10 @@ function PricingSection() {
       return
     }
     if (flow.kind === 'public') {
+      if (flow.step === 'mat') {
+        setFlow({ kind: 'chooseClass' })
+        return
+      }
       if (flow.step === 'people') {
         setPrivateGroupCount('')
         setFlow({ kind: 'chooseClass' })
@@ -638,7 +643,7 @@ function PricingSection() {
       setFlow({ kind: 'corporate', step: 'people' })
       return
     }
-    const firstStep = id === 'gentle' ? 'people' : 'date'
+    const firstStep = id === 'gentle' ? 'people' : 'mat'
     setFlow({ kind: 'public', step: firstStep, yoga: id })
     if (id === 'gentle') setPrivateGroupCount('2')
     else setPrivateGroupCount('')
@@ -763,7 +768,7 @@ function PricingSection() {
         const groupSize = Math.max(2, parseInt(privateGroupCount, 10) || 2)
         baseAmountCents = serviceInfo.baseAmountCents * groupSize
       } else {
-        baseAmountCents = serviceInfo.baseAmountCents
+        baseAmountCents = serviceInfo.baseAmountCents + (needsMatRental ? 500 : 0)
       }
     }
 
@@ -865,7 +870,8 @@ function PricingSection() {
   )
 
   let showBack = false
-  if (flow.kind === 'public' && flow.step === 'people') showBack = true
+  if (flow.kind === 'public' && flow.step === 'mat') showBack = true
+  else if (flow.kind === 'public' && flow.step === 'people') showBack = true
   else if (flow.kind === 'public' && flow.step === 'date') showBack = true
   else if (flow.kind === 'public' && flow.step === 'contact') showBack = true
   else if (flow.kind === 'public' && flow.step === 'payment') showBack = true
