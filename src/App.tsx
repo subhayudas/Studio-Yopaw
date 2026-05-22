@@ -412,7 +412,7 @@ function PricingSection() {
 
   type Flow =
     | { kind: 'chooseClass' }
-    | { kind: 'public'; step: 'people' | 'date' | 'contact' | 'payment'; yoga: YogaStyle }
+    | { kind: 'public'; step: 'mat' | 'people' | 'date' | 'contact' | 'payment'; yoga: YogaStyle }
     | { kind: 'publicSuccess'; source: 'regular' | 'private' }
     | { kind: 'corporate'; step: 'people' | 'date' | 'contact' | 'payment' }
     | { kind: 'corporateSuccess' }
@@ -429,6 +429,7 @@ function PricingSection() {
   const [corpEmail, setCorpEmail] = useState('')
   const [corpPhone, setCorpPhone] = useState('')
   const [privateGroupCount, setPrivateGroupCount] = useState('')
+  const [needsMatRental, setNeedsMatRental] = useState(false)
   const [waiverAccepted, setWaiverAccepted] = useState(false)
   const [waiverModalOpen, setWaiverModalOpen] = useState(false)
   const [bookingLoading, setBookingLoading] = useState(false)
@@ -574,7 +575,7 @@ function PricingSection() {
         if (flow.yoga === 'gentle') {
           setFlow({ kind: 'public', step: 'people', yoga: flow.yoga })
         } else {
-          setFlow({ kind: 'chooseClass' })
+          setFlow({ kind: 'public', step: 'mat', yoga: flow.yoga })
         }
         setSelectedSessionIso(null)
         setSelectedTimeSlotId(null)
@@ -641,6 +642,19 @@ function PricingSection() {
     setFlow({ kind: 'public', step: firstStep, yoga: id })
     if (id === 'gentle') setPrivateGroupCount('2')
     else setPrivateGroupCount('')
+    setSelectedSessionIso(null)
+    setPendingSessionIso(null)
+    setSelectedTimeSlotId(null)
+  }
+
+  const pickMat = (renting: boolean) => {
+    setNeedsMatRental(renting)
+    requestScrollPricingCardAfterAdvance()
+    setFlow(prev =>
+      prev.kind === 'public' && prev.step === 'mat'
+        ? { ...prev, step: 'date' }
+        : prev
+    )
     setSelectedSessionIso(null)
     setPendingSessionIso(null)
     setSelectedTimeSlotId(null)
@@ -800,6 +814,7 @@ function PricingSection() {
     setEmail('')
     setPhone('')
     setPrivateGroupCount('')
+    setNeedsMatRental(false)
     setWaiverAccepted(false)
     setWaiverModalOpen(false)
     setBookingError(null)
@@ -859,7 +874,7 @@ function PricingSection() {
   else if (flow.kind === 'corporate' && flow.step === 'contact') showBack = true
 
   const isBookingSuccessScreen = flow.kind === 'publicSuccess' || flow.kind === 'corporateSuccess'
-  const showFullPricingCardHeader = flow.kind === 'chooseClass'
+  const showPricingStepSummary = !isBookingSuccessScreen && flow.kind !== 'chooseClass'
 
   const inquiryPeopleStep =
     (flow.kind === 'public' && flow.step === 'people') || (flow.kind === 'corporate' && flow.step === 'people')
@@ -901,25 +916,18 @@ function PricingSection() {
           <p style={{ color: 'rgba(255,255,255,0.65)' }}>{s.pricingSub}</p>
         </div>
         <div ref={pricingCardRef} id="book" className="pricing-card">
-          {showFullPricingCardHeader ? (
+          {showPricingStepSummary && (
             <>
-              <div className="pricing-amount">
-                <span className="price-value">{s.pricingAmount}</span>
-                <span className="price-suffix">{s.pricingPlusTaxes}</span>
-              </div>
-              <div className="price-type">{s.pricingDropInRow}</div>
+              <p className="pricing-header-summary">{s.pricingHeaderSummary}</p>
               <ul className="price-features">
-                {[s.pricingFeat1, s.pricingFeat2, s.pricingFeat3, s.pricingFeat4, s.pricingFeat5]
+                {[s.pricingFeat1, s.pricingFeat2]
                   .filter((line) => line.trim().length > 0)
                   .map((line, i) => (
                     <li key={i}>{line}</li>
                   ))}
               </ul>
-
               <hr className="pricing-card-divider" />
             </>
-          ) : (
-            !isBookingSuccessScreen && <p className="pricing-header-summary">{s.pricingHeaderSummary}</p>
           )}
 
           <div className="pricing-multi-flow">
@@ -952,6 +960,21 @@ function PricingSection() {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {flow.kind === 'public' && flow.step === 'mat' && (
+              <div className="pricing-step-block">
+                <h3 className="pricing-step-title">{s.pricingAskMat}</h3>
+                <div className="pricing-choice-stack pricing-choice-stack--pair">
+                  <button type="button" className="pricing-choice-card" onClick={() => pickMat(false)}>
+                    {s.pricingMatYes}
+                  </button>
+                  <button type="button" className="pricing-choice-card" onClick={() => pickMat(true)}>
+                    {s.pricingMatNo}
+                  </button>
+                </div>
+                <p className="pricing-helper-text">{s.pricingMatHelper}</p>
               </div>
             )}
 
@@ -1175,7 +1198,8 @@ function PricingSection() {
                 {(() => {
                   const groupSize = flow.yoga === 'gentle' ? Math.max(2, parseInt(privateGroupCount || '2', 10)) : 1
                   const svc = SQUARE_SERVICE_VARIATIONS[flow.yoga]
-                  const baseCents = svc.baseAmountCents * groupSize
+                  const matRentalCents = flow.yoga === 'yin' && needsMatRental ? 500 : 0
+                  const baseCents = svc.baseAmountCents * groupSize + matRentalCents
                   const { gstCents, qstCents, totalCents } = computeTaxBreakdown(baseCents)
                   return (
                     <div className="pricing-payment-summary">
@@ -1187,8 +1211,16 @@ function PricingSection() {
                                 : `${groupSize} × Private Event`)
                             : (lang === 'fr' ? '1 × Cours de yoga avec chiots' : '1 × Puppy Yoga Class')}
                         </span>
-                        <span className="pricing-payment-summary-amount">{fmtCAD(baseCents, lang)}</span>
+                        <span className="pricing-payment-summary-amount">{fmtCAD(baseCents - matRentalCents, lang)}</span>
                       </div>
+                      {matRentalCents > 0 && (
+                        <div className="pricing-payment-summary-row">
+                          <span className="pricing-payment-summary-label">
+                            {lang === 'fr' ? 'Location de tapis' : 'Mat rental'}
+                          </span>
+                          <span className="pricing-payment-summary-amount">{fmtCAD(matRentalCents, lang)}</span>
+                        </div>
+                      )}
                       <div className="pricing-payment-summary-row">
                         <span className="pricing-payment-summary-label">TPS / GST (5 %)</span>
                         <span className="pricing-payment-summary-amount">{fmtCAD(gstCents, lang)}</span>
