@@ -153,6 +153,9 @@ export interface SiteStrings {
   pricingSuccessRequestReceivedBody: string
   pricingSuccessRequestReachOutPhone: string
   pricingSuccessBackHome: string
+  inquirySubmitLabel: string
+  inquirySubmitting: string
+  inquirySubmitError: string
   abbrevRequiredTitle: string
   galleryBadge: string
   galleryHeading: string
@@ -369,6 +372,9 @@ export const siteStrings: Record<Lang, SiteStrings> = {
       "Thank you! We've received your request and will contact you within 24 hours to confirm the details and finalize your private session.",
     pricingSuccessRequestReachOutPhone: "We'll call or text you at {phone}.",
     pricingSuccessBackHome: 'Back to home',
+    inquirySubmitLabel: 'Send my request',
+    inquirySubmitting: 'Sending…',
+    inquirySubmitError: 'Failed to send your request. Please try again.',
     abbrevRequiredTitle: 'required',
     galleryBadge: 'The Studio',
     galleryHeading: 'Moments of ',
@@ -634,6 +640,9 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingSuccessRequestReachOutPhone:
       'Nous vous contacterons par téléphone ou texto au {phone}.',
     pricingSuccessBackHome: "Retour à l'accueil",
+    inquirySubmitLabel: 'Envoyer ma demande',
+    inquirySubmitting: 'Envoi en cours…',
+    inquirySubmitError: "Impossible d'envoyer votre demande. Veuillez réessayer.",
     abbrevRequiredTitle: 'obligatoire',
     galleryBadge: 'Le studio',
     galleryHeading: 'Des moments ',

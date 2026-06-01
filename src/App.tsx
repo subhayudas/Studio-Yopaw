@@ -414,7 +414,7 @@ function PricingSection() {
     | { kind: 'chooseClass' }
     | { kind: 'public'; step: 'mat' | 'people' | 'date' | 'contact' | 'payment'; yoga: YogaStyle }
     | { kind: 'publicSuccess'; source: 'regular' | 'private' }
-    | { kind: 'corporate'; step: 'people' | 'date' | 'contact' | 'payment' }
+    | { kind: 'corporate'; step: 'people' | 'date' | 'contact' }
     | { kind: 'corporateSuccess' }
 
   const [flow, setFlow] = useState<Flow>({ kind: 'chooseClass' })
@@ -434,6 +434,8 @@ function PricingSection() {
   const [waiverModalOpen, setWaiverModalOpen] = useState(false)
   const [bookingLoading, setBookingLoading] = useState(false)
   const [bookingError, setBookingError] = useState<string | null>(null)
+  const [inquiryLoading, setInquiryLoading] = useState(false)
+  const [inquiryError, setInquiryError] = useState<string | null>(null)
 
   // Square availability
   const startDate = useMemo(todayIso, [])
@@ -622,11 +624,6 @@ function PricingSection() {
         setSelectedTimeSlotId(null)
         return
       }
-      if (flow.step === 'payment') {
-        setBookingError(null)
-        setFlow({ kind: 'corporate', step: 'contact' })
-        return
-      }
     }
   }
 
@@ -690,7 +687,36 @@ function PricingSection() {
     e.preventDefault()
     if (flow.kind !== 'public') return
 
-    // Capture lead in Zapier as soon as the form is submitted — before waiver gate
+    // Private Event: send inquiry directly — no payment
+    if (flow.yoga === 'gentle') {
+      setInquiryLoading(true)
+      setInquiryError(null)
+      try {
+        const res = await fetch('/api/inquiry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fullName,
+            email,
+            phone,
+            classType: 'Private Event',
+            preferredDate: selectedSessionIso ?? '',
+            preferredTime: selectedTimeSlotId ?? '',
+            groupSize: privateGroupCount,
+          }),
+        })
+        if (!res.ok) throw new Error('inquiry failed')
+        requestScrollPricingCardAfterAdvance()
+        setFlow({ kind: 'publicSuccess', source: 'private' })
+      } catch {
+        setInquiryError(s.inquirySubmitError)
+      } finally {
+        setInquiryLoading(false)
+      }
+      return
+    }
+
+    // Regular Class (yin): capture lead fire-and-forget, then go to Square payment
     fetch('/api/inquiry', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -698,79 +724,62 @@ function PricingSection() {
         fullName,
         email,
         phone,
-        classType: flow.yoga === 'gentle' ? 'Private Event' : 'Regular Class',
+        classType: 'Regular Class',
         preferredDate: selectedSessionIso ?? '',
         preferredTime: selectedTimeSlotId ?? '',
-        groupSize: flow.yoga === 'gentle' ? privateGroupCount : '',
+        groupSize: '',
       }),
     }).catch(() => {})
 
-    const needsWaiver = flow.yoga !== 'gentle'
-    if (needsWaiver && !waiverAccepted) return
+    if (!waiverAccepted) return
 
     if (typeof gtag !== 'undefined') {
       gtag('event', 'conversion', { send_to: 'AW-18168099243/YPflCLS3wLAcEKvjnNdD' })
     }
 
-    // Both yin and gentle advance to Square payment step
     requestScrollPricingCardAfterAdvance()
     setFlow({ kind: 'public', step: 'payment', yoga: flow.yoga })
   }
 
-  const submitCorporate = (e: FormEvent) => {
+  const submitCorporate = async (e: FormEvent) => {
     e.preventDefault()
-
-    // Fire Zapier lead capture the moment the corporate contact form is submitted
-    fetch('/api/inquiry', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        fullName: corpName,
-        email: corpEmail,
-        phone: corpPhone,
-        classType: 'Corporate',
-        preferredDate: selectedSessionIso ?? '',
-        preferredTime: selectedTimeSlotId ?? '',
-        groupSize: privateGroupCount,
-      }),
-    }).catch(() => {})
-
-    requestScrollPricingCardAfterAdvance()
-    setFlow({ kind: 'corporate', step: 'payment' })
+    setInquiryLoading(true)
+    setInquiryError(null)
+    try {
+      const res = await fetch('/api/inquiry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: corpName,
+          email: corpEmail,
+          phone: corpPhone,
+          classType: 'Corporate',
+          preferredDate: selectedSessionIso ?? '',
+          preferredTime: selectedTimeSlotId ?? '',
+          groupSize: privateGroupCount,
+        }),
+      })
+      if (!res.ok) throw new Error('inquiry failed')
+      requestScrollPricingCardAfterAdvance()
+      setFlow({ kind: 'corporateSuccess' })
+    } catch {
+      setInquiryError(s.inquirySubmitError)
+    } finally {
+      setInquiryLoading(false)
+    }
   }
 
   const submitBookingWithPayment = async (nonce: string) => {
-    if (flow.kind !== 'public' && flow.kind !== 'corporate') return
+    if (flow.kind !== 'public') return
     setBookingLoading(true)
     setBookingError(null)
 
-    let serviceInfo: typeof SQUARE_SERVICE_VARIATIONS[keyof typeof SQUARE_SERVICE_VARIATIONS]
-    let givenName: string, familyName: string, bookingEmail: string, bookingPhone: string
-    let baseAmountCents: number
-
-    if (flow.kind === 'corporate') {
-      serviceInfo = SQUARE_SERVICE_VARIATIONS.corporate
-      const parts = corpName.trim().split(' ')
-      givenName = parts[0] ?? corpName
-      familyName = parts.slice(1).join(' ') || givenName
-      bookingEmail = corpEmail
-      bookingPhone = corpPhone
-      const groupSize = Math.max(2, parseInt(privateGroupCount, 10) || 2)
-      baseAmountCents = serviceInfo.baseAmountCents * groupSize
-    } else {
-      serviceInfo = SQUARE_SERVICE_VARIATIONS[flow.yoga]
-      const parts = fullName.trim().split(' ')
-      givenName = parts[0] ?? fullName
-      familyName = parts.slice(1).join(' ') || givenName
-      bookingEmail = email
-      bookingPhone = phone
-      if (flow.yoga === 'gentle') {
-        const groupSize = Math.max(2, parseInt(privateGroupCount, 10) || 2)
-        baseAmountCents = serviceInfo.baseAmountCents * groupSize
-      } else {
-        baseAmountCents = serviceInfo.baseAmountCents + (needsMatRental ? 500 : 0)
-      }
-    }
+    const serviceInfo = SQUARE_SERVICE_VARIATIONS[flow.yoga]
+    const parts = fullName.trim().split(' ')
+    const givenName = parts[0] ?? fullName
+    const familyName = parts.slice(1).join(' ') || givenName
+    const bookingEmail = email
+    const bookingPhone = phone
 
     try {
       const res = await fetch('/api/booking', {
@@ -786,12 +795,9 @@ function PricingSection() {
           teamMemberId: serviceInfo.teamMemberId,
           startAt: selectedTimeSlotId,
           cardNonce: nonce,
-          baseAmountCents,
+          baseAmountCents: serviceInfo.baseAmountCents,
           serviceName: serviceInfo.serviceName,
-          groupSize:
-            flow.kind === 'corporate' || (flow.kind === 'public' && flow.yoga === 'gentle')
-              ? privateGroupCount
-              : '1',
+          needsMatRental,
         }),
       })
 
@@ -802,11 +808,7 @@ function PricingSection() {
       }
 
       requestScrollPricingCardAfterAdvance()
-      if (flow.kind === 'corporate') {
-        setFlow({ kind: 'corporateSuccess' })
-      } else {
-        setFlow({ kind: 'publicSuccess', source: flow.yoga === 'gentle' ? 'private' : 'regular' })
-      }
+      setFlow({ kind: 'publicSuccess', source: 'regular' })
     } catch {
       setBookingError('Network error. Please try again.')
     } finally {
@@ -827,6 +829,7 @@ function PricingSection() {
     setWaiverAccepted(false)
     setWaiverModalOpen(false)
     setBookingError(null)
+    setInquiryError(null)
   }
 
   const renderRegularClassPublicSuccess = () => (
@@ -1126,18 +1129,11 @@ function PricingSection() {
                 </div>
                 {flow.yoga === 'gentle' ? (
                   <>
-                    <p className="pricing-helper-text">
-                      {(() => {
-                        const groupSize = Math.max(2, parseInt(privateGroupCount || '2', 10))
-                        const svc = SQUARE_SERVICE_VARIATIONS.gentle
-                        const { totalCents } = computeTaxBreakdown(svc.baseAmountCents * groupSize)
-                        return lang === 'fr'
-                          ? `Total : ${groupSize} × ${fmtCAD(svc.baseAmountCents, 'fr')} = ${fmtCAD(totalCents, 'fr')} (taxes incluses)`
-                          : `Total: ${groupSize} × ${fmtCAD(svc.baseAmountCents, 'en')} = ${fmtCAD(totalCents, 'en')} (taxes included)`
-                      })()}
-                    </p>
-                    <button type="submit" className="btn-primary btn-lg pricing-submit">
-                      {lang === 'fr' ? 'Passer au paiement' : 'Proceed to payment'}
+                    {inquiryError && (
+                      <p className="pricing-error" role="alert">{inquiryError}</p>
+                    )}
+                    <button type="submit" className="btn-primary btn-lg pricing-submit" disabled={inquiryLoading}>
+                      {inquiryLoading ? s.inquirySubmitting : s.inquirySubmitLabel}
                     </button>
                   </>
                 ) : (
@@ -1338,112 +1334,17 @@ function PricingSection() {
                     required
                   />
                 </div>
-                <p className="pricing-helper-text">
-                  {(() => {
-                    const groupSize = Math.max(2, parseInt(privateGroupCount || '2', 10))
-                    const svc = SQUARE_SERVICE_VARIATIONS.corporate
-                    const { totalCents } = computeTaxBreakdown(svc.baseAmountCents * groupSize)
-                    return lang === 'fr'
-                      ? `Total : ${groupSize} × ${fmtCAD(svc.baseAmountCents, 'fr')} = ${fmtCAD(totalCents, 'fr')} (taxes incluses)`
-                      : `Total: ${groupSize} × ${fmtCAD(svc.baseAmountCents, 'en')} = ${fmtCAD(totalCents, 'en')} (taxes included)`
-                  })()}
-                </p>
-                <button type="submit" className="btn-primary btn-lg pricing-submit">
-                  {lang === 'fr' ? 'Passer au paiement' : 'Proceed to payment'}
+                {inquiryError && (
+                  <p className="pricing-error" role="alert">{inquiryError}</p>
+                )}
+                <button type="submit" className="btn-primary btn-lg pricing-submit" disabled={inquiryLoading}>
+                  {inquiryLoading ? s.inquirySubmitting : s.inquirySubmitLabel}
                 </button>
               </form>
             )}
 
-            {flow.kind === 'corporate' && flow.step === 'payment' && (
-              <div className="pricing-step-block">
-                <h3 className="pricing-step-title">
-                  {lang === 'fr' ? 'Paiement sécurisé' : 'Secure Payment'}
-                </h3>
-                {(() => {
-                  const groupSize = Math.max(2, parseInt(privateGroupCount || '2', 10))
-                  const baseCents = SQUARE_SERVICE_VARIATIONS.corporate.baseAmountCents * groupSize
-                  const { gstCents, qstCents, totalCents } = computeTaxBreakdown(baseCents)
-                  return (
-                    <div className="pricing-payment-summary">
-                      <div className="pricing-payment-summary-row">
-                        <span className="pricing-payment-summary-label">
-                          {lang === 'fr'
-                            ? `${groupSize} × Expérience corporative`
-                            : `${groupSize} × Corporate Experience`}
-                        </span>
-                        <span className="pricing-payment-summary-amount">{fmtCAD(baseCents, lang)}</span>
-                      </div>
-                      <div className="pricing-payment-summary-row">
-                        <span className="pricing-payment-summary-label">TPS / GST (5 %)</span>
-                        <span className="pricing-payment-summary-amount">{fmtCAD(gstCents, lang)}</span>
-                      </div>
-                      <div className="pricing-payment-summary-row">
-                        <span className="pricing-payment-summary-label">TVQ / QST (9.975 %)</span>
-                        <span className="pricing-payment-summary-amount">{fmtCAD(qstCents, lang)}</span>
-                      </div>
-                      <div className="pricing-payment-summary-row pricing-payment-summary-total">
-                        <span className="pricing-payment-summary-label">
-                          {lang === 'fr' ? 'Total' : 'Total'}
-                        </span>
-                        <span className="pricing-payment-summary-amount">{fmtCAD(totalCents, lang)}</span>
-                      </div>
-                      {selectedSessionIso && (
-                        <p className="pricing-payment-summary-meta">
-                          {formatLongSessionDate(selectedSessionIso, lang)}
-                          {selectedTimeSlotId && ` · ${formatSquareSlotTime(selectedTimeSlotId, lang)}`}
-                        </p>
-                      )}
-                    </div>
-                  )
-                })()}
-                <div className="pricing-payment-security">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.5C16.5 22.15 20 17.25 20 12V6l-8-4z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
-                    <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  {lang === 'fr'
-                    ? 'Paiement sécurisé par Square. Nous ne conservons jamais vos informations de carte.'
-                    : 'Payment secured by Square. We never store your card information.'}
-                </div>
-                {bookingError && (
-                  <p style={{ color: 'var(--rose, #e11d48)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                    {bookingError}
-                  </p>
-                )}
-                <SquareCardWidget
-                  appId={SQUARE_APP_ID}
-                  locationId={SQUARE_LOCATION_ID}
-                  loading={bookingLoading}
-                  buttonLabel={bookingLoading
-                    ? (lang === 'fr' ? 'Traitement…' : 'Processing…')
-                    : s.pricingSubmitBookSpot}
-                  onTokenize={(nonce) => { void submitBookingWithPayment(nonce) }}
-                />
-              </div>
-            )}
-
-            {flow.kind === 'corporateSuccess' && (
-              <div className="pricing-success">
-                <div className="pricing-success-icon" aria-hidden>
-                  <svg width="44" height="44" viewBox="0 0 48 48" fill="none">
-                    <circle cx="24" cy="24" r="22" stroke="var(--sage)" strokeWidth="2" opacity="0.35" />
-                    <path d="M14 24l8 8 13-17" stroke="var(--sage-dark)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-                <h3 className="pricing-step-title">{s.pricingSuccessPublicTitle}</h3>
-                <p className="pricing-success-body">
-                  {interpolate(s.pricingSuccessPublicBody, {
-                    email: corpEmail,
-                    date: selectedSessionIso ? formatLongSessionDate(selectedSessionIso, lang) : s.pricingSuccessChosenDayFallback,
-                    time: formatSquareSlotTime(selectedTimeSlotId, lang),
-                  })}
-                </p>
-                <p className="pricing-success-foot">{s.pricingSuccessPublicFoot}</p>
-                <button type="button" className="pricing-success-restart" onClick={restartPublicBooking}>
-                  {s.pricingSuccessRestart}
-                </button>
-              </div>
-            )}
+            {flow.kind === 'corporateSuccess' &&
+              renderPrivateOrCorporateRequestSuccess(corpPhone)}
           </div>
 
         </div>
