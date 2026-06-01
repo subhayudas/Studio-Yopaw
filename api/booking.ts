@@ -1,12 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { randomUUID } from 'crypto'
-import { Resend } from 'resend'
-import { square, getLocationId, stripBom } from './_square.js'
+import { square, getLocationId } from './_square.js'
 import { getMaxSeats } from './_config.js'
+import { sendTeamSms } from './_twilio.js'
 
 const ZAPIER_REGULAR_URL = 'https://hooks.zapier.com/hooks/catch/23258168/4oig0ml/'
-
-const resend = new Resend(stripBom(process.env.RESEND_API_KEY ?? ''))
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).end()
@@ -68,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       { givenName, familyName },
       ...(extraAttendees ?? []).map(a => {
         const parts = a.name.trim().split(' ')
-        return { givenName: parts[0] ?? a.name, familyName: parts.slice(1).join(' ') || parts[0] ?? a.name }
+        return { givenName: parts[0] ?? a.name, familyName: parts.slice(1).join(' ') || (parts[0] ?? a.name) }
       }),
     ]
 
@@ -222,28 +220,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
     }).catch((err) => console.error('[Zapier] regular-booking webhook failed:', err))
 
-    // 7. Send lead notification email
+    // 7. Send booking SMS to all team members
     const totalDollars = (Number(chargeAmount) / 100).toFixed(2)
-    const baseForEmail = baseAmountCents * totalPeople
-    const taxDollars = ((Number(chargeAmount) - baseForEmail - (needsMatRental ? 500 : 0)) / 100).toFixed(2)
+    const sessionDate = new Intl.DateTimeFormat('en-CA', {
+      weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+      timeZone: 'America/Toronto',
+    }).format(new Date(startAt))
+    const sessionTime = new Intl.DateTimeFormat('en-CA', {
+      hour: 'numeric', minute: '2-digit', hour12: true,
+      timeZone: 'America/Toronto',
+    }).format(new Date(startAt))
 
-    await resend.emails.send({
-      from: stripBom(process.env.RESEND_FROM_EMAIL ?? 'Studio Yopaw <noreply@studio-yopaw.com>'),
-      to: stripBom(process.env.LEAD_NOTIFY_EMAIL ?? ''),
-      subject: `New Booking — ${givenName} ${familyName} (${totalPeople} ${totalPeople === 1 ? 'person' : 'people'})`,
-      html: `
-        <h2>New booking confirmed</h2>
-        <p><strong>Lead:</strong> ${givenName} ${familyName} (${email})</p>
-        <p><strong>Phone:</strong> ${phone}</p>
-        <p><strong>All attendees (${totalPeople}):</strong> ${allNames}</p>
-        <p><strong>Start:</strong> ${startAt}</p>
-        <p><strong>Booking ID:</strong> ${booking!.id}</p>
-        <p><strong>Service:</strong> ${serviceName}${needsMatRental ? ' + Mat Rental' : ''}</p>
-        <p><strong>Subtotal:</strong> $${(baseForEmail / 100).toFixed(2)} CAD (${totalPeople} × $${(baseAmountCents / 100).toFixed(2)})</p>
-        <p><strong>Taxes:</strong> $${taxDollars} CAD (TPS/GST + TVQ/QST)</p>
-        <p><strong>Total charged:</strong> $${totalDollars} CAD — ${payment!.status}</p>
-      `,
-    })
+    await sendTeamSms(
+      `📋 NEW BOOKING — Studio Yopaw\n` +
+      `-----------------------------\n` +
+      `Service: ${serviceName}${needsMatRental ? ' + Mat Rental' : ''}\n` +
+      `Session: ${sessionDate} at ${sessionTime} (Montréal)\n` +
+      `\n` +
+      `👤 Primary booker:\n` +
+      `  Name: ${givenName} ${familyName}\n` +
+      `  Email: ${email}\n` +
+      `  Phone: ${phone}\n` +
+      `\n` +
+      `👥 Total attendees: ${totalPeople}\n` +
+      (totalPeople > 1 ? `  Names: ${allNames}\n` : '') +
+      `\n` +
+      `💳 Payment:\n` +
+      `  Total: $${totalDollars} CAD\n` +
+      `  Status: ${payment!.status}\n` +
+      `  Booking ID: ${booking!.id}`
+    ).catch(err => console.error('[Twilio] booking SMS failed:', err))
 
     return res.status(200).json({ bookingId: booking!.id, paymentStatus: payment!.status })
   } catch (err) {

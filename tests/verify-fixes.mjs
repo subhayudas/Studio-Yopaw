@@ -9,9 +9,10 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
-const booking = fs.readFileSync('./api/booking.ts', 'utf8')
-const inquiry = fs.readFileSync('./api/inquiry.ts', 'utf8')
-const appTsx  = fs.readFileSync('./src/App.tsx', 'utf8')
+const booking      = fs.readFileSync('./api/booking.ts', 'utf8')
+const inquiry      = fs.readFileSync('./api/inquiry.ts', 'utf8')
+const appTsx       = fs.readFileSync('./src/App.tsx', 'utf8')
+const availability = fs.readFileSync('./api/availability.ts', 'utf8')
 
 // ─── Payment bug #1: Taxes always applied ────────────────────────────────────
 
@@ -287,6 +288,37 @@ test('App.tsx: payment groupSize = 1 + extraAttendees.length for yin', () => {
   assert.ok(
     appTsx.includes('1 + extraAttendees.length'),
     'Payment groupSize not using 1 + extraAttendees.length for yin path'
+  )
+})
+
+// ─── Multi-attendee seat counting fix ────────────────────────────────────────
+
+test('availability.ts: has parseAttendeeCount helper', () => {
+  assert.ok(
+    availability.includes('parseAttendeeCount'),
+    'parseAttendeeCount not found in availability.ts — seat count will always be +1 per booking'
+  )
+})
+
+test('availability.ts: parseAttendeeCount reads booking.customerNote', () => {
+  assert.ok(
+    availability.includes('booking.customerNote'),
+    'availability.ts does not read booking.customerNote — attendee count cannot be extracted'
+  )
+})
+
+test('availability.ts: does not use raw +1 increment for bookingCounts', () => {
+  const hasRawPlusOne = /bookingCounts\.set\([^)]+\)\s*\+\s*1\)/.test(availability)
+  assert.ok(
+    !hasRawPlusOne,
+    'availability.ts still uses raw +1 per booking — multi-attendee groups will be undercounted'
+  )
+})
+
+test('availability.ts: parseAttendeeCount targets "Total attendees:" note format', () => {
+  assert.ok(
+    availability.includes('Total attendees'),
+    'parseAttendeeCount does not look for "Total attendees" — will not parse booking.ts notes correctly'
   )
 })
 

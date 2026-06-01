@@ -6,7 +6,7 @@
 
 ## Product Overview
 
-Studio Yopaw is a **puppy yoga studio** website and booking platform for a real studio located at 1515A Des Marguerites St., Saint-Lazare, QC J7T 2R8 (founded 2026 by Joëlle Castonguay). The site is bilingual (English / French), handles online class bookings with Square payments, and sends email notifications via Resend.
+Studio Yopaw is a **puppy yoga studio** website and booking platform for a real studio located at 1515A Des Marguerites St., Saint-Lazare, QC J7T 2R8 (founded 2026 by Joëlle Castonguay). The site is bilingual (English / French), handles online class bookings with Square payments, and sends SMS notifications via Twilio.
 
 **Live domain:** www.yopaw.ca  
 **Contact:** Studioyopaw@gmail.com | 514-242-4947  
@@ -21,7 +21,7 @@ Studio Yopaw is a **puppy yoga studio** website and booking platform for a real 
 | Frontend | React 19, TypeScript, Vite 8, Tailwind CSS v4 |
 | Backend (serverless) | Vercel Functions (`api/*.ts`), `@vercel/node` |
 | Payments | Square SDK v44 (`square` npm), vanilla Square Web Payments SDK (`window.Square`) |
-| Email | Resend v6 (`resend` npm) |
+| SMS notifications | Twilio (`twilio` npm) — sends to all `TWILIO_TEAM_NUMBERS` |
 | Lead capture | Zapier webhooks (fire-and-forget `fetch` calls) |
 | Analytics | Google Ads (gtag `AW-18168099243`), Microsoft Clarity (`wunf2gg5tc`) |
 | Deployment | Vercel (frontend + API functions bundled together) |
@@ -38,6 +38,7 @@ Studio-Yopaw/
 ├── api/                          # Vercel serverless functions
 │   ├── _square.ts                # Square client singleton + stripBom + getLocationId
 │   ├── _config.ts                # getMaxSeats(), getClassTimes(), slotMontrealTime()
+│   ├── _twilio.ts                # sendTeamSms() — sends SMS to all TWILIO_TEAM_NUMBERS
 │   ├── availability.ts           # GET  /api/availability
 │   ├── breeds.ts                 # GET  /api/breeds
 │   ├── booking.ts                # POST /api/booking
@@ -318,7 +319,7 @@ Flow:
    - Payment status validated: must be `COMPLETED` or `APPROVED`
    - **On any failure:** `square.bookings.cancel()` called immediately to prevent ghost appointments
 5. Fires `ZAPIER_REGULAR_URL` — single webhook: `{ firstName, lastName, fullName, email, phone, classType, attendeeCount: 1, startAt, bookingId, totalDollars, paymentStatus }`
-6. Sends notification email via Resend to `LEAD_NOTIFY_EMAIL`
+6. Sends booking SMS via Twilio (`sendTeamSms` in `api/_twilio.ts`) to all numbers in `TWILIO_TEAM_NUMBERS` — includes booker name/email/phone, all attendee names, session date/time (Montréal TZ), total, payment status
 
 Returns: `{ bookingId, paymentStatus }` or `{ error: string }` with human-readable message via `friendlyPaymentError()`.
 
@@ -333,8 +334,8 @@ Returns: `{ bookingId, paymentStatus }` or `{ error: string }` with human-readab
 Body: `{ fullName, email, phone, classType, preferredDate?, preferredTime?, groupSize? }`
 
 Used for Private Event and Corporate inquiries, and as a fire-and-forget lead capture for Regular Class. Flow:
-1. Sends email to `LEAD_NOTIFY_EMAIL` via Resend — `preferredDate` formatted as `"June 14, 2026"`, `preferredTime` formatted as `"10:30 AM (Montréal)"` using `Intl.DateTimeFormat` helpers `fmtDate()` / `fmtTime()` defined in the file.
-2. Fires `ZAPIER_INQUIRY_URL` — **only when `classType !== 'Regular Class'`** (private/corporate only). Regular class uses this endpoint as lead-capture only (Resend email fires, Zapier skipped — `booking.ts` fires the definitive webhook after payment).
+1. Sends SMS to all `TWILIO_TEAM_NUMBERS` via `sendTeamSms` (`api/_twilio.ts`) — includes full name, email, phone, class type, preferred date, preferred time, group size, company name (corporate only), and message. Regular Class lead shows `🔔 NEW LEAD`; inquiries show `📩 NEW INQUIRY`. `preferredDate`/`preferredTime` formatted via `fmtDate()` / `fmtTime()` (Montréal timezone).
+2. Fires `ZAPIER_INQUIRY_URL` — **only when `classType !== 'Regular Class'`** (private/corporate only). Regular class uses this endpoint as lead-capture only (SMS fires, Zapier skipped — `booking.ts` fires the definitive webhook after payment).
    Payload: `{ firstName, lastName, fullName, email, phone, classType, attendeeCount, preferredDate, preferredTime }`
 
 Returns `{ ok: true }` on success, `{ error: 'Failed to send inquiry' }` on failure.
@@ -347,8 +348,8 @@ Returns `{ ok: true }` on success, `{ error: 'Failed to send inquiry' }` on fail
 Validates HMAC-SHA256 signature (`x-square-hmacsha256-signature` header).  
 Notification URL hardcoded: `https://studio-yopaw.vercel.app/api/square-webhook`  
 Responds 200 immediately, then:
-- `payment.updated` / `payment.created` where `status === 'COMPLETED'` → email to `PAYMENT_NOTIFY_EMAIL`
-- `customer.created` → email to `LEAD_NOTIFY_EMAIL`
+- `payment.updated` / `payment.created` where `status === 'COMPLETED'` → SMS to all `TWILIO_TEAM_NUMBERS` with amount + payment ID + booking reference
+- `customer.created` → SMS to all `TWILIO_TEAM_NUMBERS` with customer name, email, phone
 
 ---
 
@@ -463,11 +464,11 @@ SQUARE_CLASS_TIMES=10:30,12:00,13:30,15:00  # Montreal-local times (used by _con
 # SQUARE_GST_TAX_ID / SQUARE_QST_TAX_ID — no longer used. Taxes are applied as inline
 # percentages (5% GST + 9.975% QST) directly in each order. No catalog tax IDs needed.
 
-# Email via Resend — server-only
-RESEND_API_KEY=
-RESEND_FROM_EMAIL=Studio Yopaw <noreply@studio-yopaw.com>
-LEAD_NOTIFY_EMAIL=                     # Inquiry/booking notification recipient
-PAYMENT_NOTIFY_EMAIL=                  # Webhook payment notification recipient
+# SMS via Twilio — server-only
+TWILIO_ACCOUNT_SID=                    # Twilio Account SID (starts with AC)
+TWILIO_AUTH_TOKEN=                     # Twilio Auth Token
+TWILIO_FROM_NUMBER=+12494026223        # The Twilio phone number that sends SMS
+TWILIO_TEAM_NUMBERS=+15142424947      # Comma-separated E.164 numbers that receive all notifications
 
 # Browser-safe (exposed via Vite)
 VITE_SQUARE_APP_ID=                    # Square application ID for Web Payments SDK

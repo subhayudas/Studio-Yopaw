@@ -366,19 +366,75 @@ test.describe('Extra attendees — Regular Class', () => {
     await expect(page.locator('.pricing-extra-attendee-card')).toHaveCount(0)
   })
 
-  test('max 4 extra attendees — add button disappears at cap', async ({ page }) => {
+  test('max 10 extra attendees — add button disappears at cap', async ({ page }) => {
     await openBooking(page)
     await clickClassChoice(page, 'Regular Class')
     await page.getByText("Yes, I'll bring my own").click()
     await expect(page.getByText('Select your preferred time')).toBeVisible({ timeout: 5_000 })
     await pickFirstDateAndTime(page)
 
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 10; i++) {
       await page.getByRole('button', { name: /Add another attendee/i }).click()
     }
 
-    await expect(page.locator('.pricing-extra-attendee-card')).toHaveCount(4)
+    await expect(page.locator('.pricing-extra-attendee-card')).toHaveCount(10)
     await expect(page.getByRole('button', { name: /Add another attendee/i })).not.toBeVisible()
+  })
+})
+
+test.describe('Seat count display — multi-attendee', () => {
+  test('slot with 1 seat remaining is shown in the date picker', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('studio-yopaw-lang', 'en'))
+
+    const d = new Date()
+    d.setDate(d.getDate() + 10)
+    const iso = d.toISOString().split('T')[0]
+
+    await page.route('**/api/availability**', route =>
+      route.fulfill({ json: { availabilities: [
+        { startAt: `${iso}T14:30:00Z`, seatsRemaining: 1 },
+      ]}})
+    )
+    await page.route('**/api/breeds**', route =>
+      route.fulfill({ json: { schedule: {
+        [iso]: [{ breed: { en: 'Golden Retriever', fr: 'Golden Retriever' }, serviceIds: [] }],
+      }}})
+    )
+
+    await page.goto('/#book')
+    await expect(page.getByText('What kind of class are you looking for?')).toBeVisible()
+    await page.locator('.pricing-choice-card', { hasText: 'Regular Class' }).click()
+    await page.getByText("Yes, I'll bring my own").click()
+
+    const row = page.locator('.pricing-session-row').first()
+    await expect(row).toBeVisible({ timeout: 8_000 })
+  })
+
+  test('slot with 0 seats remaining is hidden from the date picker', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('studio-yopaw-lang', 'en'))
+
+    const d = new Date()
+    d.setDate(d.getDate() + 10)
+    const iso = d.toISOString().split('T')[0]
+
+    await page.route('**/api/availability**', route =>
+      route.fulfill({ json: { availabilities: [
+        { startAt: `${iso}T14:30:00Z`, seatsRemaining: 0 },
+      ]}})
+    )
+    await page.route('**/api/breeds**', route =>
+      route.fulfill({ json: { schedule: {
+        [iso]: [{ breed: { en: 'Golden Retriever', fr: 'Golden Retriever' }, serviceIds: [] }],
+      }}})
+    )
+
+    await page.goto('/#book')
+    await expect(page.getByText('What kind of class are you looking for?')).toBeVisible()
+    await page.locator('.pricing-choice-card', { hasText: 'Regular Class' }).click()
+    await page.getByText("Yes, I'll bring my own").click()
+
+    await page.waitForTimeout(2_000)
+    await expect(page.locator('.pricing-session-row')).toHaveCount(0)
   })
 })
 
@@ -399,7 +455,7 @@ test.describe('French language — new strings', () => {
     await expect(page.getByText('Sélectionnez votre horaire préféré')).toBeVisible({ timeout: 5_000 })
     await pickFirstDateAndTime(page)
 
-    await expect(page.locator('.pricing-extra-attendees')).toContainText("4")
+    await expect(page.locator('.pricing-extra-attendees')).toContainText("10")
     await expect(page.getByRole('button', { name: /Ajouter un participant/i })).toBeVisible()
   })
 

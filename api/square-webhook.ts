@@ -1,9 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import crypto from 'crypto'
-import { Resend } from 'resend'
 import { stripBom } from './_square.js'
-
-const resend = new Resend(stripBom(process.env.RESEND_API_KEY ?? ''))
+import { sendTeamSms } from './_twilio.js'
 
 const NOTIFICATION_URL = 'https://studio-yopaw.vercel.app/api/square-webhook'
 
@@ -43,31 +41,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     (event.data as { object: { payment: { status?: string } } }).object.payment.status === 'COMPLETED'
   ) {
     const payment = (event.data as { object: { payment: Record<string, unknown> } }).object.payment
-    await resend.emails.send({
-      from: 'Studio Yopaw <noreply@studio-yopaw.com>',
-      to: stripBom(process.env.PAYMENT_NOTIFY_EMAIL ?? ''),
-      subject: 'Payment Completed',
-      html: `
-        <h2>Payment completed</h2>
-        <p><strong>Amount:</strong> $${Number((payment.amount_money as { amount: number }).amount) / 100} CAD</p>
-        <p><strong>Payment ID:</strong> ${payment.id}</p>
-        <p><strong>Reference:</strong> ${payment.reference_id ?? '—'}</p>
-      `,
-    })
+    const amountCents = (payment.amount_money as { amount: number }).amount
+    await sendTeamSms(
+      `✅ PAYMENT COMPLETED — Studio Yopaw\n` +
+      `Amount: $${(amountCents / 100).toFixed(2)} CAD\n` +
+      `Payment ID: ${payment.id}\n` +
+      `Reference (Booking): ${payment.reference_id ?? '—'}`
+    ).catch(err => console.error('[Twilio] payment SMS failed:', err))
   }
 
   if (event.type === 'customer.created') {
     const customer = (event.data as { object: { customer: Record<string, unknown> } }).object.customer
-    await resend.emails.send({
-      from: 'Studio Yopaw <noreply@studio-yopaw.com>',
-      to: stripBom(process.env.LEAD_NOTIFY_EMAIL ?? ''),
-      subject: 'New Customer in Square',
-      html: `
-        <h2>New customer created</h2>
-        <p><strong>Name:</strong> ${customer.given_name} ${customer.family_name}</p>
-        <p><strong>Email:</strong> ${customer.email_address ?? '—'}</p>
-        <p><strong>Phone:</strong> ${customer.phone_number ?? '—'}</p>
-      `,
-    })
+    await sendTeamSms(
+      `🆕 NEW CUSTOMER — Studio Yopaw\n` +
+      `Name: ${customer.given_name} ${customer.family_name}\n` +
+      `Email: ${customer.email_address ?? '—'}\n` +
+      `Phone: ${customer.phone_number ?? '—'}`
+    ).catch(err => console.error('[Twilio] customer SMS failed:', err))
   }
 }

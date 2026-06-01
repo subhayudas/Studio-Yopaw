@@ -483,10 +483,24 @@ function PricingSection() {
       .filter(date => {
         const entries = breedSchedule[date]
         if (!entries || entries.length === 0) return false
-        return entries.some(e => e.serviceIds.length === 0 || e.serviceIds.includes(currentServiceVariationId))
+        const hasBreed = entries.some(e => e.serviceIds.length === 0 || e.serviceIds.includes(currentServiceVariationId))
+        if (!hasBreed) return false
+        return effectiveSlotsByDate[date].some(s => s.seatsRemaining > 0)
       })
       .sort()
   }, [effectiveSlotsByDate, breedSchedule, currentServiceVariationId])
+
+  const soldOutDates = useMemo(() => {
+    return Object.keys(slotsByDate)
+      .filter(date => {
+        const entries = breedSchedule[date]
+        if (!entries || entries.length === 0) return false
+        const hasBreed = entries.some(e => e.serviceIds.length === 0 || e.serviceIds.includes(currentServiceVariationId))
+        if (!hasBreed) return false
+        return slotsByDate[date].length > 0 && slotsByDate[date].every(s => s.seatsRemaining === 0)
+      })
+      .sort()
+  }, [slotsByDate, breedSchedule, currentServiceVariationId])
 
   const pricingCardRef = useRef<HTMLDivElement>(null)
   const hasInteractedWithBookingFormRef = useRef(false)
@@ -1056,21 +1070,40 @@ function PricingSection() {
                 {availabilityLoading && (
                   <p className="pricing-helper-text">Loading available sessions…</p>
                 )}
-                {!availabilityLoading && effectiveDates.length === 0 && (
+                {!availabilityLoading && effectiveDates.length === 0 && soldOutDates.length === 0 && (
                   <p className="pricing-helper-text">No sessions available right now. Please check back soon.</p>
                 )}
                 <div className="pricing-session-list">
-                  {effectiveDates.map(dateIso => {
-                    const sel =
+                  {[...effectiveDates, ...soldOutDates].sort().map(dateIso => {
+                    const isSoldOut = !slotsByDate[dateIso] || slotsByDate[dateIso].length === 0
+                    const sel = !isSoldOut && (
                       pendingSessionIso === dateIso ||
                       (selectedSessionIso === dateIso &&
                         ((flow.kind === 'public' && flow.step === 'contact') ||
                           (flow.kind === 'corporate' && flow.step === 'contact')))
+                    )
                     const breedEntries = breedSchedule[dateIso] ?? []
                     const breedForService = breedEntries
                       .filter(e => e.serviceIds.length === 0 || e.serviceIds.includes(currentServiceVariationId))
                       .map(e => lang === 'fr' ? e.breed.fr : e.breed.en)
                       .join(', ')
+                    if (isSoldOut) {
+                      return (
+                        <div
+                          key={dateIso}
+                          className="pricing-session-row is-disabled"
+                          aria-disabled="true"
+                        >
+                          <span className="pricing-session-date">
+                            {formatShortSessionDate(dateIso, lang)}
+                            {breedForService && (
+                              <span className="pricing-session-breed">({breedForService})</span>
+                            )}
+                          </span>
+                          <span className="pricing-session-spots">{s.pricingSpotFull}</span>
+                        </div>
+                      )
+                    }
                     return (
                       <button
                         key={dateIso}
@@ -1214,7 +1247,7 @@ function PricingSection() {
                           </label>
                         </div>
                       ))}
-                      {extraAttendees.length < 4 && (
+                      {extraAttendees.length < 10 && (
                         <button
                           type="button"
                           className="pricing-add-attendee-btn"
@@ -1488,30 +1521,43 @@ function PricingSection() {
           </h3>
           <p className="pricing-time-modal-date">{formatLongSessionDate(pendingSessionIso, lang)}</p>
           <div className="pricing-time-slot-list">
-            {(effectiveSlotsByDate[pendingSessionIso] ?? []).map(slot => (
-              <button
-                key={slot.startAt}
-                type="button"
-                className="pricing-time-slot-row"
-                onClick={() => {
-                  const iso = pendingSessionIso
-                  setSelectedSessionIso(iso)
-                  setSelectedTimeSlotId(slot.startAt)
-                  setPendingSessionIso(null)
-                  requestScrollPricingCardAfterAdvance()
-                  setFlow(prev => {
-                    if (prev.kind === 'public' && prev.step === 'date')
-                      return { kind: 'public', step: 'contact', yoga: prev.yoga }
-                    if (prev.kind === 'corporate' && prev.step === 'date')
-                      return { kind: 'corporate', step: 'contact' }
-                    return prev
-                  })
-                }}
-              >
-                <span className="pricing-time-slot-label">{formatSquareSlotTime(slot.startAt, lang)}</span>
-                <span className="pricing-session-spots">{interpolate(s.pricingSpotsRemain, { count: String(slot.seatsRemaining) })}</span>
-              </button>
-            ))}
+            {(effectiveSlotsByDate[pendingSessionIso] ?? []).length === 0 && (
+              <p className="pricing-helper-text">{s.pricingTimeModalNoSlots}</p>
+            )}
+            {(effectiveSlotsByDate[pendingSessionIso] ?? []).map(slot => {
+              if (slot.seatsRemaining === 0) {
+                return (
+                  <div key={slot.startAt} className="pricing-time-slot-row is-disabled" aria-disabled="true">
+                    <span className="pricing-time-slot-label">{formatSquareSlotTime(slot.startAt, lang)}</span>
+                    <span className="pricing-session-spots">{s.pricingSpotFull}</span>
+                  </div>
+                )
+              }
+              return (
+                <button
+                  key={slot.startAt}
+                  type="button"
+                  className="pricing-time-slot-row"
+                  onClick={() => {
+                    const iso = pendingSessionIso
+                    setSelectedSessionIso(iso)
+                    setSelectedTimeSlotId(slot.startAt)
+                    setPendingSessionIso(null)
+                    requestScrollPricingCardAfterAdvance()
+                    setFlow(prev => {
+                      if (prev.kind === 'public' && prev.step === 'date')
+                        return { kind: 'public', step: 'contact', yoga: prev.yoga }
+                      if (prev.kind === 'corporate' && prev.step === 'date')
+                        return { kind: 'corporate', step: 'contact' }
+                      return prev
+                    })
+                  }}
+                >
+                  <span className="pricing-time-slot-label">{formatSquareSlotTime(slot.startAt, lang)}</span>
+                  <span className="pricing-session-spots">{interpolate(s.pricingSpotsRemain, { count: String(slot.seatsRemaining) })}</span>
+                </button>
+              )
+            })}
           </div>
           <button
             type="button"

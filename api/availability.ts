@@ -17,6 +17,12 @@ function loadSchedule(): ClassSchedule {
 
 const normalizeStartAt = (s: string) => s.replace(/\.\d+Z$/, 'Z')
 
+function parseAttendeeCount(note: string | undefined | null): number {
+  if (!note) return 1
+  const m = note.match(/Total attendees:\s*(\d+)/)
+  return m ? Math.max(1, parseInt(m[1], 10)) : 1
+}
+
 /** Split [startDate, endDate] into ≤30-day chunks to stay within Square's 32-day list limit. */
 function dateChunks(startDate: string, endDate: string): Array<{ start: string; end: string }> {
   const chunks: Array<{ start: string; end: string }> = []
@@ -71,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const st = booking.status ?? ''
             if (st === 'CANCELLED_BY_SELLER' || st === 'CANCELLED_BY_CUSTOMER' || st === 'DECLINED') continue
             const key = normalizeStartAt(booking.startAt)
-            bookingCounts.set(key, (bookingCounts.get(key) ?? 0) + 1)
+            bookingCounts.set(key, (bookingCounts.get(key) ?? 0) + parseAttendeeCount(booking.customerNote))
           }
         }
       }
@@ -98,10 +104,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const startAt = corrected.toISOString().replace(/\.\d{3}Z$/, 'Z')
 
         const booked = bookingCounts.get(normalizeStartAt(startAt)) ?? 0
-        const seatsRemaining = maxSeats - booked
-        if (seatsRemaining > 0) {
-          availabilities.push({ startAt, seatsRemaining })
-        }
+        const seatsRemaining = Math.max(0, maxSeats - booked)
+        availabilities.push({ startAt, seatsRemaining })
       }
     }
 
