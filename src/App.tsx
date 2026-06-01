@@ -69,18 +69,17 @@ function useInView(threshold = 0.2) {
 // ── Static Data ────────────────────────────────────────────
 
 const GALLERY_IMAGES = [
-  { src: '/IMG_7546.webp', tall: true as const },
-  { src: '/IMG_2299_2.webp', tall: false as const },
-  { src: '/IMG_7478_3c7b739e-7a8c-43b3-b104-99f3db44a731.webp', tall: false as const },
-  { src: '/IMG_9045_b027fb31-b966-46ee-ac10-47bafc1ef696.webp', tall: false as const },
-  { src: '/IMG_1167_ff8c28e8-ef39-491c-bf7c-ae0caa5fda75.webp', tall: false as const },
+  { src: '/class-regular.jpg', tall: true as const },
+  { src: '/class-private.jpg', tall: false as const },
+  { src: '/class-corporate.jpg', tall: false as const },
+  { src: '/class-regular.jpg', tall: false as const },
+  { src: '/class-private.jpg', tall: false as const },
 ]
 
 const CLASS_IMAGES = [
   '/class-regular.jpg',
   '/class-private.jpg',
   '/class-corporate.jpg',
-  '/magnific_change-the-dog-to-a-poodl_2935981941.png',
 ]
 
 
@@ -144,10 +143,11 @@ function HeroSection() {
   const { s } = useI18n()
   return (
     <section className="hero-section" id="hero">
-      <video
-        autoPlay muted loop playsInline
+      <img
         className="hero-video"
-        src="/182991340eeb459d952466dcb9f2d778.mp4"
+        src="/class-corporate.jpg"
+        alt=""
+        aria-hidden="true"
       />
       <div className="hero-overlay" />
       <div className="hero-content">
@@ -205,7 +205,7 @@ function AboutSection() {
           <a href="#classes" className="link-arrow">{s.aboutLink}</a>
         </div>
         <div className="about-image">
-          <img src="/IMG_1167_ff8c28e8-ef39-491c-bf7c-ae0caa5fda75.webp" alt={s.aboutImgAlt} />
+          <img src="/class-private.jpg" alt={s.aboutImgAlt} />
           <div className="paw-float paw-float-1"><PawIcon size={46} /></div>
           <div className="paw-float paw-float-2"><PawIcon size={32} /></div>
           <div className="paw-float paw-float-3"><PawIcon size={22} /></div>
