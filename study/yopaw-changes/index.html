@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Studio Yopaw — Changelog Study (since 28c2dbe)</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="header">
+        <h1>Studio Yopaw — What Changed</h1>
+        <div class="sub">All work done since commit <code>28c2dbe</code> — detailed study notes</div>
+      </div>
+
+      <nav class="nav" aria-label="Site">
+        <ul>
+          <li><a href="./index.html" aria-current="page">Overview</a></li>
+          <li><a href="./01-booking-flow.html">Booking Flow</a></li>
+          <li><a href="./02-api-layer.html">API Layer</a></li>
+          <li><a href="./03-integrations.html">3rd-Party Integrations</a></li>
+          <li><a href="./04-payment-resilience.html">Payment Resilience</a></li>
+          <li><a href="./05-ui-cleanup.html">UI Cleanup</a></li>
+        </ul>
+      </nav>
+
+      <!-- Commit range -->
+      <section class="card">
+        <h2>Commit Range</h2>
+        <p>Base: <code>28c2dbe</code> → HEAD <code>f3bcadb</code> — <strong>24 commits</strong>, 17 files changed, 3 025 insertions, 573 deletions.</p>
+        <table>
+          <thead><tr><th>Hash</th><th>Subject</th></tr></thead>
+          <tbody>
+            <tr><td><code>f1bdbf8</code></td><td>Push</td></tr>
+            <tr><td><code>721feab</code></td><td>thing</td></tr>
+            <tr><td><code>17eeb3b</code></td><td>PUsh</td></tr>
+            <tr><td><code>7d07260</code></td><td>Push</td></tr>
+            <tr><td><code>5c4c11a</code></td><td>Push</td></tr>
+            <tr><td><code>b9c1946</code></td><td>Push</td></tr>
+            <tr><td><code>d68ecc4</code></td><td>reviews</td></tr>
+            <tr><td><code>0dcbdc2</code></td><td>pull</td></tr>
+            <tr><td><code>2c71718</code></td><td>Push</td></tr>
+            <tr><td><code>9e99139</code></td><td>Push</td></tr>
+            <tr><td><code>ac023bb</code></td><td>Push</td></tr>
+            <tr><td><code>5ec8c0e</code></td><td>Fix Zapier webhook data format and error logging</td></tr>
+            <tr><td><code>8130ce0</code></td><td>Fire Zapier webhook on contact form submit, not just on payment</td></tr>
+            <tr><td><code>1c2b47e</code></td><td>Move Zapier fetch before waiver gate in submitPublic</td></tr>
+            <tr><td><code>adfb057</code></td><td>Push</td></tr>
+            <tr><td><code>a564f7c</code></td><td>Push</td></tr>
+            <tr><td><code>d347dee</code></td><td>Push</td></tr>
+            <tr><td><code>b418ddb</code></td><td>Pushed</td></tr>
+            <tr><td><code>46f12ba</code></td><td>Form Update</td></tr>
+            <tr><td><code>2d32fec</code></td><td>fix: resolve stashed conflict markers in Form branch</td></tr>
+            <tr><td><code>81fcb71</code></td><td>feat: add mat-rental step to yin booking flow (merge Form branch)</td></tr>
+            <tr><td><code>897d325</code></td><td>fix: wire mat step fully into yin booking flow</td></tr>
+            <tr><td><code>a9fbe7f</code></td><td>Push</td></tr>
+            <tr><td><code>f3bcadb</code></td><td>push</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- High-level summary cards -->
+      <section class="card">
+        <h2>What Was Built — High-Level Summary</h2>
+        <div class="grid">
+
+          <div class="card">
+            <span class="pill green">New Feature</span>
+            <h3><a href="./01-booking-flow.html">Mat Rental Step</a></h3>
+            <p>Yin yoga bookings now ask whether the customer has their own mat before letting them pick a date. Choosing "rent" adds $5 + taxes to the order total.</p>
+          </div>
+
+          <div class="card">
+            <span class="pill yellow">Rewrite</span>
+            <h3><a href="./02-api-layer.html">Availability &amp; Breeds API</a></h3>
+            <p>Both APIs were rewritten from reading Square Catalog / all-day bookings to reading a flat <code>class-schedule.json</code> file — far simpler and no extra Square API calls.</p>
+          </div>
+
+          <div class="card">
+            <span class="pill purple">Integration</span>
+            <h3><a href="./03-integrations.html">Zapier Lead Capture</a></h3>
+            <p>Three Zapier webhooks fire on key events (new Square customer, confirmed booking, contact form submit) so leads flow into Zapier automations even before payment.</p>
+          </div>
+
+          <div class="card">
+            <span class="pill purple">Integration</span>
+            <h3><a href="./03-integrations.html">Google Ads + Clarity</a></h3>
+            <p>Google Ads conversion tracking fires when the customer submits the contact form. Microsoft Clarity session recording is active on all pages.</p>
+          </div>
+
+          <div class="card">
+            <span class="pill green">Bug Fix</span>
+            <h3><a href="./04-payment-resilience.html">Payment Resilience</a></h3>
+            <p>If payment fails after the booking is created, the booking is immediately cancelled to prevent ghost appointments. User sees a human-readable error instead of a raw Square code.</p>
+          </div>
+
+          <div class="card">
+            <span class="pill red">Removed</span>
+            <h3><a href="./05-ui-cleanup.html">UI Cleanup</a></h3>
+            <p>The Testimonials section was removed from the landing page. The "Reviews" link was removed from Navbar and Footer. The pricing card header was simplified during booking steps.</p>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Files changed -->
+      <section class="card">
+        <h2>Files Changed</h2>
+        <table>
+          <thead><tr><th>File</th><th>Category</th><th>Net change</th></tr></thead>
+          <tbody>
+            <tr><td><code>src/App.tsx</code></td><td>Mat rental step, Zapier front-end calls, Google Ads conversion, pricing header refactor</td><td>+234 / -234</td></tr>
+            <tr><td><code>api/booking.ts</code></td><td>Zapier webhooks, payment resilience, friendly errors, groupSize param</td><td>+208 / -65</td></tr>
+            <tr><td><code>api/availability.ts</code></td><td>Rewrite: Square Catalog → class-schedule.json</td><td>+82 / -129</td></tr>
+            <tr><td><code>api/breeds.ts</code></td><td>Rewrite: Square all-day bookings → class-schedule.json breeds field</td><td>+18 / -71</td></tr>
+            <tr><td><code>api/inquiry.ts</code></td><td>Zapier webhooks added to inquiry endpoint</td><td>+35 / -0</td></tr>
+            <tr><td><code>class-schedule.json</code></td><td>Added <code>breeds</code> field with upcoming session dogs</td><td>+30 / -3</td></tr>
+            <tr><td><code>vite.config.ts</code></td><td>Added <code>devApiPlugin()</code> for local dev without <code>vercel dev</code></td><td>+102 / -2</td></tr>
+            <tr><td><code>index.html</code></td><td>Google Ads gtag + Microsoft Clarity snippets</td><td>+16 / -0</td></tr>
+            <tr><td><code>src/i18n/siteStrings.ts</code></td><td>New strings for mat rental step (EN + FR)</td><td>+12 / -0</td></tr>
+            <tr><td><code>vercel.json</code></td><td><code>includeFiles: class-schedule.json</code> added</td><td>+2 / -1</td></tr>
+            <tr><td><code>.env.local.example</code></td><td>Tax ID vars added; renamed <code>AMOUNT_CENTS</code> → <code>BASE_CENTS</code></td><td>+4 / -4</td></tr>
+            <tr><td><code>src/components/Navbar.tsx</code></td><td>Removed "Reviews" nav link</td><td>-2</td></tr>
+            <tr><td><code>src/components/Footer.tsx</code></td><td>Removed "Reviews" footer link</td><td>-1</td></tr>
+            <tr><td><code>package.json</code></td><td>Added <code>vercel</code> as production dep</td><td>+2 / -2</td></tr>
+            <tr><td><code>package-lock.json</code></td><td>Lock file updated (vercel pkg + reordering)</td><td>large</td></tr>
+            <tr><td><code>scripts/push-schedule.ts</code></td><td>Minor (1-line change)</td><td>+1</td></tr>
+            <tr><td><code>.claude/launch.json</code></td><td>Minor (launch config tweak)</td><td>+1 / -1</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <div class="footer">Folder: <code>study/yopaw-changes/</code> — base commit <code>28c2dbe</code></div>
+    </div>
+  </body>
+</html>
