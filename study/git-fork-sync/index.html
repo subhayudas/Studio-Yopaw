@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sync a Fork Safely (Git) — Study Notes</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="header">
+        <h1>Sync a Fork Safely (Git)</h1>
+        <div class="sub">Study notes based on what we did in this repo</div>
+      </div>
+
+      <nav class="nav" aria-label="Site">
+        <ul>
+          <li><a href="./index.html" aria-current="page">Home</a></li>
+          <li><a href="./01-forks-remotes.html">Forks &amp; Remotes</a></li>
+          <li><a href="./02-spotting-problems.html">Spotting Problems</a></li>
+          <li><a href="./03-safe-recovery.html">Safe Recovery</a></li>
+          <li><a href="./04-sync-workflow.html">Sync Workflow</a></li>
+          <li><a href="./05-checklist.html">Checklist</a></li>
+          <li><a href="./glossary.html">Glossary</a></li>
+        </ul>
+      </nav>
+
+      <section class="card">
+        <h2>Goal</h2>
+        <p>
+          You said: “discard the changes I have done, and just make it so I have commit <code>f3bcadb</code>
+          in the forked repo and on my machine.”
+        </p>
+        <p>
+          Outcome: your local branch <code>main</code> and your fork’s remote branch <code>origin/main</code>
+          both point to <code>f3bcadb</code> (same commit hash).
+        </p>
+        <div class="callout good">
+          <strong>Final state check</strong>
+          <pre><code>git rev-parse HEAD
+git rev-parse origin/main
+git show -s --oneline --decorate HEAD</code></pre>
+          <p class="muted">
+            If the first two hashes match, your local branch and the fork’s branch are aligned.
+          </p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>What we changed (conceptually)</h2>
+        <div class="grid">
+          <div class="card">
+            <span class="pill">Safety</span>
+            <h3>We prevented “oops push to upstream”</h3>
+            <p>
+              We added an <code>upstream</code> remote (the original repo) and disabled its push URL so
+              it can’t be pushed to from this clone.
+            </p>
+          </div>
+          <div class="card">
+            <span class="pill">Cleanup</span>
+            <h3>We exited an unfinished merge</h3>
+            <p>
+              The repo was mid-merge with conflicts. We backed up files and ran <code>git merge --abort</code>
+              so Git returned to a consistent state.
+            </p>
+          </div>
+          <div class="card">
+            <span class="pill">Sync</span>
+            <h3>We aligned your local branch to the fork</h3>
+            <p>
+              We moved local <code>main</code> to match <code>origin/main</code> using
+              <code>git reset --hard origin/main</code>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>How to read this study folder</h2>
+        <ol>
+          <li><a href="./01-forks-remotes.html">Forks &amp; Remotes</a>: the mental model (origin vs upstream)</li>
+          <li><a href="./02-spotting-problems.html">Spotting Problems</a>: how we knew the repo was “stuck”</li>
+          <li><a href="./03-safe-recovery.html">Safe Recovery</a>: how we safely got to a clean state</li>
+          <li><a href="./04-sync-workflow.html">Sync Workflow</a>: how to keep a fork updated long-term</li>
+          <li><a href="./05-checklist.html">Checklist</a>: copy/paste steps</li>
+          <li><a href="./glossary.html">Glossary</a>: jargon explained</li>
+        </ol>
+      </section>
+
+      <div class="footer">
+        Folder: <code>study/git-fork-sync/</code>
+      </div>
+    </div>
+  </body>
+</html>
+

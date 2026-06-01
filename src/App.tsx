@@ -77,9 +77,9 @@ const GALLERY_IMAGES = [
 ]
 
 const CLASS_IMAGES = [
-  '/magnific_change-the-dog-to-a-frenc_2935952488.png',
-  '/IMG_7478_3c7b739e-7a8c-43b3-b104-99f3db44a731.webp',
-  '/IMG_2299_2.webp',
+  '/class-regular.jpg',
+  '/class-private.jpg',
+  '/class-corporate.jpg',
   '/magnific_change-the-dog-to-a-poodl_2935981941.png',
 ]
 

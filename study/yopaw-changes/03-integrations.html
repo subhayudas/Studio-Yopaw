@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>3rd-Party Integrations — Studio Yopaw</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="header">
+        <h1>3rd-Party Integrations</h1>
+        <div class="sub">Zapier lead capture, Google Ads conversion tracking, Microsoft Clarity</div>
+      </div>
+
+      <nav class="nav" aria-label="Site">
+        <ul>
+          <li><a href="./index.html">Overview</a></li>
+          <li><a href="./01-booking-flow.html">Booking Flow</a></li>
+          <li><a href="./02-api-layer.html">API Layer</a></li>
+          <li><a href="./03-integrations.html" aria-current="page">3rd-Party Integrations</a></li>
+          <li><a href="./04-payment-resilience.html">Payment Resilience</a></li>
+          <li><a href="./05-ui-cleanup.html">UI Cleanup</a></li>
+        </ul>
+      </nav>
+
+      <!-- Overview -->
+      <section class="card">
+        <h2>What Was Added</h2>
+        <div class="grid">
+          <div class="card">
+            <span class="pill purple">Zapier</span>
+            <h3>Lead Capture Webhooks</h3>
+            <p>Three Zapier webhook URLs are called at key moments during the booking funnel to push lead data into Zapier automations.</p>
+          </div>
+          <div class="card">
+            <span class="pill yellow">Google</span>
+            <h3>Ads Conversion Tracking</h3>
+            <p>Google Ads global site tag (<code>gtag</code>) is loaded on every page. A conversion event fires when the contact form is submitted.</p>
+          </div>
+          <div class="card">
+            <span class="pill purple">Microsoft</span>
+            <h3>Clarity Session Recording</h3>
+            <p>Microsoft Clarity snippet added to <code>index.html</code>. Records session replays and heatmaps.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== ZAPIER ========== -->
+      <section class="card">
+        <h2>Zapier Webhooks</h2>
+
+        <h3>Webhook URLs (defined as constants)</h3>
+        <table>
+          <thead><tr><th>Constant</th><th>URL (partial)</th><th>When it fires</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>ZAPIER_NEW_CONTACT_URL</code></td>
+              <td><code>…/4oigr6o/</code></td>
+              <td>New Square customer created in <code>booking.ts</code>, or any inquiry submitted (<code>inquiry.ts</code>).</td>
+            </tr>
+            <tr>
+              <td><code>ZAPIER_NEW_BOOKING_URL</code></td>
+              <td><code>…/4oig0ml/</code></td>
+              <td>After a successful Square payment in <code>booking.ts</code>.</td>
+            </tr>
+            <tr>
+              <td><code>ZAPIER_FORM_URL</code></td>
+              <td><code>…/4ok9t5x/</code></td>
+              <td>Contact form submitted (both confirmed booking and inquiry paths).</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>These constants are defined in <strong>both</strong> <code>api/booking.ts</code> and <code>api/inquiry.ts</code> (duplicated intentionally — the two files are independent Vercel functions).</p>
+
+        <h3>Why fire early (before payment)?</h3>
+        <div class="callout">
+          The most important change is that <strong>Zapier is called when the contact form is submitted</strong>, not just when payment completes. If a customer fills in their name/email/phone and then abandons the payment step, the lead is still captured. This is the "Move Zapier fetch before waiver gate" commit (<code>1c2b47e</code>).
+        </div>
+      </section>
+
+      <!-- Zapier in booking.ts -->
+      <section class="card">
+        <h2>Zapier in <code>api/booking.ts</code></h2>
+        <p>Three webhooks fire at different points during the booking server flow:</p>
+
+        <h3>1. After new Square customer is created</h3>
+        <pre><code>// Only fires for brand-new customers (not returning ones)
+await fetch(ZAPIER_NEW_CONTACT_URL, &#123;
+  method: 'POST',
+  headers: &#123; 'Content-Type': 'application/json' &#125;,
+  body: JSON.stringify(&#123;
+    firstName: givenName,
+    lastName: familyName,
+    fullName: `$&#123;givenName&#125; $&#123;familyName&#125;`,
+    email,
+    phone,
+    source: 'booking',
+  &#125;),
+&#125;).catch((err) =&gt; console.error('[Zapier] new-contact webhook failed:', err))</code></pre>
+
+        <h3>2. After successful payment — booking confirmation</h3>
+        <pre><code>await fetch(ZAPIER_NEW_BOOKING_URL, &#123;
+  method: 'POST',
+  body: JSON.stringify(&#123;
+    firstName: givenName,
+    lastName: familyName,
+    fullName: `$&#123;givenName&#125; $&#123;familyName&#125;`,
+    email,
+    phone,
+    bookingId: booking!.id,
+    startAt,
+    serviceName,
+    totalCents: Number(chargeAmount),
+    totalDollars: (Number(chargeAmount) / 100).toFixed(2),
+    paymentStatus: payment!.status,
+  &#125;),
+&#125;).catch(...)</code></pre>
+
+        <h3>3. After successful payment — form-style fields</h3>
+        <pre><code>await fetch(ZAPIER_FORM_URL, &#123;
+  method: 'POST',
+  body: JSON.stringify(&#123;
+    firstName: givenName,
+    lastName: familyName,
+    phone,
+    email,
+    dateWanted: startAt,
+    eventType: serviceName,
+    peopleCount: groupSize ?? '1',
+  &#125;),
+&#125;).catch(...)</code></pre>
+        <p>All Zapier calls use <code>.catch(() =&gt; {})</code> / <code>.catch(err =&gt; console.error(...))</code> — they are fire-and-forget. A Zapier failure never breaks the booking response.</p>
+      </section>
+
+      <!-- Zapier in inquiry.ts -->
+      <section class="card">
+        <h2>Zapier in <code>api/inquiry.ts</code></h2>
+        <p>The inquiry endpoint (Private Event and Corporate) also fires Zapier after sending the Resend notification email:</p>
+
+        <pre><code>const [firstName, ...rest] = fullName.trim().split(/\s+/)
+const lastName = rest.join(' ')
+
+// Form fields
+await fetch(ZAPIER_FORM_URL, &#123;
+  method: 'POST',
+  body: JSON.stringify(&#123;
+    firstName, lastName, phone, email,
+    dateWanted: preferredDate ?? '',
+    eventType: classType,
+    peopleCount: groupSize ?? '',
+  &#125;),
+&#125;).catch(...)
+
+// New contact
+await fetch(ZAPIER_NEW_CONTACT_URL, &#123;
+  method: 'POST',
+  body: JSON.stringify(&#123;
+    firstName, lastName, fullName,
+    email, phone, classType,
+    preferredDate: preferredDate ?? '',
+    preferredTime: preferredTime ?? '',
+    groupSize: groupSize ?? '',
+    source: 'inquiry',
+  &#125;),
+&#125;).catch(...)</code></pre>
+        <p>Note: <code>ZAPIER_NEW_BOOKING_URL</code> is <em>not</em> called from inquiry — that webhook is reserved for confirmed paid bookings only.</p>
+      </section>
+
+      <!-- Zapier in App.tsx (frontend) -->
+      <section class="card">
+        <h2>Zapier in <code>src/App.tsx</code> (Frontend Lead Capture)</h2>
+        <p>The most important Zapier change is that the <em>frontend</em> also fires the inquiry API as soon as the contact form is submitted — before the user even sees the payment step.</p>
+
+        <h3>In <code>submitPublic()</code> (yin &amp; gentle flows)</h3>
+        <pre><code>const submitPublic = (e: FormEvent) =&gt; &#123;
+  e.preventDefault()
+  if (flow.kind !== 'public') return
+
+  // ← Fires FIRST, before waiver gate
+  fetch('/api/inquiry', &#123;
+    method: 'POST',
+    headers: &#123; 'Content-Type': 'application/json' &#125;,
+    body: JSON.stringify(&#123;
+      fullName,
+      email,
+      phone,
+      classType: flow.yoga === 'gentle' ? 'Private Event' : 'Regular Class',
+      preferredDate: selectedSessionIso ?? '',
+      preferredTime: selectedTimeSlotId ?? '',
+      groupSize: flow.yoga === 'gentle' ? privateGroupCount : '',
+    &#125;),
+  &#125;).catch(() =&gt; &#123;&#125;)
+
+  const needsWaiver = flow.yoga !== 'gentle'
+  if (needsWaiver &amp;&amp; !waiverAccepted) return  // ← waiver gate is here
+
+  // ... advance to payment
+&#125;</code></pre>
+        <div class="callout good">
+          Even if the waiver hasn't been accepted yet (and the function returns early), the <code>fetch('/api/inquiry')</code> has already been dispatched. So clicking "Submit" captures the lead regardless of whether they complete the booking.
+        </div>
+
+        <h3>In <code>submitCorporate()</code></h3>
+        <pre><code>const submitCorporate = (e: FormEvent) =&gt; &#123;
+  e.preventDefault()
+
+  fetch('/api/inquiry', &#123;
+    method: 'POST',
+    body: JSON.stringify(&#123;
+      fullName: corpName,
+      email: corpEmail,
+      phone: corpPhone,
+      classType: 'Corporate',
+      preferredDate: selectedSessionIso ?? '',
+      preferredTime: selectedTimeSlotId ?? '',
+      groupSize: privateGroupCount,
+    &#125;),
+  &#125;).catch(() =&gt; &#123;&#125;)
+
+  // ... advance to payment step (which is the confirmation screen for corporate)
+&#125;</code></pre>
+      </section>
+
+      <!-- Google Ads -->
+      <section class="card">
+        <h2>Google Ads Conversion Tracking</h2>
+
+        <h3>Global site tag in <code>index.html</code></h3>
+        <pre><code>&lt;!-- Google Ads conversion tracking --&gt;
+&lt;script async src="https://www.googletagmanager.com/gtag/js?id=AW-18168099243"&gt;&lt;/script&gt;
+&lt;script&gt;
+  window.dataLayer = window.dataLayer || [];
+  function gtag()&#123;dataLayer.push(arguments);&#125;
+  gtag('js', new Date());
+  gtag('config', 'AW-18168099243');
+&lt;/script&gt;</code></pre>
+        <p>The account ID is <code>AW-18168099243</code>. This loads the Google Ads global site tag on every page view.</p>
+
+        <h3>TypeScript declaration in <code>src/App.tsx</code></h3>
+        <pre><code>declare function gtag(...args: unknown[]): void</code></pre>
+        <p>This tells TypeScript that <code>gtag</code> is a global function (injected by the script tag), preventing a type error when it's called.</p>
+
+        <h3>Conversion event fired on contact form submit</h3>
+        <pre><code>// Inside submitPublic(), after the waiver check passes:
+if (typeof gtag !== 'undefined') &#123;
+  gtag('event', 'conversion', &#123; send_to: 'AW-18168099243/YPflCLS3wLAcEKvjnNdD' &#125;)
+&#125;</code></pre>
+        <p>The conversion label is <code>YPflCLS3wLAcEKvjnNdD</code>. The <code>typeof gtag !== 'undefined'</code> guard prevents errors if the script tag fails to load (e.g., blocked by an ad blocker).</p>
+
+        <div class="callout warn">
+          <strong>Timing:</strong> The conversion fires <em>after</em> the waiver check (when the user advances to the payment step), not when the form is first submitted. This means it fires for users who actually intend to pay, not for people who abandon at the waiver.
+        </div>
+      </section>
+
+      <!-- Microsoft Clarity -->
+      <section class="card">
+        <h2>Microsoft Clarity</h2>
+        <h3>Snippet in <code>index.html</code></h3>
+        <pre><code>&lt;script type="text/javascript"&gt;
+  (function(c,l,a,r,i,t,y)&#123;
+    c[a]=c[a]||function()&#123;(c[a].q=c[a].q||[]).push(arguments)&#125;;
+    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+  &#125;)(window, document, "clarity", "script", "wunf2gg5tc");
+&lt;/script&gt;</code></pre>
+        <p>The tag ID is <code>wunf2gg5tc</code>. Clarity records session replays and generates heatmaps automatically.</p>
+        <div class="callout">
+          Clarity is passive — no code changes elsewhere are needed. It runs on all pages and does not interact with the booking flow or Square SDK.
+        </div>
+      </section>
+
+      <div class="footer">← <a href="./02-api-layer.html">API Layer</a> &nbsp;|&nbsp; <a href="./04-payment-resilience.html">Payment Resilience →</a></div>
+    </div>
+  </body>
+</html>

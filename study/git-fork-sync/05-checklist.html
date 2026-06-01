@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Checklist — Sync a Fork Safely (Git)</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="header">
+        <h1>Checklist</h1>
+        <div class="sub">Copy/paste steps for common situations</div>
+      </div>
+
+      <nav class="nav" aria-label="Site">
+        <ul>
+          <li><a href="./index.html">Home</a></li>
+          <li><a href="./01-forks-remotes.html">Forks &amp; Remotes</a></li>
+          <li><a href="./02-spotting-problems.html">Spotting Problems</a></li>
+          <li><a href="./03-safe-recovery.html">Safe Recovery</a></li>
+          <li><a href="./04-sync-workflow.html">Sync Workflow</a></li>
+          <li><a href="./05-checklist.html" aria-current="page">Checklist</a></li>
+          <li><a href="./glossary.html">Glossary</a></li>
+        </ul>
+      </nav>
+
+      <section class="card">
+        <h2>Situation 1 — “I just want my local repo to match my fork (discard local changes)”</h2>
+        <div class="callout bad">
+          <strong>Warning</strong>
+          <p>
+            This can delete local uncommitted changes. If you might need them later, back up first.
+          </p>
+        </div>
+        <pre><code>git merge --abort  2&gt; NUL
+git fetch origin
+git checkout main
+git reset --hard origin/main</code></pre>
+        <p class="muted">
+          Note: <code>2&gt; NUL</code> is a Windows/cmd-style redirect. In PowerShell, you can omit it or use <code>2&gt;$null</code>.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>Situation 2 — “I want to sync my fork with upstream (typical fork workflow)”</h2>
+        <pre><code>git remote -v
+git fetch upstream --prune
+git checkout main
+git merge upstream/main
+git push origin main</code></pre>
+        <div class="callout">
+          <strong>Tip</strong>
+          <p>
+            Run <code>git status -sb</code> before pushing to ensure you’re on the right branch.
+          </p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Situation 3 — “Prove origin/main and upstream/main are identical”</h2>
+        <pre><code>git fetch origin --prune
+git fetch upstream --prune
+git rev-list --left-right --count origin/main...upstream/main
+git rev-parse origin/main
+git rev-parse upstream/main</code></pre>
+      </section>
+
+      <section class="card">
+        <h2>Situation 4 — “Make upstream impossible to push to”</h2>
+        <pre><code>git remote set-url --push upstream DISABLE
+git remote -v</code></pre>
+      </section>
+
+      <div class="footer">
+        Next: <a href="./glossary.html">Glossary</a>
+      </div>
+    </div>
+  </body>
+</html>
+
