@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 02 — Closing the Gaps: Implementation & Testing | Studio Yopaw</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── CSS VARIABLES ── */
+:root {
+  --bg: #1a1a2e; --bg-card: #16213e; --bg-code: #0f0f23;
+  --text: #e0e0e0; --text-muted: #8899aa; --border: #2a2a4a;
+  --accent: #6c63ff; --accent-hover: #5a52d5;
+  --success: #4ade80; --warning: #fbbf24; --danger: #f87171; --bug: #f472b6;
+  --tip: #38bdf8; --key: #a78bfa;
+  --code-keyword: #c678dd; --code-string: #98c379; --code-comment: #5c6370;
+  --code-function: #61afef; --code-number: #d19a66; --code-operator: #56b6c2;
+  --sidebar-w: 260px; --header-h: 60px;
+}
+[data-theme="light"] {
+  --bg: #f8f9fc; --bg-card: #ffffff; --bg-code: #f0f0f8;
+  --text: #1a1a2e; --text-muted: #64748b; --border: #e2e8f0;
+  --accent: #5a52d5; --code-comment: #6b7280; --code-keyword: #7c3aed;
+  --code-string: #16a34a; --code-function: #2563eb; --code-number: #c2410c;
+  --code-operator: #0891b2; --bug: #db2777; --warning: #d97706;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden;transition:background .3s,color .3s}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── TOP BAR ── */
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--header-h);background:var(--bg-card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;z-index:100;backdrop-filter:blur(8px)}
+.topbar-left{display:flex;align-items:center;gap:1rem}
+.session-badge{background:var(--accent);color:#fff;font-size:.72rem;font-weight:700;padding:.25rem .6rem;border-radius:20px;letter-spacing:.05em}
+.session-title{font-weight:600;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px}
+.topbar-right{display:flex;align-items:center;gap:.75rem}
+.theme-btn{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:.4rem .8rem;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .2s}
+.theme-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.nav-pill{background:var(--bg);border:1px solid var(--border);color:var(--text-muted);padding:.3rem .7rem;border-radius:6px;font-size:.8rem;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-block}
+.nav-pill:hover{color:var(--accent);border-color:var(--accent);text-decoration:none}
+
+/* ── PROGRESS BAR ── */
+.progress-track{height:3px;background:var(--border);position:fixed;top:var(--header-h);left:0;right:0;z-index:99}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--bug));width:0;transition:width .1s}
+
+/* ── LAYOUT ── */
+.layout{display:flex;padding-top:calc(var(--header-h)+3px);min-height:100vh}
+.sidebar{width:var(--sidebar-w);flex-shrink:0;position:fixed;top:calc(var(--header-h)+3px);bottom:0;overflow-y:auto;padding:1.5rem 1rem;border-right:1px solid var(--border);background:var(--bg-card)}
+.sidebar-section{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin:1.2rem 0 .4rem .5rem}
+.sidebar a{display:block;font-size:.83rem;color:var(--text-muted);padding:.3rem .6rem;border-radius:6px;transition:all .15s;text-decoration:none;border-left:2px solid transparent}
+.sidebar a:hover,.sidebar a.active{color:var(--accent);background:rgba(108,99,255,.1);border-left-color:var(--accent)}
+.main{flex:1;margin-left:var(--sidebar-w);padding:2.5rem 3rem 4rem;max-width:900px}
+
+/* ── HEADER BLOCK ── */
+.session-header{background:linear-gradient(135deg,var(--bg-card),#1e1e3f);border:1px solid var(--border);border-radius:16px;padding:2.5rem;margin-bottom:2.5rem}
+.session-number{font-size:.8rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.5rem}
+.session-header h1{font-size:2rem;font-weight:700;line-height:1.2;margin-bottom:1rem}
+.meta-row{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:1rem}
+.meta-chip{background:rgba(108,99,255,.15);border:1px solid rgba(108,99,255,.3);border-radius:20px;padding:.3rem .8rem;font-size:.78rem;color:var(--text-muted)}
+.meta-chip strong{color:var(--text)}
+
+/* ── TYPOGRAPHY ── */
+h2{font-size:1.5rem;font-weight:700;margin:3rem 0 1rem;padding-top:.5rem;border-bottom:1px solid var(--border);padding-bottom:.5rem}
+h3{font-size:1.15rem;font-weight:600;margin:2rem 0 .75rem;color:var(--key)}
+h4{font-size:1rem;font-weight:600;margin:1.5rem 0 .5rem;color:var(--text-muted)}
+p{margin-bottom:1rem;max-width:72ch}
+ul,ol{padding-left:1.5rem;margin-bottom:1rem}
+li{margin-bottom:.35rem}
+strong{font-weight:600;color:var(--text)}
+em{font-style:italic;color:var(--text-muted)}
+code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--bg-code);padding:.15em .4em;border-radius:4px;color:var(--code-string)}
+
+/* ── CODE BLOCKS ── */
+.code-block{position:relative;background:var(--bg-code);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:1rem 0 1.5rem}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:.5rem 1rem;background:rgba(255,255,255,.04);border-bottom:1px solid var(--border)}
+.code-lang{font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+.copy-btn{background:none;border:1px solid var(--border);color:var(--text-muted);padding:.2rem .6rem;border-radius:5px;cursor:pointer;font-size:.72rem;transition:all .15s}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent)}
+.copy-btn.copied{border-color:var(--success);color:var(--success)}
+pre{padding:1.2rem 1.4rem;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.7;tab-size:2}
+pre code{background:none;padding:0;font-size:inherit;color:var(--text)}
+
+/* syntax highlight helpers — apply manually via spans */
+.kw{color:var(--code-keyword)}
+.str{color:var(--code-string)}
+.fn{color:var(--code-function)}
+.cm{color:var(--code-comment)}
+.nu{color:var(--code-number)}
+.op{color:var(--code-operator)}
+.ty{color:var(--warning)}
+
+/* ── CALLOUT BOXES ── */
+.callout{border-radius:10px;padding:1rem 1.2rem;margin:1.2rem 0;border-left:4px solid;display:flex;gap:.75rem}
+.callout-icon{font-size:1.1rem;flex-shrink:0;margin-top:.1rem}
+.callout-body{flex:1}
+.callout-body p:last-child{margin-bottom:0}
+.callout.tip{background:rgba(56,189,248,.08);border-color:var(--tip)}
+.callout.warning{background:rgba(251,191,36,.08);border-color:var(--warning)}
+.callout.key{background:rgba(167,139,250,.08);border-color:var(--key)}
+.callout.bug{background:rgba(244,114,182,.08);border-color:var(--bug)}
+.callout.exercise{background:rgba(74,222,128,.08);border-color:var(--success)}
+.callout.deep{background:rgba(108,99,255,.08);border-color:var(--accent)}
+
+/* ── TASK CARDS ── */
+.task-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin:1.5rem 0}
+.task-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.25rem;transition:border-color .2s}
+.task-card:hover{border-color:var(--accent)}
+.task-label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:.4rem}
+.task-title{font-weight:600;font-size:.95rem;color:var(--text);margin-bottom:.5rem}
+.task-severity{display:inline-block;font-size:.7rem;padding:.2rem .6rem;border-radius:10px;font-weight:600;margin-top:.4rem}
+.sev-high{background:rgba(248,113,113,.15);color:var(--danger)}
+.sev-med{background:rgba(251,191,36,.15);color:var(--warning)}
+.sev-low{background:rgba(74,222,128,.15);color:var(--success)}
+
+/* ── RESULT BADGE ── */
+.result-row{display:flex;align-items:center;gap:.75rem;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:.85rem 1.1rem;margin:.5rem 0}
+.result-icon{font-size:1.2rem}
+.result-text{font-size:.9rem}
+.result-count{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--success);margin-left:auto}
+
+/* ── FLOW DIAGRAM ── */
+.flow-diagram{background:var(--bg-code);border:1px solid var(--border);border-radius:10px;padding:1.5rem;margin:1.5rem 0;font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height:1.9;overflow-x:auto;white-space:pre;color:var(--text-muted)}
+.flow-diagram .hi{color:var(--accent)}
+.flow-diagram .ok{color:var(--success)}
+.flow-diagram .warn{color:var(--warning)}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse;margin:1.2rem 0;font-size:.88rem}
+th{background:rgba(108,99,255,.12);padding:.6rem 1rem;text-align:left;font-weight:600;border-bottom:2px solid var(--border)}
+td{padding:.55rem 1rem;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+
+/* ── COLLAPSIBLE ── */
+details{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;margin:1rem 0}
+summary{padding:1rem 1.2rem;cursor:pointer;font-weight:600;font-size:.9rem;list-style:none;display:flex;align-items:center;gap:.5rem}
+summary::before{content:'▶';font-size:.7rem;color:var(--accent);transition:transform .2s}
+details[open] summary::before{transform:rotate(90deg)}
+details .inner{padding:0 1.2rem 1.2rem}
+
+/* ── FOOTER ── */
+.page-footer{margin-top:4rem;padding:2rem 0 1rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+.page-footer a{color:var(--text-muted);font-size:.85rem;text-decoration:none}
+.page-footer a:hover{color:var(--accent)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .sidebar{display:none}
+  .main{margin-left:0;padding:1.5rem 1.2rem 3rem}
+  .session-header h1{font-size:1.5rem}
+}
+@media(max-width:600px){
+  .topbar-right .nav-pill{display:none}
+  .task-grid{grid-template-columns:1fr}
+}
+
+/* ── PRINT ── */
+@media print{
+  .topbar,.sidebar,.progress-track,.copy-btn,.theme-btn,.nav-pill{display:none!important}
+  .main{margin-left:0;padding:0}
+  body{background:#fff;color:#000}
+  .code-block{border:1px solid #ccc}
+  pre{font-size:.75rem}
+  .callout{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="session-badge">Session 02</span>
+    <span class="session-title">Closing the Gaps: Implementation &amp; Testing</span>
+  </div>
+  <div class="topbar-right">
+    <a href="session-01a-booking-flow-gap-analysis.html" class="nav-pill">← Session 01A</a>
+    <a href="index.html" class="nav-pill">Index</a>
+    <button class="theme-btn" onclick="toggleTheme()">☀ / ☾</button>
+  </div>
+</div>
+
+<!-- READING PROGRESS -->
+<div class="progress-track"><div class="progress-fill" id="prog"></div></div>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-section">Overview</div>
+  <a href="#overview">What We Built</a>
+  <a href="#recap">Recap Bridge</a>
+
+  <div class="sidebar-section">Implementation</div>
+  <a href="#task-a">Task A — Inquiry Fields</a>
+  <a href="#task-b">Task B — Extra Attendees</a>
+  <a href="#task-c">Task C — Per-Attendee Waivers</a>
+  <a href="#task-d">Task D — Payment × Attendees</a>
+  <a href="#task-e">Task E — Square Customers</a>
+  <a href="#task-f">Task F — Booking Note</a>
+
+  <div class="sidebar-section">Key Concepts</div>
+  <a href="#concept-array-state">Array State in React</a>
+  <a href="#concept-immutable">Immutable Updates</a>
+  <a href="#concept-disabled">Computed disabled Props</a>
+  <a href="#concept-promise-all">Promise.all + Fallback</a>
+  <a href="#concept-quantity">Quantity vs Custom Price</a>
+
+  <div class="sidebar-section">Testing</div>
+  <a href="#test-strategy">Test Strategy</a>
+  <a href="#test-node">Node Unit Tests</a>
+  <a href="#test-playwright">Playwright E2E</a>
+
+  <div class="sidebar-section">Bugs</div>
+  <a href="#bug-apostrophe">Bug: Curly Apostrophe</a>
+  <a href="#bug-selector">Bug: Ambiguous Selector</a>
+  <a href="#bug-breed-mock">Bug: Empty Breed Mock</a>
+  <a href="#bug-quantity-assert">Bug: Overstrict Assertion</a>
+
+  <div class="sidebar-section">Wrap-Up</div>
+  <a href="#results">Final Results</a>
+  <a href="#exercises">Exercises</a>
+  <a href="#glossary">Glossary</a>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main class="main" id="main">
+
+<!-- ── SESSION HEADER ── -->
+<div class="session-header">
+  <div class="session-number">Session 02 · Studio Yopaw Build Series</div>
+  <h1>Closing the Gaps:<br>Implementation &amp; Testing</h1>
+  <p style="color:var(--text-muted);margin-bottom:0">We had a 10-item gap list and a plan. This session executes the plan, fixes every gap, and then proves the fixes work with 67 automated tests — all passing.</p>
+  <div class="meta-row">
+    <span class="meta-chip"><strong>⏱ Time:</strong> ~90 min read + build</span>
+    <span class="meta-chip"><strong>🔴 Level:</strong> Intermediate–Advanced</span>
+    <span class="meta-chip"><strong>📚 Requires:</strong> Session 01A</span>
+    <span class="meta-chip"><strong>🧪 Tests:</strong> 47 unit + 20 E2E = 67 total</span>
+  </div>
+</div>
+
+<!-- ── OVERVIEW ── -->
+<h2 id="overview">A. What We Built</h2>
+
+<p>Session 01A ended with a gap analysis: 10 things the booking flow diagram showed that the code didn't do. This session implements every single one, in dependency order, and then builds a full automated test suite to prove nothing regressed.</p>
+
+<div class="task-grid">
+  <div class="task-card">
+    <div class="task-label">Task A</div>
+    <div class="task-title">Message &amp; Company Fields</div>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:.3rem">Private Event gets a message textarea. Corporate gets company name + message. Backend passes them through email and Zapier.</p>
+    <span class="task-severity sev-med">Medium</span>
+  </div>
+  <div class="task-card">
+    <div class="task-label">Task B</div>
+    <div class="task-title">Extra Attendees UI</div>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:.3rem">Regular Class contact form gains an "Add attendee" button. Up to 4 extra people, each with a name field and waiver checkbox.</p>
+    <span class="task-severity sev-high">High</span>
+  </div>
+  <div class="task-card">
+    <div class="task-label">Task C</div>
+    <div class="task-title">Per-Attendee Waiver Guard</div>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:.3rem">Submit button disabled until ALL attendees (primary + extras) have checked their waiver. Zero magic — pure boolean logic.</p>
+    <span class="task-severity sev-high">High</span>
+  </div>
+  <div class="task-card">
+    <div class="task-label">Task D</div>
+    <div class="task-title">Payment × Attendee Count</div>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:.3rem">Fix the revenue bug: price × total people. Frontend summary updates live. Backend uses Square order quantity to drive the real charge.</p>
+    <span class="task-severity sev-high">High</span>
+  </div>
+  <div class="task-card">
+    <div class="task-label">Task E</div>
+    <div class="task-title">Per-Attendee Square Customers</div>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:.3rem">One Square customer record per attendee, created in parallel via <code>Promise.all</code>. Graceful fallback to primary client if the API rate-limits.</p>
+    <span class="task-severity sev-med">Medium</span>
+  </div>
+  <div class="task-card">
+    <div class="task-label">Task F</div>
+    <div class="task-title">Booking Note on Appointment</div>
+    <p style="font-size:.82rem;color:var(--text-muted);margin-bottom:.3rem">Every Square appointment gets a <code>customerNote</code> listing all names and waiver status. Studio staff see this in the Square calendar.</p>
+    <span class="task-severity sev-low">Low</span>
+  </div>
+</div>
+
+<h3>Files Changed</h3>
+<table>
+  <tr><th>File</th><th>What Changed</th></tr>
+  <tr><td><code>src/i18n/siteStrings.ts</code></td><td>7 new string keys (EN + FR) for all new UI elements</td></tr>
+  <tr><td><code>src/App.tsx</code></td><td>4 new state vars, attendee cards UI, payment calculation, form validation</td></tr>
+  <tr><td><code>src/App.css</code></td><td>Styles for <code>.pricing-extra-attendees</code>, <code>.pricing-textarea</code></td></tr>
+  <tr><td><code>api/booking.ts</code></td><td>Extra attendees, quantity scaling, per-attendee customers, booking note</td></tr>
+  <tr><td><code>api/inquiry.ts</code></td><td>Accept and forward <code>companyName</code> + <code>message</code></td></tr>
+  <tr><td><code>tests/verify-fixes.mjs</code></td><td>27 new code-level assertions; 1 stale assertion fixed</td></tr>
+  <tr><td><code>tests/e2e/booking-flow.spec.ts</code></td><td>New E2E tests; 4 pre-existing bugs fixed</td></tr>
+</table>
+
+<!-- ── RECAP ── -->
+<h2 id="recap">B. Recap Bridge</h2>
+
+<p>If you haven't read Session 01A, here's the context you need for this session:</p>
+
+<ul>
+  <li>The user provided two hand-drawn images of the intended booking and payment flows.</li>
+  <li>We created <code>dev-docs/booking-payment-flow.md</code> — a plain-text flowchart from those images.</li>
+  <li>We ran a gap analysis comparing the diagram against the live code and found <strong>10 gaps</strong>.</li>
+  <li>We wrote <code>dev-docs/booking-flow-implementation-plan.md</code> — a prioritised, dependency-ordered plan for fixing all 10 gaps across 6 tasks (A–F).</li>
+</ul>
+
+<div class="callout key">
+  <div class="callout-icon">🔑</div>
+  <div class="callout-body">
+    <strong>Implementation order matters.</strong> Tasks B, C, D, E, and F all depend on the extra-attendee state introduced in Task B. The plan specifically ordered them so each task could be built and tested independently before the next one layered on top. Task A (inquiry fields) has no dependencies and could run in parallel.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TASK A
+══════════════════════════════════════════════ -->
+<h2 id="task-a">C. Task A — Message &amp; Company Name Fields</h2>
+
+<h3>What Gap Does This Fix?</h3>
+<p>The booking diagram showed that Private Event inquiries include a "Message / special request" field, and Corporate inquiries also include a "Company name" field. Neither existed in the code.</p>
+
+<h3>i18n First — Add String Keys</h3>
+<p>Every user-visible string in this codebase lives in <code>src/i18n/siteStrings.ts</code>. We extended the <code>SiteStrings</code> interface and added both EN and FR values before touching the UI:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TypeScript — siteStrings.ts (additions)</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="cm">// Interface — defines the contract both languages must fulfil</span>
+<span class="kw">interface</span> <span class="ty">SiteStrings</span> {
+  <span class="cm">// ... existing keys ...</span>
+  pricingLblMessage: <span class="ty">string</span>
+  pricingLblCompanyName: <span class="ty">string</span>
+  pricingExtraAttendeesHelper: <span class="ty">string</span>
+  pricingExtraAttendeeName: <span class="ty">string</span>
+  pricingAddAttendee: <span class="ty">string</span>
+  pricingRemoveAttendee: <span class="ty">string</span>
+  pricingExtraAttendeeWaiver: <span class="ty">string</span>
+}
+
+<span class="cm">// English values</span>
+<span class="kw">export const</span> <span class="fn">siteStrings</span>.<span class="fn">en</span>: <span class="ty">SiteStrings</span> = {
+  <span class="cm">// ... existing ...</span>
+  pricingLblMessage:          <span class="str">'Message / special request'</span>,
+  pricingLblCompanyName:      <span class="str">'Company name'</span>,
+  pricingExtraAttendeesHelper:<span class="str">'Add up to 4 more people to this booking.'</span>,
+  pricingExtraAttendeeName:   <span class="str">'Attendee name'</span>,
+  pricingAddAttendee:         <span class="str">'+ Add another attendee'</span>,
+  pricingRemoveAttendee:      <span class="str">'Remove'</span>,
+  pricingExtraAttendeeWaiver: <span class="str">'I have read and agree to the waiver'</span>,
+}
+
+<span class="cm">// French values</span>
+<span class="kw">export const</span> <span class="fn">siteStrings</span>.<span class="fn">fr</span>: <span class="ty">SiteStrings</span> = {
+  pricingLblMessage:          <span class="str">'Message / demande spéciale'</span>,
+  pricingLblCompanyName:      <span class="str">"Nom de l'entreprise"</span>,
+  pricingExtraAttendeesHelper:<span class="str">"Ajoutez jusqu'à 4 participants supplémentaires."</span>,
+  pricingExtraAttendeeName:   <span class="str">'Nom du participant'</span>,
+  pricingAddAttendee:         <span class="str">'+ Ajouter un participant'</span>,
+  pricingRemoveAttendee:      <span class="str">'Supprimer'</span>,
+  pricingExtraAttendeeWaiver: <span class="str">"J'ai lu et j'accepte les conditions de la décharge"</span>,
+}</code></pre>
+</div>
+
+<div class="callout tip">
+  <div class="callout-icon">💡</div>
+  <div class="callout-body">
+    <strong>Why define strings before building the UI?</strong> TypeScript will show a compile error for any string key referenced in JSX that doesn't exist in the <code>SiteStrings</code> interface. Adding the keys first means the compiler guides you — if you forget to add <code>pricingLblCompanyName</code> to the interface, the JSX <code>{s.pricingLblCompanyName}</code> reference fails the build immediately, not at runtime.
+  </div>
+</div>
+
+<h3>Frontend State Variables</h3>
+<p>Three new state variables were added to <code>PricingSection</code>:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TypeScript — App.tsx</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="kw">const</span> [privateMessage, setPrivateMessage] = <span class="fn">useState</span>(<span class="str">''</span>)
+<span class="kw">const</span> [corpCompanyName, setCorpCompanyName] = <span class="fn">useState</span>(<span class="str">''</span>)
+<span class="kw">const</span> [corpMessage, setCorpMessage] = <span class="fn">useState</span>(<span class="str">''</span>)</code></pre>
+</div>
+
+<p>Both <code>chooseClass()</code> and <code>restartPublicBooking()</code> reset these to <code>''</code> so they don't leak between sessions if the user navigates back and picks a different class type.</p>
+
+<h3>Private Event Contact Form — Message Textarea</h3>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TSX — Private Event contact form addition</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="cm">/* Added below the phone field in the gentle (Private Event) path */</span>
+&lt;<span class="fn">div</span> className=<span class="str">"pricing-form-field"</span>&gt;
+  &lt;<span class="fn">label</span> className=<span class="str">"pricing-form-label"</span> htmlFor=<span class="str">"pub-message"</span>&gt;
+    {s.pricingLblMessage}
+  &lt;/<span class="fn">label</span>&gt;
+  &lt;<span class="fn">textarea</span>
+    id=<span class="str">"pub-message"</span>
+    name=<span class="str">"message"</span>
+    className=<span class="str">"pricing-input pricing-textarea"</span>
+    rows={<span class="nu">3</span>}
+    value={privateMessage}
+    onChange={e =&gt; setPrivateMessage(e.target.value)}
+  /&gt;
+&lt;/<span class="fn">div</span>&gt;</code></pre>
+</div>
+
+<h3>Corporate Contact Form — Company Name + Message</h3>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TSX — Corporate contact form additions</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="cm">/* Company name — required */</span>
+&lt;<span class="fn">div</span> className=<span class="str">"pricing-form-field"</span>&gt;
+  &lt;<span class="fn">label</span> className=<span class="str">"pricing-form-label"</span> htmlFor=<span class="str">"corp-company"</span>&gt;
+    {s.pricingLblCompanyName} *
+  &lt;/<span class="fn">label</span>&gt;
+  &lt;<span class="fn">input</span>
+    type=<span class="str">"text"</span>
+    id=<span class="str">"corp-company"</span>
+    className=<span class="str">"pricing-input"</span>
+    required
+    value={corpCompanyName}
+    onChange={e =&gt; setCorpCompanyName(e.target.value)}
+  /&gt;
+&lt;/<span class="fn">div</span>&gt;
+
+<span class="cm">/* Message — optional */</span>
+&lt;<span class="fn">div</span> className=<span class="str">"pricing-form-field"</span>&gt;
+  &lt;<span class="fn">label</span> className=<span class="str">"pricing-form-label"</span> htmlFor=<span class="str">"corp-message"</span>&gt;
+    {s.pricingLblMessage}
+  &lt;/<span class="fn">label</span>&gt;
+  &lt;<span class="fn">textarea</span>
+    id=<span class="str">"corp-message"</span>
+    className=<span class="str">"pricing-input pricing-textarea"</span>
+    rows={<span class="nu">3</span>}
+    value={corpMessage}
+    onChange={e =&gt; setCorpMessage(e.target.value)}
+  /&gt;
+&lt;/<span class="fn">div</span>&gt;</code></pre>
+</div>
+
+<h3>Backend — <code>api/inquiry.ts</code></h3>
+<p>The API was updated to accept both new fields (optional, since they don't apply to all inquiry types):</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TypeScript — api/inquiry.ts changes</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="cm">// Destructure — companyName and message are optional</span>
+<span class="kw">const</span> { fullName, email, phone, classType,
+        preferredDate, preferredTime, groupSize,
+        companyName, message } = req.body
+
+<span class="cm">// These appear in the Resend email HTML:</span>
+<span class="kw">const</span> emailHtml = <span class="str">`
+  ...
+  ${companyName ? <span class="str">&lt;p&gt;&lt;strong&gt;Company:&lt;/strong&gt; ${companyName}&lt;/p&gt;</span> : <span class="str">''</span>}
+  ${message     ? <span class="str">&lt;p&gt;&lt;strong&gt;Message:&lt;/strong&gt; ${message}&lt;/p&gt;</span>     : <span class="str">''</span>}
+  ...
+`</span>
+
+<span class="cm">// Zapier payload also gets the message field:</span>
+<span class="fn">fetch</span>(ZAPIER_INQUIRY_URL, {
+  body: <span class="fn">JSON.stringify</span>({
+    fullName, email, phone, classType,
+    attendeeCount: groupSize,
+    preferredDate, preferredTime,
+    companyName,   <span class="cm">// new</span>
+    message,       <span class="cm">// new</span>
+  }),
+})</code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TASK B
+══════════════════════════════════════════════ -->
+<h2 id="task-b">D. Task B — Extra Attendees UI</h2>
+
+<h3>The Type Definition</h3>
+<p>We defined a local type inside <code>PricingSection</code> to represent each extra person:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TypeScript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="kw">type</span> <span class="ty">ExtraAttendee</span> = { name: <span class="ty">string</span>; waiverAccepted: <span class="ty">boolean</span> }
+<span class="kw">const</span> [extraAttendees, setExtraAttendees] = <span class="fn">useState</span>&lt;<span class="ty">ExtraAttendee</span>[]&gt;([])</code></pre>
+</div>
+
+<div class="callout key">
+  <div class="callout-icon">🔑</div>
+  <div class="callout-body">
+    <strong>Why bundle <code>name</code> and <code>waiverAccepted</code> into one object per attendee?</strong> The alternative would be two parallel arrays — <code>string[]</code> for names and <code>boolean[]</code> for waivers. Parallel arrays require careful index synchronisation and are a common source of off-by-one bugs. A single array of objects keeps each attendee's data <em>co-located</em> — you can't accidentally mismatch them.
+  </div>
+</div>
+
+<h3>The Extra Attendees UI Block</h3>
+<p>This renders below the phone input in the yin (Regular Class) contact form. The key logic: add up to 4, remove by index, update name or waiver by index:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TSX — Extra attendees section</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="kw">const</span> <span class="fn">updateAttendee</span> = (i: <span class="ty">number</span>, patch: <span class="ty">Partial</span>&lt;<span class="ty">ExtraAttendee</span>&gt;) =&gt;
+  <span class="fn">setExtraAttendees</span>(prev =&gt; {
+    <span class="kw">const</span> next = [...prev]       <span class="cm">// shallow copy — never mutate state directly</span>
+    next[i] = { ...next[i], ...patch }
+    <span class="kw">return</span> next
+  })
+
+<span class="cm">/* In JSX: */</span>
+&lt;<span class="fn">div</span> className=<span class="str">"pricing-extra-attendees"</span>&gt;
+  &lt;<span class="fn">p</span> className=<span class="str">"pricing-helper-text"</span>&gt;{s.pricingExtraAttendeesHelper}&lt;/<span class="fn">p</span>&gt;
+
+  {extraAttendees.<span class="fn">map</span>((attendee, i) =&gt; (
+    &lt;<span class="fn">div</span> key={i} className=<span class="str">"pricing-extra-attendee-card"</span>&gt;
+
+      <span class="cm">/* Name input */</span>
+      &lt;<span class="fn">input</span>
+        type=<span class="str">"text"</span>
+        placeholder={s.pricingExtraAttendeeName}
+        value={attendee.name}
+        onChange={e =&gt; <span class="fn">updateAttendee</span>(i, { name: e.target.value })}
+        required
+      /&gt;
+
+      <span class="cm">/* Individual waiver checkbox */</span>
+      &lt;<span class="fn">label</span> className=<span class="str">"pricing-checkbox-row"</span>&gt;
+        &lt;<span class="fn">input</span>
+          type=<span class="str">"checkbox"</span>
+          checked={attendee.waiverAccepted}
+          onChange={e =&gt; <span class="fn">updateAttendee</span>(i, { waiverAccepted: e.target.checked })}
+        /&gt;
+        &lt;<span class="fn">span</span>&gt;{s.pricingExtraAttendeeWaiver}&lt;/<span class="fn">span</span>&gt;
+      &lt;/<span class="fn">label</span>&gt;
+
+      <span class="cm">/* Remove button */</span>
+      &lt;<span class="fn">button</span> type=<span class="str">"button"</span>
+        onClick={() =&gt; <span class="fn">setExtraAttendees</span>(prev =&gt; prev.<span class="fn">filter</span>((_, j) =&gt; j !== i))}&gt;
+        {s.pricingRemoveAttendee}
+      &lt;/<span class="fn">button</span>&gt;
+    &lt;/<span class="fn">div</span>&gt;
+  ))}
+
+  <span class="cm">/* Add button — hidden at max capacity */</span>
+  {extraAttendees.length &lt; <span class="nu">4</span> &amp;&amp; (
+    &lt;<span class="fn">button</span> type=<span class="str">"button"</span>
+      onClick={() =&gt; <span class="fn">setExtraAttendees</span>(prev =&gt; [...prev, { name: <span class="str">''</span>, waiverAccepted: <span class="kw">false</span> }])}&gt;
+      {s.pricingAddAttendee}
+    &lt;/<span class="fn">button</span>&gt;
+  )}
+&lt;/<span class="fn">div</span>&gt;</code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     CONCEPT: Array State
+══════════════════════════════════════════════ -->
+<h2 id="concept-array-state">E. Concept: Array State in React</h2>
+
+<p>React's <code>useState</code> works with any JavaScript value — including arrays of objects. But arrays have a subtle requirement: you must <strong>always replace the array</strong> with a new array. React uses reference equality to detect changes. If you mutate the existing array in place, React sees the same reference and skips the re-render.</p>
+
+<h3 id="concept-immutable">Immutable Array Update Patterns</h3>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TypeScript — the four patterns we used</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="cm">// ❌ WRONG — mutates in place, React won't re-render</span>
+extraAttendees[<span class="nu">0</span>].name = <span class="str">'Alice'</span>
+setExtraAttendees(extraAttendees)  <span class="cm">// same reference!</span>
+
+<span class="cm">// ✅ ADD — spread existing + append new item</span>
+<span class="fn">setExtraAttendees</span>(prev =&gt; [...prev, { name: <span class="str">''</span>, waiverAccepted: <span class="kw">false</span> }])
+
+<span class="cm">// ✅ REMOVE — filter keeps everything except index i</span>
+<span class="fn">setExtraAttendees</span>(prev =&gt; prev.<span class="fn">filter</span>((_, j) =&gt; j !== i))
+
+<span class="cm">// ✅ UPDATE — spread into new array, replace item at index i</span>
+<span class="fn">setExtraAttendees</span>(prev =&gt; {
+  <span class="kw">const</span> next = [...prev]          <span class="cm">// new array, same item references</span>
+  next[i] = { ...next[i], name }  <span class="cm">// new object at index i</span>
+  <span class="kw">return</span> next
+})
+
+<span class="cm">// ✅ CLEAR — just return an empty array</span>
+<span class="fn">setExtraAttendees</span>([])</code></pre>
+</div>
+
+<div class="callout deep">
+  <div class="callout-icon">📖</div>
+  <div class="callout-body">
+    <strong>Real-world context.</strong> This "immutable update" pattern is the same reason Redux Toolkit exists — it lets you write <em>apparent</em> mutations but secretly produces new references via Immer. In this codebase we're too small for Redux, so we use the spread pattern directly. In production apps like Notion or Linear, the same principle drives their collaborative state machines — every change produces a new state snapshot that can be diffed, compared, or time-traveled.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TASK C
+══════════════════════════════════════════════ -->
+<h2 id="task-c">F. Task C — Per-Attendee Waiver Validation</h2>
+
+<p>With the attendee cards in place, the submit button needed to validate <em>every</em> person — primary booker and all extras. This is a single <code>disabled</code> expression:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TSX — Submit button gate</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code>&lt;<span class="fn">button</span>
+  type=<span class="str">"submit"</span>
+  className=<span class="str">"btn-primary btn-lg pricing-submit"</span>
+  disabled={
+    !waiverAccepted                                   <span class="cm">// primary booker waiver</span>
+    || extraAttendees.<span class="fn">some</span>(a =&gt; !a.waiverAccepted)    <span class="cm">// any extra unchecked</span>
+    || extraAttendees.<span class="fn">some</span>(a =&gt; !a.name.<span class="fn">trim</span>())       <span class="cm">// any name empty</span>
+  }
+&gt;
+  {s.pricingSubmitBookSpot}
+&lt;/<span class="fn">button</span>&gt;</code></pre>
+</div>
+
+<h2 id="concept-disabled">G. Concept: Computed <code>disabled</code> Props</h2>
+
+<p>The <code>disabled</code> attribute on a button accepts any boolean expression. React evaluates it every render — as state changes, the button automatically enables or disables with zero additional code. This is the "declarative" mindset: you describe <em>what should be true</em>, not <em>what to do</em>.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TypeScript — how the validation evaluates</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="cm">// Initial state (no extras added) — primary waiver controls the button</span>
+!<span class="kw">false</span> || [].some(...) || [].some(...)
+→ <span class="kw">true</span>  <span class="cm">// button DISABLED — must check primary waiver first</span>
+
+<span class="cm">// Primary waiver checked, one extra added but no name yet</span>
+!<span class="kw">true</span> || [{ name: <span class="str">''</span>, waiverAccepted: <span class="kw">false</span> }].some(a =&gt; !a.waiverAccepted)
+→ <span class="kw">false</span> || <span class="kw">true</span>
+→ <span class="kw">true</span>  <span class="cm">// still DISABLED</span>
+
+<span class="cm">// All waivers checked, all names filled</span>
+!<span class="kw">true</span> || [{ name: <span class="str">'Alice'</span>, waiverAccepted: <span class="kw">true</span> }].some(a =&gt; !a.waiverAccepted)
+→ <span class="kw">false</span> || <span class="kw">false</span>
+→ <span class="kw">false</span>  <span class="cm">// button ENABLED ✅</span></code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TASK D
+══════════════════════════════════════════════ -->
+<h2 id="task-d">H. Task D — Payment × Attendee Count</h2>
+
+<h3>Frontend: Live Price Calculation</h3>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TypeScript — App.tsx payment calculation</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="cm">// Before (always 1 person — the revenue bug):</span>
+<span class="kw">const</span> groupSize = flow.yoga === <span class="str">'gentle'</span> ? <span class="fn">Math.max</span>(<span class="nu">2</span>, ...) : <span class="nu">1</span>  <span class="cm">// hardcoded!</span>
+
+<span class="cm">// After (counts actual attendees):</span>
+<span class="kw">const</span> groupSize =
+  flow.yoga === <span class="str">'yin'</span>
+    ? <span class="nu">1</span> + extraAttendees.length      <span class="cm">// primary + extras</span>
+    : <span class="fn">Math.max</span>(<span class="nu">2</span>, <span class="fn">parseInt</span>(privateGroupCount || <span class="str">'2'</span>, <span class="nu">10</span>))  <span class="cm">// private/corp unchanged</span>
+
+<span class="kw">const</span> matRentalCents = needsMatRental ? <span class="nu">500</span> : <span class="nu">0</span>
+<span class="kw">const</span> baseCents = svc.baseAmountCents * groupSize + matRentalCents</code></pre>
+</div>
+
+<div class="callout warning">
+  <div class="callout-icon">⚠️</div>
+  <div class="callout-body">
+    <strong>Mat rental does NOT scale with attendees.</strong> The $5 mat rental is flat — it's for the primary booker's physical mat. Whether 1 or 5 people attend, the rental stays $5. The service line item scales; the mat rental does not. This is intentional and matches the studio's business rules.
+  </div>
+</div>
+
+<h3>Backend: Square Order Quantity</h3>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TypeScript — api/booking.ts order creation</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="kw">const</span> totalPeople = <span class="nu">1</span> + (extraAttendees?.length ?? <span class="nu">0</span>)
+
+<span class="kw">const</span> lineItems = [
+  {
+    quantity: <span class="fn">String</span>(totalPeople),    <span class="cm">// was hardcoded '1' — now scales</span>
+    catalogObjectId: serviceVariationId,  <span class="cm">// catalog price × quantity = real total</span>
+    catalogVersion: <span class="fn">BigInt</span>(serviceVariationVersion),
+    appliedTaxes: [{ taxUid: <span class="str">'gst'</span> }, { taxUid: <span class="str">'qst'</span> }],
+  },
+]
+<span class="kw">if</span> (needsMatRental) {
+  lineItems.<span class="fn">push</span>({
+    quantity: <span class="str">'1'</span>,                           <span class="cm">// mat stays at 1 regardless</span>
+    name: <span class="str">'Mat Rental / Location de tapis'</span>,
+    basePriceMoney: { amount: <span class="nu">500n</span>, currency: <span class="str">'CAD'</span> },
+  })
+}</code></pre>
+</div>
+
+<div class="callout key">
+  <div class="callout-icon">🔑</div>
+  <div class="callout-body">
+    <strong>The charge always comes from <code>order.totalMoney.amount</code></strong> — Square computes the total from line items. The <code>baseAmountCents</code> sent from the frontend is used only to display a price preview to the user. If they disagree, the Square-computed total wins. This design means you can't accidentally charge a user a different amount than what Square calculated — it's a safety layer built into the API design.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TASK E
+══════════════════════════════════════════════ -->
+<h2 id="task-e">I. Task E — Per-Attendee Square Customers + Fallback</h2>
+
+<h3>The Problem</h3>
+<p>The original code created one Square customer record (the primary booker). If 4 people attend, 3 of them have no record in Square's CRM. The diagram required one customer per attendee.</p>
+
+<h3>The Helper Function</h3>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TypeScript — findOrCreateCustomer</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="kw">async function</span> <span class="fn">findOrCreateCustomer</span>(
+  gName: <span class="ty">string</span>, fName: <span class="ty">string</span>,
+  emailAddr: <span class="ty">string</span>, phoneNum: <span class="ty">string</span>,
+): <span class="ty">Promise</span>&lt;<span class="ty">string</span>&gt; {
+  <span class="cm">// Search first — don't create duplicates</span>
+  <span class="kw">const</span> search = <span class="kw">await</span> square.customers.<span class="fn">search</span>({
+    query: { filter: { emailAddress: { exact: emailAddr } } },
+  })
+  <span class="kw">const</span> existing = search.customers?.[<span class="nu">0</span>]?.id
+  <span class="kw">if</span> (existing) <span class="kw">return</span> existing
+
+  <span class="cm">// Not found — create</span>
+  <span class="kw">const</span> { customer } = <span class="kw">await</span> square.customers.<span class="fn">create</span>({
+    idempotencyKey: <span class="fn">randomUUID</span>(),
+    givenName: gName, familyName: fName,
+    emailAddress: emailAddr, phoneNumber: phoneNum,
+  })
+  <span class="kw">return</span> customer!.id!
+}</code></pre>
+</div>
+
+<h3>Parallel Creation + Fallback</h3>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TypeScript — Promise.all with catch fallback</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="cm">// Build the full attendee list (primary + extras)</span>
+<span class="kw">const</span> allAttendees = [
+  { givenName, familyName },
+  ...(extraAttendees ?? []).<span class="fn">map</span>(a =&gt; {
+    <span class="kw">const</span> parts = a.name.<span class="fn">trim</span>().<span class="fn">split</span>(<span class="str">' '</span>)
+    <span class="kw">return</span> {
+      givenName:  parts[<span class="nu">0</span>] ?? a.name,
+      familyName: parts.<span class="fn">slice</span>(<span class="nu">1</span>).<span class="fn">join</span>(<span class="str">' '</span>) || parts[<span class="nu">0</span>] ?? a.name,
+    }
+  }),
+]
+
+<span class="kw">let</span> customerId: <span class="ty">string</span>
+<span class="kw">try</span> {
+  <span class="cm">// Try to create all customers in parallel</span>
+  <span class="kw">const</span> ids = <span class="kw">await</span> <span class="ty">Promise</span>.<span class="fn">all</span>(
+    allAttendees.<span class="fn">map</span>(a =&gt; <span class="fn">findOrCreateCustomer</span>(a.givenName, a.familyName, email, phone)),
+  )
+  customerId = ids[<span class="nu">0</span>]  <span class="cm">// primary ID used for booking + payment</span>
+} <span class="kw">catch</span> (batchErr) {
+  <span class="cm">// Rate-limit or API error — fall back gracefully</span>
+  console.<span class="fn">warn</span>(<span class="str">'Customer batch creation failed — falling back to primary only'</span>, batchErr)
+  customerId = <span class="kw">await</span> <span class="fn">findOrCreateCustomer</span>(givenName, familyName, email, phone)
+}</code></pre>
+</div>
+
+<h2 id="concept-promise-all">J. Concept: <code>Promise.all</code> + Graceful Fallback</h2>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TypeScript — Promise.all explained</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="cm">// Sequential — slow (waits for each before starting next):</span>
+<span class="kw">for</span> (<span class="kw">const</span> a <span class="kw">of</span> attendees) {
+  <span class="kw">await</span> <span class="fn">findOrCreateCustomer</span>(a.givenName, ...)
+}
+
+<span class="cm">// Parallel — fast (all start simultaneously, resolve when ALL done):</span>
+<span class="kw">const</span> ids = <span class="kw">await</span> <span class="ty">Promise</span>.<span class="fn">all</span>(
+  attendees.<span class="fn">map</span>(a =&gt; <span class="fn">findOrCreateCustomer</span>(a.givenName, ...))
+)
+<span class="cm">// ids[0] = primary, ids[1] = extra1, ids[2] = extra2 ...</span>
+
+<span class="cm">// ⚠️ Promise.all rejects the WHOLE thing if ANY one fails</span>
+<span class="cm">// That's why we wrap it in try/catch and fall back to primary-only</span></code></pre>
+</div>
+
+<div class="callout deep">
+  <div class="callout-icon">📖</div>
+  <div class="callout-body">
+    <strong>Real-world context.</strong> This pattern — "try to do everything in parallel, degrade gracefully on failure" — appears everywhere in distributed systems. Stripe's API does exactly this: if a batch creation call fails mid-way, they complete as many as they can and report which succeeded. The key insight is that a partial success is better than a complete failure for the user. The studio still gets its booking; the missing customer records can be fixed manually.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TASK F
+══════════════════════════════════════════════ -->
+<h2 id="task-f">K. Task F — Booking Note on Appointment</h2>
+
+<p>The last gap: studio staff couldn't see attendee details in the Square calendar. The fix is a <code>customerNote</code> field on the booking object:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TypeScript — api/booking.ts</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="kw">const</span> allNames = [
+  <span class="str">`${givenName} ${familyName}`</span>,
+  ...(extraAttendees ?? []).<span class="fn">map</span>((a: { name: <span class="ty">string</span> }) =&gt; a.name),
+].<span class="fn">join</span>(<span class="str">', '</span>)
+
+<span class="kw">const</span> bookingNote =
+  <span class="str">`Total attendees: ${totalPeople} · Names: ${allNames} · Waiver confirmed: yes`</span>
+
+<span class="kw">await</span> square.bookings.<span class="fn">create</span>({
+  idempotencyKey: <span class="fn">randomUUID</span>(),
+  booking: {
+    locationId: <span class="fn">getLocationId</span>(),
+    customerId,
+    startAt,
+    customerNote: bookingNote,   <span class="cm">// ← new — visible in Square Dashboard</span>
+    appointmentSegments: [{ serviceVariationId, ... }],
+  },
+})</code></pre>
+</div>
+
+<p>The studio now sees a note like: <em>"Total attendees: 3 · Names: Joëlle Castonguay, Alice Smith, Bob Jones · Waiver confirmed: yes"</em> directly in the Square Appointments calendar view.</p>
+
+<!-- ═══════════════════════════════════════════
+     CONCEPT: Quantity vs Price
+══════════════════════════════════════════════ -->
+<h2 id="concept-quantity">L. Concept: Square Order Quantity vs Custom Price</h2>
+
+<p>This is one of the more subtle patterns in this codebase. When you create a Square Order, you have two ways to set the price for a line item:</p>
+
+<table>
+  <tr><th>Method</th><th>How it Works</th><th>When to Use</th></tr>
+  <tr>
+    <td><strong>Catalog Reference</strong><br><code>catalogObjectId + quantity</code></td>
+    <td>Square looks up the item's price from its own Catalog. You control quantity; Square computes the total.</td>
+    <td>✅ For items you manage in Square Dashboard (services, products)</td>
+  </tr>
+  <tr>
+    <td><strong>Custom Price</strong><br><code>basePriceMoney + quantity</code></td>
+    <td>You specify an arbitrary price per unit. Square doesn't reference its Catalog.</td>
+    <td>✅ For ad-hoc items with no catalog entry (mat rental, tips)</td>
+  </tr>
+</table>
+
+<div class="callout key">
+  <div class="callout-icon">🔑</div>
+  <div class="callout-body">
+    <strong>Studio Yopaw uses both patterns in the same order.</strong> The yoga class uses <code>catalogObjectId</code> (so the price in Square Dashboard is the authoritative price), and the mat rental uses <code>basePriceMoney: 500n</code> (a flat $5 ad-hoc charge with no catalog entry). Taxes are only applied to the catalog item — the mat rental line has no <code>appliedTaxes</code> (the studio treats it as a flat service fee).
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     TESTING
+══════════════════════════════════════════════ -->
+<h2 id="test-strategy">M. Testing Strategy</h2>
+
+<p>After every implementation session, we want to know two things: (1) did the new code actually land in the source files, and (2) does the user-facing flow behave correctly end-to-end? We use two distinct tools for these two questions.</p>
+
+<table>
+  <tr><th>Layer</th><th>Tool</th><th>What It Tests</th><th>Speed</th></tr>
+  <tr><td>Code-level</td><td><code>node --test</code></td><td>Source code contains the right patterns (regex assertions against file text)</td><td>~1s</td></tr>
+  <tr><td>E2E</td><td>Playwright</td><td>Full browser — click buttons, check DOM, verify API mocks</td><td>~30s</td></tr>
+</table>
+
+<h2 id="test-node">N. Node Unit Tests (<code>verify-fixes.mjs</code>)</h2>
+
+<p>These tests use Node's built-in test runner (<code>node:test</code> + <code>node:assert</code>) to assert that specific code patterns exist in source files. No build step, no framework. Just read the file as a string and check for expected substrings.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">JavaScript — verify-fixes.mjs (sample assertions)</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="kw">import</span> { test } <span class="kw">from</span> <span class="str">'node:test'</span>
+<span class="kw">import</span> assert <span class="kw">from</span> <span class="str">'node:assert/strict'</span>
+<span class="kw">import</span> fs <span class="kw">from</span> <span class="str">'node:fs'</span>
+
+<span class="kw">const</span> booking = fs.<span class="fn">readFileSync</span>(<span class="str">'./api/booking.ts'</span>, <span class="str">'utf8'</span>)
+<span class="kw">const</span> appTsx  = fs.<span class="fn">readFileSync</span>(<span class="str">'./src/App.tsx'</span>, <span class="str">'utf8'</span>)
+
+<span class="cm">// Verify: extra attendees state exists</span>
+<span class="fn">test</span>(<span class="str">'App.tsx: extraAttendees state exists'</span>, () =&gt; {
+  assert.<span class="fn">ok</span>(appTsx.<span class="fn">includes</span>(<span class="str">'extraAttendees'</span>),
+    <span class="str">'Missing extraAttendees state'</span>)
+})
+
+<span class="cm">// Verify: per-attendee waiver check</span>
+<span class="fn">test</span>(<span class="str">'App.tsx: per-attendee waiver check on submit'</span>, () =&gt; {
+  assert.<span class="fn">ok</span>(appTsx.<span class="fn">includes</span>(<span class="str">'extraAttendees.some(a => !a.waiverAccepted)'</span>),
+    <span class="str">'Missing per-attendee waiver validation on submit button'</span>)
+})
+
+<span class="cm">// Verify: order quantity uses totalPeople (not hardcoded '1')</span>
+<span class="fn">test</span>(<span class="str">'booking.ts: service line item quantity is totalPeople'</span>, () =&gt; {
+  assert.<span class="fn">ok</span>(booking.<span class="fn">includes</span>(<span class="str">'quantity: String(totalPeople)'</span>),
+    <span class="str">'Service line item still uses hardcoded quantity'</span>)
+})
+
+<span class="cm">// Verify: booking note contains attendee info</span>
+<span class="fn">test</span>(<span class="str">'booking.ts: customerNote includes attendee list'</span>, () =&gt; {
+  assert.<span class="fn">ok</span>(booking.<span class="fn">includes</span>(<span class="str">'customerNote: bookingNote'</span>),
+    <span class="str">'Missing customerNote on booking'</span>)
+})</code></pre>
+</div>
+
+<div class="callout tip">
+  <div class="callout-icon">💡</div>
+  <div class="callout-body">
+    <strong>Why assert on file text and not compiled output?</strong> Source code assertions are the fastest possible check — no build, no network, no browser. They serve as a "did the change land?" gate. They're not a substitute for integration tests, but they catch regressions in seconds rather than minutes. Think of them like linting with domain knowledge.
+  </div>
+</div>
+
+<p>Run them with:</p>
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">Shell</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code>node --test tests/verify-fixes.mjs</code></pre>
+</div>
+
+<div class="result-row">
+  <span class="result-icon">✅</span>
+  <span class="result-text">verify-fixes.mjs — all passing</span>
+  <span class="result-count">47 / 47</span>
+</div>
+
+<h2 id="test-playwright">O. Playwright E2E Tests</h2>
+
+<p>Playwright drives a real Chromium browser against the running Vite dev server. It mocks the API endpoints so tests don't need a real Square account, but the React component tree, state management, routing, and DOM interactions all run for real.</p>
+
+<h3>The Mock Pattern</h3>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TypeScript — tests/e2e/booking-flow.spec.ts</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="cm">/** Mock all external API calls so tests run without a real backend. */</span>
+<span class="kw">async function</span> <span class="fn">mockApis</span>(page: <span class="ty">Page</span>) {
+  <span class="kw">const</span> slots = <span class="fn">mockSlots</span>()  <span class="cm">// generates future dates dynamically</span>
+
+  <span class="cm">// Availability: 3 dates × 2 time slots each</span>
+  <span class="kw">await</span> page.<span class="fn">route</span>(<span class="str">'**/api/availability**'</span>, route =&gt;
+    route.<span class="fn">fulfill</span>({ json: { availabilities: slots } }))
+
+  <span class="cm">// Breeds: must have an entry per date or calendar shows nothing</span>
+  <span class="kw">await</span> page.<span class="fn">route</span>(<span class="str">'**/api/breeds**'</span>, route =&gt; {
+    <span class="kw">const</span> schedule: <span class="ty">Record</span>&lt;<span class="ty">string</span>, <span class="ty">Array</span>&lt;...&gt;&gt; = {}
+    <span class="kw">for</span> (<span class="kw">const</span> slot <span class="kw">of</span> slots) {
+      <span class="kw">const</span> date = slot.startAt.<span class="fn">split</span>(<span class="str">'T'</span>)[<span class="nu">0</span>]
+      <span class="kw">if</span> (!schedule[date]) {
+        schedule[date] = [{ breed: { en: <span class="str">'Golden Retriever'</span>, fr: <span class="str">'Golden Retriever'</span> }, serviceIds: [] }]
+      }
+    }
+    route.<span class="fn">fulfill</span>({ json: { schedule } })
+  })
+
+  <span class="cm">// Inquiry: always succeed</span>
+  <span class="kw">await</span> page.<span class="fn">route</span>(<span class="str">'**/api/inquiry**'</span>, route =&gt;
+    route.<span class="fn">fulfill</span>({ json: { ok: <span class="kw">true</span> } }))
+}</code></pre>
+</div>
+
+<h3>A Sample Test — Extra Attendees Waiver Gate</h3>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">TypeScript — E2E test</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="fn">test</span>(<span class="str">'regular class — extra attendee blocks submit until waiver checked'</span>,
+  <span class="kw">async</span> ({ page }) =&gt; {
+  <span class="kw">await</span> <span class="fn">openBooking</span>(page)  <span class="cm">// helper: mocks APIs, sets lang, navigates to #book</span>
+  <span class="fn">clickClassChoice</span>(page, <span class="str">'Regular Class'</span>)  <span class="cm">// targets .pricing-choice-card, not heading text</span>
+  <span class="kw">await</span> page.<span class="fn">getByRole</span>(<span class="str">'button'</span>, { name: <span class="str">/bring my own/i</span> }).<span class="fn">click</span>()
+  <span class="kw">await</span> <span class="fn">pickFirstDateAndTime</span>(page)
+
+  <span class="kw">await</span> page.<span class="fn">fill</span>(<span class="str">'#pub-fullname'</span>, <span class="str">'Alice Primary'</span>)
+  <span class="kw">await</span> page.<span class="fn">fill</span>(<span class="str">'#pub-email'</span>, <span class="str">'alice@test.com'</span>)
+  <span class="kw">await</span> page.<span class="fn">fill</span>(<span class="str">'#pub-phone'</span>, <span class="str">'514-000-0001'</span>)
+
+  <span class="cm">// Add an extra attendee</span>
+  <span class="kw">await</span> page.<span class="fn">getByRole</span>(<span class="str">'button'</span>, { name: <span class="str">/add another attendee/i</span> }).<span class="fn">click</span>()
+  <span class="kw">await</span> page.<span class="fn">locator</span>(<span class="str">'.pricing-extra-attendee-card'</span>).<span class="fn">nth</span>(<span class="nu">0</span>)
+    .<span class="fn">locator</span>(<span class="str">'input[type="text"]'</span>).<span class="fn">fill</span>(<span class="str">'Bob Extra'</span>)
+
+  <span class="cm">// Check primary waiver only</span>
+  <span class="kw">await</span> page.<span class="fn">locator</span>(<span class="str">'#pub-waiver'</span>).<span class="fn">check</span>()
+
+  <span class="kw">const</span> submit = page.<span class="fn">getByRole</span>(<span class="str">'button'</span>, { name: <span class="str">/book my spot/i</span> })
+  <span class="kw">await</span> <span class="fn">expect</span>(submit).<span class="fn">toBeDisabled</span>()  <span class="cm">// Bob's waiver not yet checked</span>
+
+  <span class="cm">// Now check Bob's waiver</span>
+  <span class="kw">await</span> page.<span class="fn">locator</span>(<span class="str">'.pricing-extra-attendee-card'</span>).<span class="fn">nth</span>(<span class="nu">0</span>)
+    .<span class="fn">locator</span>(<span class="str">'input[type="checkbox"]'</span>).<span class="fn">check</span>()
+  <span class="kw">await</span> <span class="fn">expect</span>(submit).<span class="fn">toBeEnabled</span>()  <span class="cm">// ✅ all waivers now checked</span>
+})</code></pre>
+</div>
+
+<div class="result-row">
+  <span class="result-icon">✅</span>
+  <span class="result-text">booking-flow.spec.ts — all passing</span>
+  <span class="result-count">20 / 20</span>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     BUGS
+══════════════════════════════════════════════ -->
+<h2 id="bug-apostrophe">P. Bug Stories</h2>
+
+<div class="callout bug">
+  <div class="callout-icon">🐛</div>
+  <div class="callout-body">
+    <strong>Bug 1: Curly Apostrophe in a TypeScript String Literal</strong>
+    <p style="margin-top:.5rem"><strong>Symptom:</strong> TypeScript compilation failed with a syntax error pointing at the FR string for <code>pricingExtraAttendeesHelper</code>.</p>
+    <p><strong>Root cause:</strong> The FR string <code>"Ajoutez jusqu'à 4 participants"</code> was written with a <em>curly</em> (typographic) apostrophe <code>'</code> (Unicode U+2019) instead of a straight quote <code>'</code>. This is a common artefact of text editors and copy-paste from word processors.</p>
+    <p><strong>Fix:</strong> Replace with the ASCII straight apostrophe: <code>'</code>.</p>
+    <strong>Lesson:</strong> TypeScript's string delimiters are ASCII quotes only. A curly apostrophe inside a single-quoted string literal is valid Unicode but looks identical on screen — the only clue is the cryptic parse error. Always check the raw character when debugging string syntax errors.
+  </div>
+</div>
+
+<div class="callout bug" id="bug-selector">
+  <div class="callout-icon">🐛</div>
+  <div class="callout-body">
+    <strong>Bug 2: Playwright Selector Matches Two Elements</strong>
+    <p style="margin-top:.5rem"><strong>Symptom:</strong> All E2E tests crashed with "strict mode violation — locator resolved to 2 elements" when trying to click the Regular Class booking button.</p>
+    <p><strong>Root cause:</strong> The original code used <code>getByText('Regular Class')</code>. But "Regular Class" appears twice in the DOM: once as the heading on the class card, and once as the text inside the booking button inside that card. Playwright's strict mode refuses to click when a selector matches multiple elements.</p>
+    <p><strong>Fix:</strong> Target by component class instead of text:</p>
+    <div class="code-block" style="margin:.5rem 0">
+      <div class="code-header"><span class="code-lang">TypeScript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="cm">// ❌ Before (matches heading + button = 2 elements)</span>
+page.<span class="fn">getByText</span>(<span class="str">'Regular Class'</span>).<span class="fn">click</span>()
+
+<span class="cm">// ✅ After (matches only the card that contains the text)</span>
+page.<span class="fn">locator</span>(<span class="str">'.pricing-choice-card'</span>, { hasText: <span class="str">'Regular Class'</span> }).<span class="fn">click</span>()</code></pre>
+    </div>
+    <strong>Lesson:</strong> Use semantic CSS classes or <code>data-testid</code> attributes to anchor Playwright selectors, not visible text alone. Text can appear multiple times. A <code>.pricing-choice-card</code> appears only where intended.
+  </div>
+</div>
+
+<div class="callout bug" id="bug-breed-mock">
+  <div class="callout-icon">🐛</div>
+  <div class="callout-body">
+    <strong>Bug 3: Empty Breed Mock Hides All Dates</strong>
+    <p style="margin-top:.5rem"><strong>Symptom:</strong> E2E tests timing out because the date picker showed no rows — the calendar was blank.</p>
+    <p><strong>Root cause:</strong> The initial Playwright mock for <code>/api/breeds</code> returned an empty object <code>{}</code>. The frontend filter (<code>effectiveDates</code>) requires a breed entry to exist for a date before it shows that date as a session row. With no breed entries, no rows rendered.</p>
+    <p><strong>Fix:</strong> Generate breed entries dynamically from the same slot list used for availability:</p>
+    <div class="code-block" style="margin:.5rem 0">
+      <div class="code-header"><span class="code-lang">TypeScript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="cm">// ❌ Before — empty, nothing renders</span>
+route.<span class="fn">fulfill</span>({ json: { schedule: {} } })
+
+<span class="cm">// ✅ After — one breed entry per unique date from slots</span>
+<span class="kw">for</span> (<span class="kw">const</span> slot <span class="kw">of</span> slots) {
+  <span class="kw">const</span> date = slot.startAt.<span class="fn">split</span>(<span class="str">'T'</span>)[<span class="nu">0</span>]
+  <span class="kw">if</span> (!schedule[date]) {
+    schedule[date] = [{ breed: { en: <span class="str">'Golden Retriever'</span>, fr: <span class="str">'Golden Retriever'</span> },
+                        serviceIds: [] }]
+  }
+}</code></pre>
+    </div>
+    <strong>Lesson:</strong> When mocking related APIs, ensure their data is consistent. Availability says "these dates exist." Breeds must confirm the same dates or the UI's join logic produces nothing. Test data should be co-generated.
+  </div>
+</div>
+
+<div class="callout bug" id="bug-quantity-assert">
+  <div class="callout-icon">🐛</div>
+  <div class="callout-body">
+    <strong>Bug 4: Overstrict Test Assertion</strong>
+    <p style="margin-top:.5rem"><strong>Symptom:</strong> A test for "service line item uses <code>totalPeople</code> as quantity" was failing even after the fix was in place.</p>
+    <p><strong>Root cause:</strong> The assertion checked that <code>quantity: '1'</code> did NOT appear in <code>booking.ts</code>. But the mat rental line item legitimately uses <code>quantity: '1'</code> (mat rental is always 1 unit). Checking the whole file was too broad.</p>
+    <p><strong>Fix:</strong> Assert the specific positive case instead of the negative:</p>
+    <div class="code-block" style="margin:.5rem 0">
+      <div class="code-header"><span class="code-lang">JavaScript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><code><span class="cm">// ❌ Too broad — fails because mat rental also has quantity '1'</span>
+assert.<span class="fn">ok</span>(!booking.<span class="fn">includes</span>(<span class="str">"quantity: '1'"</span>), ...)
+
+<span class="cm">// ✅ Specific — asserts the positive case</span>
+assert.<span class="fn">ok</span>(booking.<span class="fn">includes</span>(<span class="str">'quantity: String(totalPeople)'</span>),
+  <span class="str">'Service line item not using totalPeople'</span>)</code></pre>
+    </div>
+    <strong>Lesson:</strong> "Does not contain X" assertions are fragile — they pass when X is removed but also when X was never there, and they fail on unrelated uses of X. Prefer "contains Y" (the specific thing you want) over "does not contain X" (the thing you replaced).
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     FINAL RESULTS
+══════════════════════════════════════════════ -->
+<h2 id="results">Q. Final Test Results</h2>
+
+<div class="result-row">
+  <span class="result-icon">✅</span>
+  <span class="result-text"><code>node --test tests/verify-fixes.mjs</code></span>
+  <span class="result-count">47 / 47</span>
+</div>
+<div class="result-row">
+  <span class="result-icon">✅</span>
+  <span class="result-text"><code>playwright test tests/e2e/booking-flow.spec.ts</code></span>
+  <span class="result-count">20 / 20</span>
+</div>
+<div class="result-row" style="border-color:var(--success)">
+  <span class="result-icon">🏆</span>
+  <span class="result-text"><strong>Total — zero failures</strong></span>
+  <span class="result-count">67 / 67</span>
+</div>
+
+<p style="margin-top:1rem">TypeScript also compiled clean (<code>tsc -b</code>) with zero errors after the curly apostrophe fix.</p>
+
+<!-- ═══════════════════════════════════════════
+     EXERCISES
+══════════════════════════════════════════════ -->
+<h2 id="exercises">R. Exercises</h2>
+
+<div class="callout exercise">
+  <div class="callout-icon">🧪</div>
+  <div class="callout-body">
+    <strong>Exercise 1 — Add a "dietary restriction" note to the Private Event form.</strong>
+    <p>Following Task A's pattern:</p>
+    <ol>
+      <li>Add a new string key <code>pricingLblDietary</code> to <code>siteStrings.ts</code> in both EN and FR.</li>
+      <li>Add a state variable <code>privateDietary</code> and a <code>&lt;textarea&gt;</code> in the gentle contact form.</li>
+      <li>Pass it in the <code>submitPublic</code> inquiry body and forward it in <code>inquiry.ts</code>.</li>
+      <li>Add a <code>verify-fixes.mjs</code> assertion that the new string key exists in <code>siteStrings.ts</code>.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="callout exercise">
+  <div class="callout-icon">🧪</div>
+  <div class="callout-body">
+    <strong>Exercise 2 — Write a Playwright test for the FR language path.</strong>
+    <p>The session left a placeholder for FR language testing. Write a test that:</p>
+    <ol>
+      <li>Sets <code>localStorage['studio-yopaw-lang']</code> to <code>'fr'</code> before loading.</li>
+      <li>Opens the booking section, picks "Cours régulier".</li>
+      <li>Navigates to the contact step and confirms the "Ajouter un participant" button text appears in French.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="callout exercise">
+  <div class="callout-icon">🧪</div>
+  <div class="callout-body">
+    <strong>Exercise 3 — Add a max-capacity test to verify-fixes.mjs.</strong>
+    <p>Add a code-level assertion that verifies <code>App.tsx</code> contains the condition that hides the "Add attendee" button when <code>extraAttendees.length &lt; 4</code>. What exact string would you search for?</p>
+  </div>
+</div>
+
+<div class="callout exercise">
+  <div class="callout-icon">🧪</div>
+  <div class="callout-body">
+    <strong>Exercise 4 — Why can't we test the actual Square payment in Playwright?</strong>
+    <p>Think through the architecture and write a short explanation of:</p>
+    <ul>
+      <li>What the Square Web Payments SDK does differently from a regular form field.</li>
+      <li>Why Playwright can't easily fill in the Square card iframe.</li>
+      <li>What the Square sandbox nonce <code>cnon:card-nonce-ok</code> is for, and how it's used in <code>tests/api/booking.test.ts</code> instead.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     GLOSSARY
+══════════════════════════════════════════════ -->
+<h2 id="glossary">S. Glossary</h2>
+
+<table>
+  <tr><th>Term</th><th>Definition in context</th></tr>
+  <tr><td><strong>Discriminated union</strong></td><td>A TypeScript type with a <code>kind</code> (or similar) tag field that narrows the type in a <code>switch</code> or <code>if</code>. The <code>Flow</code> type uses <code>kind: 'public' | 'corporate' | ...</code> so each branch gets narrowed state.</td></tr>
+  <tr><td><strong>Immutable update</strong></td><td>Replacing a value (especially an array or object) with a new copy rather than modifying it in place. Required by React's change-detection model.</td></tr>
+  <tr><td><strong>Promise.all</strong></td><td>Takes an array of Promises and returns a single Promise that resolves when all of them resolve (or rejects as soon as any one rejects).</td></tr>
+  <tr><td><strong>Graceful degradation</strong></td><td>A failure mode where the system does less but continues working. Here: if Square rate-limits customer creation, we fall back to creating only the primary customer instead of failing the whole booking.</td></tr>
+  <tr><td><strong>catalogObjectId</strong></td><td>A Square order line item field that points to an item in the Square Catalog. Square reads the catalog price for the charge — not a custom amount.</td></tr>
+  <tr><td><strong>customerNote</strong></td><td>A free-text field on a Square Booking object. Visible to staff in the Square Appointments calendar view. Used here to store attendee names and waiver status.</td></tr>
+  <tr><td><strong>page.route()</strong></td><td>Playwright's API interception. Intercepts network requests matching a URL pattern and replaces the server response with mock data. Lets E2E tests run without a live backend.</td></tr>
+  <tr><td><strong>strict mode violation</strong></td><td>Playwright error thrown when a locator matches more than one element. The fix is always to make the selector more specific.</td></tr>
+  <tr><td><strong>node:test</strong></td><td>Node.js built-in test runner (available since Node 18). No npm install needed. Used in <code>verify-fixes.mjs</code> for fast, dependency-free code-level assertions.</td></tr>
+  <tr><td><strong>idempotency key</strong></td><td>A unique ID sent with API calls to Square. If the same request is retried (due to a network error), Square detects the key and returns the original result instead of creating a duplicate record.</td></tr>
+</table>
+
+<!-- ── FOOTER ── -->
+<div class="page-footer">
+  <a href="session-01a-booking-flow-gap-analysis.html">← Session 01A: Docs, Gap Analysis &amp; Plan</a>
+  <a href="index.html">Index</a>
+  <span style="color:var(--text-muted);font-size:.8rem">Session 02 · Studio Yopaw Learning Series</span>
+</div>
+
+</main>
+</div><!-- end layout -->
+
+<script>
+// ── THEME TOGGLE ──
+function toggleTheme() {
+  const html = document.documentElement
+  const next = html.dataset.theme === 'dark' ? 'light' : 'dark'
+  html.dataset.theme = next
+  localStorage.setItem('yopaw-theme', next)
+}
+(function() {
+  const saved = localStorage.getItem('yopaw-theme')
+  if (saved) document.documentElement.dataset.theme = saved
+})()
+
+// ── READING PROGRESS ──
+const prog = document.getElementById('prog')
+document.addEventListener('scroll', () => {
+  const scrolled = window.scrollY
+  const total = document.body.scrollHeight - window.innerHeight
+  prog.style.width = Math.min(100, (scrolled / total) * 100) + '%'
+})
+
+// ── SIDEBAR ACTIVE LINK ──
+const sections = document.querySelectorAll('h2[id], h3[id]')
+const sidebarLinks = document.querySelectorAll('.sidebar a')
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      sidebarLinks.forEach(link => {
+        link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id)
+      })
+    }
+  })
+}, { rootMargin: '-20% 0px -70% 0px' })
+sections.forEach(s => observer.observe(s))
+
+// ── COPY TO CLIPBOARD ──
+function copyCode(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre')
+  const text = pre.innerText
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!'
+    btn.classList.add('copied')
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied') }, 2000)
+  })
+}
+</script>
+</body>
+</html>

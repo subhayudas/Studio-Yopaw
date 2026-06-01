@@ -1,10 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { Resend } from 'resend'
-import { stripBom } from './_square.js'
+import { sendTeamSms } from './_twilio.js'
 
 const ZAPIER_INQUIRY_URL = 'https://hooks.zapier.com/hooks/catch/23258168/4ok9t5x/'
-
-const resend = new Resend(stripBom(process.env.RESEND_API_KEY ?? ''))
 
 const fmtDate = (iso: string) => {
   try {
@@ -43,23 +40,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
   try {
-    await resend.emails.send({
-      from: stripBom(process.env.RESEND_FROM_EMAIL ?? 'Studio Yopaw <noreply@studio-yopaw.com>'),
-      to: stripBom(process.env.LEAD_NOTIFY_EMAIL ?? ''),
-      subject: `New Inquiry — ${fullName} (${classType})`,
-      html: `
-        <h2>New class inquiry</h2>
-        <p><strong>Name:</strong> ${fullName}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Phone:</strong> ${phone}</p>
-        ${companyName ? `<p><strong>Company:</strong> ${companyName}</p>` : ''}
-        <p><strong>Class type:</strong> ${classType}</p>
-        <p><strong>Preferred date:</strong> ${preferredDate ? fmtDate(preferredDate) : '—'}</p>
-        <p><strong>Preferred time:</strong> ${preferredTime ? fmtTime(preferredTime) : '—'}</p>
-        <p><strong>Group size:</strong> ${groupSize ?? '—'}</p>
-        ${message ? `<p><strong>Message:</strong> ${message}</p>` : ''}
-      `,
-    })
+    const dateStr = preferredDate ? fmtDate(preferredDate) : '—'
+    const timeStr = preferredTime ? fmtTime(preferredTime) : '—'
+    const isLead = classType === 'Regular Class'
+
+    const smsBody =
+      `${isLead ? '🔔 NEW LEAD' : '📩 NEW INQUIRY'} — Studio Yopaw\n` +
+      `-----------------------------\n` +
+      `Class: ${classType}\n` +
+      `\n` +
+      `👤 Contact info:\n` +
+      `  Name: ${fullName}\n` +
+      `  Email: ${email}\n` +
+      `  Phone: ${phone}\n` +
+      (companyName ? `  Company: ${companyName}\n` : '') +
+      `\n` +
+      `📅 Request details:\n` +
+      `  Preferred date: ${dateStr}\n` +
+      `  Preferred time: ${timeStr}\n` +
+      (groupSize ? `  Group size: ${groupSize}\n` : '') +
+      (message ? `\n💬 Message:\n  ${message}` : '')
+
+    await sendTeamSms(smsBody)
 
     const [firstName, ...rest] = fullName.trim().split(/\s+/)
     const lastName = rest.join(' ')
@@ -88,7 +90,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({ ok: true })
   } catch (err) {
-    console.error('inquiry email error', err)
+    console.error('inquiry SMS error', err)
     return res.status(500).json({ error: 'Failed to send inquiry' })
   }
 }

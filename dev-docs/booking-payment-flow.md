@@ -28,7 +28,7 @@ Calendar picker       date & time            Preferred date & time
 Contact information         │                     │
 Name · Email · Phone        ▼                     ▼
 + Add extra attendees  Inquiry Submitted    Inquiry Submitted
-  (1–4)               Team will follow up  Team will follow up
+  (1–10)               Team will follow up  Team will follow up
         │
         ▼
 Waiver Agreement
@@ -119,6 +119,6 @@ Booking Confirmed
 
 - **Mat rental** is offered at booking for Regular Class (on-site, adds $5 to total).
 - **Waiver** is required for every attendee before payment can proceed — one checkbox per person.
-- **Extra attendees** (up to 4 additional beyond the primary booker) can be added at the contact step.
+- **Extra attendees** (up to 10 additional beyond the primary booker) can be added at the contact step.
 - **Private and Corporate** flows are inquiry-only — no online payment is collected.
 - **Fallback behaviour:** if Square's API limits prevent creating a customer record for every attendee, the system falls back to creating only the primary client and still completes the booking.

@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "square:setup-taxes": "tsx --env-file=.env.local scripts/setup-square-taxes.ts",
     "square:attach-taxes": "tsx --env-file=.env.local scripts/attach-square-taxes.ts",
-    "test": "node --test tests/verify-fixes.mjs",
+    "test": "node --test tests/verify-fixes.mjs && node --test tests/availability-seat-count.test.mjs",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -18,8 +18,8 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-square-web-payments-sdk": "^3.3.0",
-    "resend": "^6.12.3",
     "square": "^44.0.1",
+    "twilio": "^6.0.2",
     "vercel": "^54.1.0"
   },
   "devDependencies": {
@@ -39,6 +39,7 @@
     "tsx": "^4.0.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",
-    "vite": "8.0.10"
+    "vite": "8.0.10",
+    "vitest": "^4.1.8"
   }
 }

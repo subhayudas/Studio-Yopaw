@@ -121,6 +121,7 @@ export interface SiteStrings {
   pricingChooseSession: string
   pricingChooseTimeTitle: string
   pricingTimeModalCancel: string
+  pricingTimeModalNoSlots: string
   pricingSessionPickTime: string
   pricingSpotFull: string
   pricingSpotsRemain: string
@@ -342,6 +343,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingChooseSession: 'Select your preferred time',
     pricingChooseTimeTitle: 'Choose a session time',
     pricingTimeModalCancel: 'Cancel',
+    pricingTimeModalNoSlots: 'All times for this date are fully booked.',
     pricingSessionPickTime: 'Choose time',
     pricingSpotFull: 'Full',
     pricingSpotsRemain: '{count} spots remaining',
@@ -381,7 +383,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingSuccessBackHome: 'Back to home',
     pricingLblMessage: 'Message / special request (optional)',
     pricingLblCompanyName: 'Company name',
-    pricingExtraAttendeesHelper: 'Bringing friends? Add up to 4 more people (each needs their own waiver).',
+    pricingExtraAttendeesHelper: 'Bringing friends? Add up to 10 more people (each needs their own waiver).',
     pricingExtraAttendeeName: 'Attendee name',
     pricingAddAttendee: '+ Add another attendee',
     pricingRemoveAttendee: 'Remove',
@@ -615,6 +617,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingChooseSession: 'Sélectionnez votre horaire préféré',
     pricingChooseTimeTitle: 'Choisissez un horaire',
     pricingTimeModalCancel: 'Annuler',
+    pricingTimeModalNoSlots: 'Tous les créneaux pour cette date sont complets.',
     pricingSessionPickTime: 'Choisir un horaire',
     pricingSpotFull: 'Complet',
     pricingSpotsRemain: '{count} places restantes',
@@ -656,7 +659,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingSuccessBackHome: "Retour à l'accueil",
     pricingLblMessage: 'Message / demande spéciale (facultatif)',
     pricingLblCompanyName: "Nom de l'entreprise",
-    pricingExtraAttendeesHelper: "Vous venez à plusieurs ? Ajoutez jusqu'à 4 personnes supplémentaires (chacune doit accepter la décharge).",
+    pricingExtraAttendeesHelper: "Vous venez à plusieurs ? Ajoutez jusqu'à 10 personnes supplémentaires (chacune doit accepter la décharge).",
     pricingExtraAttendeeName: 'Nom du participant',
     pricingAddAttendee: '+ Ajouter un participant',
     pricingRemoveAttendee: 'Retirer',
