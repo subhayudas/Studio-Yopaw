@@ -29,7 +29,7 @@ const fmtTime = (iso: string) => {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  const { fullName, email, phone, classType, preferredDate, preferredTime, groupSize } =
+  const { fullName, email, phone, classType, preferredDate, preferredTime, groupSize, companyName, message } =
     req.body as {
       fullName: string
       email: string
@@ -38,6 +38,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       preferredDate?: string
       preferredTime?: string
       groupSize?: string
+      companyName?: string
+      message?: string
     }
 
   try {
@@ -50,10 +52,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         <p><strong>Name:</strong> ${fullName}</p>
         <p><strong>Email:</strong> ${email}</p>
         <p><strong>Phone:</strong> ${phone}</p>
+        ${companyName ? `<p><strong>Company:</strong> ${companyName}</p>` : ''}
         <p><strong>Class type:</strong> ${classType}</p>
         <p><strong>Preferred date:</strong> ${preferredDate ? fmtDate(preferredDate) : '—'}</p>
         <p><strong>Preferred time:</strong> ${preferredTime ? fmtTime(preferredTime) : '—'}</p>
         <p><strong>Group size:</strong> ${groupSize ?? '—'}</p>
+        ${message ? `<p><strong>Message:</strong> ${message}</p>` : ''}
       `,
     })
 
@@ -73,9 +77,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           email,
           phone,
           classType,
+          companyName: companyName ?? '',
           attendeeCount: parseInt(groupSize ?? '1', 10) || 1,
           preferredDate: preferredDate ?? '',
           preferredTime: preferredTime ?? '',
+          message: message ?? '',
         }),
       }).catch((err) => console.error('[Zapier] inquiry webhook failed:', err))
     }

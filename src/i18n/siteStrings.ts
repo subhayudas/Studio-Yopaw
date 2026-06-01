@@ -153,6 +153,13 @@ export interface SiteStrings {
   pricingSuccessRequestReceivedBody: string
   pricingSuccessRequestReachOutPhone: string
   pricingSuccessBackHome: string
+  pricingLblMessage: string
+  pricingLblCompanyName: string
+  pricingExtraAttendeesHelper: string
+  pricingExtraAttendeeName: string
+  pricingAddAttendee: string
+  pricingRemoveAttendee: string
+  pricingExtraAttendeeWaiver: string
   inquirySubmitLabel: string
   inquirySubmitting: string
   inquirySubmitError: string
@@ -372,6 +379,13 @@ export const siteStrings: Record<Lang, SiteStrings> = {
       "Thank you! We've received your request and will contact you within 24 hours to confirm the details and finalize your private session.",
     pricingSuccessRequestReachOutPhone: "We'll call or text you at {phone}.",
     pricingSuccessBackHome: 'Back to home',
+    pricingLblMessage: 'Message / special request (optional)',
+    pricingLblCompanyName: 'Company name',
+    pricingExtraAttendeesHelper: 'Bringing friends? Add up to 4 more people (each needs their own waiver).',
+    pricingExtraAttendeeName: 'Attendee name',
+    pricingAddAttendee: '+ Add another attendee',
+    pricingRemoveAttendee: 'Remove',
+    pricingExtraAttendeeWaiver: 'This person agrees to the liability waiver.',
     inquirySubmitLabel: 'Send my request',
     inquirySubmitting: 'Sending…',
     inquirySubmitError: 'Failed to send your request. Please try again.',
@@ -640,6 +654,13 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     pricingSuccessRequestReachOutPhone:
       'Nous vous contacterons par téléphone ou texto au {phone}.',
     pricingSuccessBackHome: "Retour à l'accueil",
+    pricingLblMessage: 'Message / demande spéciale (facultatif)',
+    pricingLblCompanyName: "Nom de l'entreprise",
+    pricingExtraAttendeesHelper: "Vous venez à plusieurs ? Ajoutez jusqu'à 4 personnes supplémentaires (chacune doit accepter la décharge).",
+    pricingExtraAttendeeName: 'Nom du participant',
+    pricingAddAttendee: '+ Ajouter un participant',
+    pricingRemoveAttendee: 'Retirer',
+    pricingExtraAttendeeWaiver: 'Cette personne accepte la décharge de responsabilité.',
     inquirySubmitLabel: 'Envoyer ma demande',
     inquirySubmitting: 'Envoi en cours…',
     inquirySubmitError: "Impossible d'envoyer votre demande. Veuillez réessayer.",

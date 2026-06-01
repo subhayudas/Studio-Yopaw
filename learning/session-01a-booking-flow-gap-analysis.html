@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 01A — Booking Flow: Docs, Gap Analysis & Plan | Studio Yopaw</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── CSS VARIABLES ── */
+:root {
+  --bg: #1a1a2e; --bg-card: #16213e; --bg-code: #0f0f23;
+  --text: #e0e0e0; --text-muted: #8899aa; --border: #2a2a4a;
+  --accent: #6c63ff; --accent-hover: #5a52d5;
+  --success: #4ade80; --warning: #fbbf24; --danger: #f87171; --bug: #f472b6;
+  --tip: #38bdf8; --key: #a78bfa;
+  --code-keyword: #c678dd; --code-string: #98c379; --code-comment: #5c6370;
+  --code-function: #61afef; --code-number: #d19a66; --code-operator: #56b6c2;
+  --sidebar-w: 260px; --header-h: 60px;
+}
+[data-theme="light"] {
+  --bg: #f8f9fc; --bg-card: #ffffff; --bg-code: #f0f0f8;
+  --text: #1a1a2e; --text-muted: #64748b; --border: #e2e8f0;
+  --accent: #5a52d5; --code-comment: #6b7280; --code-keyword: #7c3aed;
+  --code-string: #16a34a; --code-function: #2563eb; --code-number: #c2410c;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden;transition:background .3s,color .3s}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── TOP BAR ── */
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--header-h);background:var(--bg-card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;z-index:100;backdrop-filter:blur(8px)}
+.topbar-left{display:flex;align-items:center;gap:1rem}
+.session-badge{background:var(--accent);color:#fff;font-size:.72rem;font-weight:700;padding:.25rem .6rem;border-radius:20px;letter-spacing:.05em}
+.session-title{font-weight:600;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px}
+.topbar-right{display:flex;align-items:center;gap:.75rem}
+.theme-btn{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:.4rem .8rem;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .2s}
+.theme-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.nav-pill{background:var(--bg);border:1px solid var(--border);color:var(--text-muted);padding:.3rem .7rem;border-radius:6px;font-size:.8rem;cursor:pointer;white-space:nowrap}
+.nav-pill:hover{color:var(--accent);border-color:var(--accent)}
+
+/* ── PROGRESS BAR ── */
+.progress-track{height:3px;background:var(--border);position:fixed;top:var(--header-h);left:0;right:0;z-index:99}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--bug));width:0;transition:width .1s}
+
+/* ── LAYOUT ── */
+.layout{display:flex;padding-top:calc(var(--header-h)+3px);min-height:100vh}
+.sidebar{width:var(--sidebar-w);flex-shrink:0;position:fixed;top:calc(var(--header-h)+3px);bottom:0;overflow-y:auto;padding:1.5rem 1rem;border-right:1px solid var(--border);background:var(--bg-card)}
+.sidebar-section{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin:1.2rem 0 .4rem .5rem}
+.sidebar-link{display:block;padding:.35rem .75rem;border-radius:6px;font-size:.82rem;color:var(--text-muted);transition:all .15s;border-left:2px solid transparent;margin-bottom:1px}
+.sidebar-link:hover,.sidebar-link.active{color:var(--accent);background:rgba(108,99,255,.1);border-left-color:var(--accent);text-decoration:none}
+.main{margin-left:var(--sidebar-w);flex:1;max-width:900px;padding:2.5rem 2.5rem 4rem}
+
+/* ── HEADERS ── */
+h1{font-size:2.2rem;font-weight:700;line-height:1.2;margin-bottom:.5rem;background:linear-gradient(135deg,var(--accent),var(--bug));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+h2{font-size:1.5rem;font-weight:600;margin:3rem 0 1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border);color:var(--text)}
+h3{font-size:1.15rem;font-weight:600;margin:2rem 0 .75rem;color:var(--accent)}
+h4{font-size:1rem;font-weight:600;margin:1.5rem 0 .5rem}
+p{margin-bottom:1rem}
+ul,ol{padding-left:1.5rem;margin-bottom:1rem}
+li{margin-bottom:.35rem}
+
+/* ── META ROW ── */
+.meta-row{display:flex;flex-wrap:wrap;gap:.6rem;margin:1rem 0 2rem;align-items:center}
+.meta-pill{display:inline-flex;align-items:center;gap:.35rem;background:var(--bg-card);border:1px solid var(--border);padding:.3rem .75rem;border-radius:20px;font-size:.8rem;font-weight:500}
+.meta-pill.difficulty-advanced{border-color:var(--danger);color:var(--danger)}
+.meta-pill.difficulty-intermediate{border-color:var(--warning);color:var(--warning)}
+
+/* ── CALLOUT BOXES ── */
+.callout{border-radius:10px;padding:1.1rem 1.3rem;margin:1.5rem 0;border-left:4px solid;font-size:.93rem}
+.callout-icon{font-size:1.1rem;margin-right:.5rem}
+.callout-title{font-weight:700;margin-bottom:.4rem;display:flex;align-items:center}
+.callout.tip{background:rgba(56,189,248,.08);border-color:var(--tip)}
+.callout.warning{background:rgba(251,191,36,.08);border-color:var(--warning)}
+.callout.key{background:rgba(167,139,250,.08);border-color:var(--key)}
+.callout.bug{background:rgba(244,114,182,.08);border-color:var(--bug)}
+.callout.exercise{background:rgba(74,222,128,.08);border-color:var(--success)}
+.callout.deep{background:rgba(108,99,255,.08);border-color:var(--accent)}
+
+/* ── CODE BLOCKS ── */
+.code-wrap{position:relative;margin:1.5rem 0;border-radius:10px;overflow:hidden;background:var(--bg-code);border:1px solid var(--border)}
+.code-header{display:flex;justify-content:space-between;align-items:center;padding:.5rem 1rem;background:rgba(255,255,255,.04);border-bottom:1px solid var(--border);font-size:.78rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace}
+.code-lang{color:var(--accent);font-weight:600}
+.copy-btn{background:var(--bg-card);border:1px solid var(--border);color:var(--text-muted);padding:.2rem .6rem;border-radius:5px;cursor:pointer;font-size:.75rem;transition:all .2s}
+.copy-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.copy-btn.copied{background:var(--success);color:#000;border-color:var(--success)}
+pre{overflow-x:auto;padding:1.25rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:.85rem;line-height:1.75;tab-size:2}
+code{font-family:'JetBrains Mono',monospace;font-size:.875em}
+p code,li code{background:var(--bg-code);padding:.15em .4em;border-radius:4px;border:1px solid var(--border);font-size:.85em}
+.kw{color:var(--code-keyword)}
+.str{color:var(--code-string)}
+.cm{color:var(--code-comment);font-style:italic}
+.fn{color:var(--code-function)}
+.nm{color:var(--code-number)}
+.op{color:var(--code-operator)}
+.ty{color:#e5c07b}
+
+/* ── TERMINAL BLOCK ── */
+.terminal{background:#0a0a0a;border:1px solid #333;border-radius:10px;margin:1.5rem 0;overflow:hidden}
+.terminal-header{background:#1a1a1a;padding:.5rem 1rem;display:flex;align-items:center;gap:.5rem}
+.term-dot{width:12px;height:12px;border-radius:50%}
+.term-dot.r{background:#ff5f57}.term-dot.y{background:#febc2e}.term-dot.g{background:#28c840}
+.terminal-body{padding:1.1rem 1.3rem;font-family:'JetBrains Mono',monospace;font-size:.83rem;line-height:1.8;color:#d4d4d4}
+.term-prompt{color:#6c63ff}.term-output{color:#4ade80}.term-error{color:#f87171}.term-comment{color:#5c6370}
+
+/* ── TABLES ── */
+table{width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:.88rem}
+th{background:var(--bg-card);padding:.7rem 1rem;text-align:left;border-bottom:2px solid var(--accent);font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)}
+td{padding:.65rem 1rem;border-bottom:1px solid var(--border);vertical-align:top}
+tr:hover td{background:rgba(108,99,255,.04)}
+.badge{display:inline-block;padding:.2rem .5rem;border-radius:4px;font-size:.72rem;font-weight:700;letter-spacing:.04em}
+.badge.high{background:rgba(248,113,113,.15);color:var(--danger)}
+.badge.medium{background:rgba(251,191,36,.15);color:var(--warning)}
+.badge.low{background:rgba(74,222,128,.15);color:var(--success)}
+
+/* ── DETAILS/SUMMARY ── */
+details{border:1px solid var(--border);border-radius:8px;margin:1rem 0;overflow:hidden}
+summary{padding:.85rem 1.1rem;cursor:pointer;font-weight:600;font-size:.9rem;background:var(--bg-card);list-style:none;display:flex;align-items:center;gap:.5rem;user-select:none}
+summary::before{content:"▶";font-size:.7rem;color:var(--accent);transition:transform .2s;flex-shrink:0}
+details[open] summary::before{transform:rotate(90deg)}
+details>*:not(summary){padding:1.1rem}
+
+/* ── STEP BLOCK ── */
+.step{display:flex;gap:1.2rem;margin:2rem 0;align-items:flex-start}
+.step-num{background:var(--accent);color:#fff;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;margin-top:.2rem}
+.step-body{flex:1}
+.step-title{font-weight:700;font-size:1rem;margin-bottom:.5rem}
+
+/* ── FLOW DIAGRAM ── */
+.flow{display:flex;flex-direction:column;align-items:center;gap:0;margin:2rem auto;max-width:600px}
+.flow-box{background:var(--bg-card);border:2px solid var(--border);border-radius:10px;padding:.7rem 1.2rem;text-align:center;font-weight:500;font-size:.88rem;width:100%;max-width:380px;position:relative}
+.flow-box.start{border-color:var(--accent);color:var(--accent)}
+.flow-box.success{border-color:var(--success);color:var(--success)}
+.flow-box.payment{border-color:var(--warning);color:var(--warning)}
+.flow-box.inquiry{border-color:var(--tip);color:var(--tip)}
+.flow-box sub{display:block;font-size:.75rem;font-weight:400;color:var(--text-muted);margin-top:.2rem}
+.flow-arrow{font-size:1.2rem;color:var(--text-muted);line-height:1;padding:.2rem 0}
+.flow-branch{display:flex;gap:1rem;width:100%;justify-content:center;margin:.4rem 0}
+.flow-branch-box{flex:1;max-width:180px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:.6rem .8rem;text-align:center;font-size:.8rem}
+.flow-branch-box.active{border-color:var(--accent);background:rgba(108,99,255,.08)}
+
+/* ── GAP ROW ── */
+.gap-row{display:grid;grid-template-columns:auto 1fr auto;align-items:start;gap:1rem;padding:1rem;border-radius:8px;margin:.5rem 0;background:var(--bg-card);border:1px solid var(--border)}
+.gap-num{font-weight:700;color:var(--accent);font-size:1.1rem;min-width:28px}
+.gap-desc{font-size:.9rem}
+.gap-desc strong{display:block;margin-bottom:.2rem}
+.gap-desc span{color:var(--text-muted);font-size:.82rem}
+
+/* ── CHECKLIST ── */
+.checklist{list-style:none;padding:0}
+.checklist li{display:flex;align-items:flex-start;gap:.6rem;padding:.4rem 0;font-size:.9rem;border-bottom:1px solid var(--border)}
+.checklist li:last-child{border:none}
+.check-pass::before{content:"✅";flex-shrink:0}
+.check-fail::before{content:"❌";flex-shrink:0}
+.check-todo::before{content:"⬜";flex-shrink:0}
+
+/* ── FOOTER ── */
+footer{margin-left:var(--sidebar-w);background:var(--bg-card);border-top:1px solid var(--border);padding:2rem 2.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;font-size:.85rem;color:var(--text-muted)}
+.footer-nav{display:flex;gap:1rem}
+.footer-nav a{color:var(--accent);font-weight:500}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){.sidebar{display:none}.main{margin-left:0;padding:1.5rem}footer{margin-left:0}}
+@media print{.sidebar,.topbar,.theme-btn,.copy-btn{display:none}.main{margin:0;max-width:100%}h2{break-before:page}}
+</style>
+</head>
+<body>
+
+<!-- ── TOP BAR ── -->
+<header class="topbar">
+  <div class="topbar-left">
+    <span class="session-badge">01A</span>
+    <span class="session-title">Booking Flow: Docs, Gap Analysis & Plan</span>
+  </div>
+  <div class="topbar-right">
+    <a href="session-01b-implementation-and-testing.html" class="nav-pill">Part B: Implementation & Testing →</a>
+    <button class="theme-btn" onclick="toggleTheme()">☀ / ☾</button>
+  </div>
+</header>
+
+<div class="progress-track"><div class="progress-fill" id="progressBar"></div></div>
+
+<div class="layout">
+<!-- ── SIDEBAR ── -->
+<nav class="sidebar">
+  <div class="sidebar-section">Navigation</div>
+  <a class="sidebar-link" href="#overview">Overview</a>
+  <a class="sidebar-link" href="#recap">Session Recap</a>
+  <div class="sidebar-section">Concepts</div>
+  <a class="sidebar-link" href="#concept-flow-docs">Flow Documentation</a>
+  <a class="sidebar-link" href="#concept-gap-analysis">Gap Analysis</a>
+  <a class="sidebar-link" href="#concept-discriminated-unions">Discriminated Unions</a>
+  <a class="sidebar-link" href="#concept-react-state">Multi-State Patterns</a>
+  <div class="sidebar-section">The Flows</div>
+  <a class="sidebar-link" href="#booking-flow">Booking Flow Diagram</a>
+  <a class="sidebar-link" href="#payment-flow">Payment Flow Diagram</a>
+  <div class="sidebar-section">Gap Analysis</div>
+  <a class="sidebar-link" href="#gaps-identified">10 Gaps Identified</a>
+  <a class="sidebar-link" href="#design-decisions">Design Decisions</a>
+  <div class="sidebar-section">Plan</div>
+  <a class="sidebar-link" href="#implementation-plan">Implementation Plan</a>
+  <a class="sidebar-link" href="#exercises">Exercises</a>
+  <a class="sidebar-link" href="#glossary">Glossary</a>
+</nav>
+
+<!-- ── MAIN CONTENT ── -->
+<main class="main">
+
+<!-- ═══ HEADER ═══ -->
+<h1 id="top">Booking Flow:<br>Docs, Gap Analysis & Plan</h1>
+
+<div class="meta-row">
+  <span class="meta-pill">📅 Session 01A</span>
+  <span class="meta-pill difficulty-advanced">🔴 Intermediate</span>
+  <span class="meta-pill">⏱ ~45 min read</span>
+  <span class="meta-pill">📋 Part 1 of 2</span>
+  <span class="meta-pill">🔗 Part B: Implementation</span>
+</div>
+
+<!-- ═══ OVERVIEW ═══ -->
+<h2 id="overview">Session Overview</h2>
+
+<p>This session documents everything done during a major feature build for <strong>Studio Yopaw</strong> — a real puppy yoga studio in Saint-Lazare, QC, Canada. The studio uses a custom-built booking platform where customers select classes, enter contact information, accept a legal waiver, and pay via Square (a payment processor).</p>
+
+<p>The session had two major phases (split into files A and B):</p>
+<ul>
+  <li><strong>Part A (this file):</strong> We converted booking flow diagrams from images into written documentation, then ran a systematic <em>gap analysis</em> — comparing what the diagrams described the system should do against what the actual code actually does. We found 10 gaps.</li>
+  <li><strong>Part B:</strong> We implemented all 10 fixes across 5 source files, then wrote and ran 67 automated tests (47 code-level + 20 browser-based) that all pass.</li>
+</ul>
+
+<div class="callout key">
+  <div class="callout-title"><span class="callout-icon">🔑</span>Why This Matters</div>
+  <p>Gap analysis is a professional engineering discipline. Before writing any code, you identify the difference between <em>design intent</em> (what the feature is supposed to do) and <em>implementation reality</em> (what the code actually does). This prevents building on a broken foundation and is common practice at companies like Stripe, Shopify, and any team doing serious product work.</p>
+</div>
+
+<h3>Learning Objectives</h3>
+<p>By the end of Part A you will be able to:</p>
+<ul>
+  <li>Convert a visual flow diagram into structured Markdown documentation</li>
+  <li>Perform a gap analysis between design and code</li>
+  <li>Read and understand a React <code>Flow</code> type using discriminated unions</li>
+  <li>Identify missing state, missing form fields, and missing API behaviour</li>
+  <li>Write an implementation plan with task ordering and dependencies</li>
+</ul>
+
+<!-- ═══ RECAP BRIDGE ═══ -->
+<h2 id="recap">Recap Bridge — Where We Started</h2>
+
+<p>Studio Yopaw already had a working booking system. Customers could go to the website, pick a class type (Regular, Private, or Corporate), select a date and time, fill in their contact information, and either pay (Regular Class) or submit an inquiry (Private/Corporate). Square handles the payment processing; Resend sends email notifications; Zapier syncs leads to the studio's CRM.</p>
+
+<p>The system was built iteratively, with features added one at a time. The visual design had evolved ahead of the code: someone had created detailed flow diagrams showing exactly how the booking process <em>should</em> work, but the code had been built from an earlier version of those designs. The diagrams lived only as images — there was no written documentation of the intended flow.</p>
+
+<p>Our starting point: two images showing the intended booking flow and payment flow, and a codebase that partially matched those images but diverged in important ways nobody had catalogued.</p>
+
+<!-- ═══ CONCEPT: FLOW DOCUMENTATION ═══ -->
+<h2 id="concept-flow-docs">Concept: Flow Documentation</h2>
+
+<h3>Plain-English Explanation</h3>
+<p>A <strong>flow diagram</strong> is a picture showing every step a user takes through a feature — every decision point ("Do you have a mat?"), every branch ("Yes → go to date step / No → rent a mat"), and every terminal state ("Booking confirmed" or "Inquiry submitted").</p>
+<p>Flow documentation converts that picture into text. Why? Because images are fragile — they get lost, they can't be searched, and developers can't paste them into code reviews. A text version lives in the repository, can be version-controlled, and can be linked from code comments.</p>
+
+<h3>The Booking Flow We Documented</h3>
+<p>The original design showed three paths through the booking wizard:</p>
+
+<div class="flow">
+  <div class="flow-box start">Booking Start<sub>Choose your experience</sub></div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-branch">
+    <div class="flow-branch-box active">Regular Class<br><small>Drop-in / booked</small></div>
+    <div class="flow-branch-box">Private Class<br><small>For your group</small></div>
+    <div class="flow-branch-box">Corporate<br><small>Team wellness</small></div>
+  </div>
+  <div class="flow-arrow">↓ (Regular path shown)</div>
+  <div class="flow-box">Do you have a yoga mat?<sub>Yes / No (rent on site $5)</sub></div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-box">Select date &amp; time<sub>Calendar picker</sub></div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-box">Contact information<sub>Name · Email · Phone + Add extra attendees (1–4)</sub></div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-box">Waiver agreement<sub>☑ Checkbox per attendee · Must agree before payment</sub></div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-box payment">Payment<sub>Price × number of attendees · Credit card</sub></div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-box success">Booking Confirmed<sub>Email confirmation sent</sub></div>
+</div>
+
+<h3>The Payment Flow We Documented</h3>
+<p>The payment step had its own detailed sub-flow showing how Square's API is called:</p>
+
+<div class="flow">
+  <div class="flow-box">Confirm &amp; proceed to payment<sub>All waivers must be checked</sub></div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-box">Try: create client per attendee<sub>Square Customers API — one call each</sub></div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-branch">
+    <div class="flow-branch-box active">✅ Success<br>Book appointment<br>attendee count = total</div>
+    <div class="flow-branch-box">⚠️ API limit fallback<br>Create primary<br>client only</div>
+  </div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-box inquiry">Booking note on appointment (always)<sub>Total attendees: N · Names · Waiver confirmed: yes</sub></div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-box payment">Payment: Price × total attendees<sub>Charged via Square</sub></div>
+  <div class="flow-arrow">↓</div>
+  <div class="flow-box success">Booking Confirmed</div>
+</div>
+
+<div class="callout tip">
+  <div class="callout-title"><span class="callout-icon">💡</span>The Output File</div>
+  <p>We saved this as <code>dev-docs/booking-payment-flow.md</code> — a Markdown file in the repository's docs folder. Markdown renders beautifully on GitHub and can be read as plain text anywhere. This file becomes the single source of truth for the intended flow.</p>
+</div>
+
+<!-- ═══ CONCEPT: GAP ANALYSIS ═══ -->
+<h2 id="concept-gap-analysis">Concept: Gap Analysis</h2>
+
+<h3>Plain-English Explanation</h3>
+<p>A gap analysis is a structured comparison: <em>"Here is what was designed. Here is what was built. What's different?"</em></p>
+<p>Think of it like a house inspection. An inspector doesn't just say "the house looks fine" — they go room by room with a checklist, comparing the architectural drawings to what was actually constructed. They document every place the reality differs from the plan, assign severity (structural crack vs. missing light switch cover), and produce a report.</p>
+<p>We did the same thing: we read the flow diagrams line by line, then opened the actual source code and checked whether each described feature existed.</p>
+
+<h3>How We Read the Code</h3>
+<p>The booking UI lives in <code>src/App.tsx</code>. The key thing to look for was the <strong>Flow type</strong>:</p>
+
+<div class="code-wrap">
+  <div class="code-header"><span class="code-lang">TypeScript</span><span>src/App.tsx</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="cm">// A "discriminated union" — TypeScript's way of saying</span>
+<span class="cm">// "this variable can be one of these specific shapes,</span>
+<span class="cm">// and the 'kind' field tells you which shape it is"</span>
+<span class="kw">type</span> <span class="ty">Flow</span> =
+  | { kind: <span class="str">'chooseClass'</span> }                   <span class="cm">// step 1: pick Regular/Private/Corporate</span>
+  | { kind: <span class="str">'public'</span>; step: <span class="str">'mat'</span> | <span class="str">'people'</span> | <span class="str">'date'</span> | <span class="str">'contact'</span> | <span class="str">'payment'</span>; yoga: <span class="ty">YogaStyle</span> }
+  | { kind: <span class="str">'publicSuccess'</span>; source: <span class="str">'regular'</span> | <span class="str">'private'</span> }
+  | { kind: <span class="str">'corporate'</span>; step: <span class="str">'people'</span> | <span class="str">'date'</span> | <span class="str">'contact'</span> }
+  | { kind: <span class="str">'corporateSuccess'</span> }</code></pre>
+</div>
+
+<!-- ═══ CONCEPT: DISCRIMINATED UNIONS ═══ -->
+<h2 id="concept-discriminated-unions">Concept: Discriminated Unions in TypeScript</h2>
+
+<h3>Plain-English Explanation</h3>
+<p>A <strong>discriminated union</strong> (DU) is a TypeScript pattern for a variable that can hold different shapes of data. The "discriminator" is a field (always <code>kind</code> in this codebase) that tells you which shape you have.</p>
+<p>Think of it like a shipping label. A box can contain a book, a lamp, or a bicycle. Each has different properties. The label on the outside says which kind of item is inside, and once you know the kind, you know exactly what properties exist.</p>
+
+<div class="code-wrap">
+  <div class="code-header"><span class="code-lang">TypeScript — analogy</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="cm">// Without discriminated unions — messy, unclear</span>
+<span class="kw">type</span> <span class="ty">Package</span> = {
+  kind: <span class="str">'book'</span> | <span class="str">'lamp'</span> | <span class="str">'bicycle'</span>
+  isbn?: <span class="ty">string</span>      <span class="cm">// only for books</span>
+  wattage?: <span class="ty">number</span>    <span class="cm">// only for lamps</span>
+  wheelSize?: <span class="ty">number</span>  <span class="cm">// only for bicycles</span>
+}
+
+<span class="cm">// With discriminated unions — TypeScript knows EXACTLY</span>
+<span class="cm">// which fields exist based on the "kind" value</span>
+<span class="kw">type</span> <span class="ty">Package</span> =
+  | { kind: <span class="str">'book'</span>; isbn: <span class="ty">string</span> }
+  | { kind: <span class="str">'lamp'</span>; wattage: <span class="ty">number</span> }
+  | { kind: <span class="str">'bicycle'</span>; wheelSize: <span class="ty">number</span> }
+
+<span class="cm">// Now TypeScript can catch errors like:</span>
+<span class="kw">const</span> pkg: <span class="ty">Package</span> = { kind: <span class="str">'book'</span>, isbn: <span class="str">'978...'</span> }
+<span class="kw">if</span> (pkg.kind === <span class="str">'book'</span>) {
+  console.log(pkg.isbn)    <span class="cm">// ✅ TypeScript knows this exists</span>
+  console.log(pkg.wattage) <span class="cm">// ❌ TypeScript error — books don't have wattage</span>
+}</code></pre>
+</div>
+
+<p>For the booking flow, this means that when <code>flow.kind === 'public'</code>, TypeScript knows <code>flow.step</code> and <code>flow.yoga</code> exist. When <code>flow.kind === 'chooseClass'</code>, those fields don't exist at all. This eliminates entire categories of bugs.</p>
+
+<!-- ═══ CONCEPT: REACT STATE ═══ -->
+<h2 id="concept-react-state">Concept: Multi-State React Components</h2>
+
+<h3>The Problem with Complex State</h3>
+<p>The booking wizard has many moving parts that change independently: which step you're on, what date you selected, whether you need a mat rental, who the extra attendees are. Poor state management leads to bugs like "I went back a step but my date is still selected" or "The submit button is enabled when it shouldn't be."</p>
+
+<div class="callout key">
+  <div class="callout-title"><span class="callout-icon">🔑</span>State Design Principle</div>
+  <p>Every piece of state should answer exactly one question. If you're storing "which step are we on" AND "what yoga style" in separate booleans, you can end up in impossible states (e.g., <code>isYinStep=true</code> and <code>isGentleStep=true</code> simultaneously). The discriminated union Flow type prevents this — only one shape can be active at a time.</p>
+</div>
+
+<h3>The State Variables We Found (and Added)</h3>
+
+<div class="code-wrap">
+  <div class="code-header"><span class="code-lang">TypeScript</span><span>src/App.tsx — state summary</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code><span class="cm">// EXISTING state (already in code before this session)</span>
+<span class="kw">const</span> [flow, setFlow] = <span class="fn">useState</span>&lt;<span class="ty">Flow</span>&gt;({ kind: <span class="str">'chooseClass'</span> })
+<span class="kw">const</span> [selectedSessionIso, setSelectedSessionIso] = <span class="fn">useState</span>&lt;<span class="ty">string</span> | <span class="kw">null</span>&gt;(<span class="kw">null</span>)
+<span class="kw">const</span> [selectedTimeSlotId, setSelectedTimeSlotId] = <span class="fn">useState</span>&lt;<span class="ty">string</span> | <span class="kw">null</span>&gt;(<span class="kw">null</span>)
+<span class="kw">const</span> [fullName, setFullName] = <span class="fn">useState</span>(<span class="str">''</span>)
+<span class="kw">const</span> [email, setEmail] = <span class="fn">useState</span>(<span class="str">''</span>)
+<span class="kw">const</span> [phone, setPhone] = <span class="fn">useState</span>(<span class="str">''</span>)
+<span class="kw">const</span> [needsMatRental, setNeedsMatRental] = <span class="fn">useState</span>(<span class="kw">false</span>)
+<span class="kw">const</span> [waiverAccepted, setWaiverAccepted] = <span class="fn">useState</span>(<span class="kw">false</span>)
+
+<span class="cm">// NEW state added this session (gaps 1, 2, 4, 5, 6)</span>
+<span class="kw">type</span> <span class="ty">ExtraAttendee</span> = { name: <span class="ty">string</span>; waiverAccepted: <span class="ty">boolean</span> }
+<span class="kw">const</span> [extraAttendees, setExtraAttendees] = <span class="fn">useState</span>&lt;<span class="ty">ExtraAttendee</span>[]&gt;([])
+
+<span class="kw">const</span> [privateMessage, setPrivateMessage] = <span class="fn">useState</span>(<span class="str">''</span>)    <span class="cm">// private event message</span>
+<span class="kw">const</span> [corpCompanyName, setCorpCompanyName] = <span class="fn">useState</span>(<span class="str">''</span>)  <span class="cm">// corporate company name</span>
+<span class="kw">const</span> [corpMessage, setCorpMessage] = <span class="fn">useState</span>(<span class="str">''</span>)          <span class="cm">// corporate message</span></code></pre>
+</div>
+
+<!-- ═══ 10 GAPS ═══ -->
+<h2 id="gaps-identified">The 10 Gaps We Found</h2>
+
+<p>After reading every part of the flow diagram and comparing it to the code line by line, we found these 10 gaps. We classified each by severity based on impact:</p>
+
+<table>
+<thead><tr><th>#</th><th>Gap</th><th>Where</th><th>Severity</th></tr></thead>
+<tbody>
+<tr><td><strong>1</strong></td><td>Extra attendees (up to 4) on Regular Class contact step — no UI, no state</td><td>Frontend</td><td><span class="badge high">HIGH</span></td></tr>
+<tr><td><strong>2</strong></td><td>Waiver checkbox per attendee — only one checkbox existed (primary booker only)</td><td>Frontend</td><td><span class="badge high">HIGH</span></td></tr>
+<tr><td><strong>3</strong></td><td>Payment charged for 1 person only — should be price × attendee count</td><td>Frontend + Backend</td><td><span class="badge high">HIGH</span></td></tr>
+<tr><td><strong>4</strong></td><td>Message / special request field missing from Private Class inquiry</td><td>Frontend + Backend</td><td><span class="badge medium">MEDIUM</span></td></tr>
+<tr><td><strong>5</strong></td><td>Company name field missing from Corporate inquiry</td><td>Frontend + Backend</td><td><span class="badge medium">MEDIUM</span></td></tr>
+<tr><td><strong>6</strong></td><td>Message / special request field missing from Corporate inquiry</td><td>Frontend + Backend</td><td><span class="badge medium">MEDIUM</span></td></tr>
+<tr><td><strong>7</strong></td><td>booking.ts creates only one Square customer — should try one per attendee</td><td>Backend</td><td><span class="badge medium">MEDIUM</span></td></tr>
+<tr><td><strong>8</strong></td><td>No fallback if Square API rate-limits during customer creation</td><td>Backend</td><td><span class="badge medium">MEDIUM</span></td></tr>
+<tr><td><strong>9</strong></td><td>Booking appointment has no attendee count set on Square calendar</td><td>Backend</td><td><span class="badge medium">MEDIUM</span></td></tr>
+<tr><td><strong>10</strong></td><td>No booking note written to Square appointment (names + waiver status)</td><td>Backend</td><td><span class="badge low">LOW</span></td></tr>
+</tbody>
+</table>
+
+<h3>Why Some Gaps Are "High" Severity</h3>
+<p>Gaps 1–3 are HIGH because they affect <strong>revenue and user data</strong>. If a group of 3 friends books together:</p>
+<ul>
+  <li>Without gap 1 fixed: only 1 person can be registered — the others have no record</li>
+  <li>Without gap 2 fixed: only the primary booker signs the legal waiver — the others have no legal protection</li>
+  <li>Without gap 3 fixed: the studio only collects 1 person's fee instead of 3 — losing 67% of revenue for that booking</li>
+</ul>
+
+<!-- ═══ DEEP DIVE: WHY THE GAPS EXISTED ═══ -->
+<h2 id="why-gaps">Why Did These Gaps Exist?</h2>
+
+<div class="callout deep">
+  <div class="callout-title"><span class="callout-icon">📖</span>The Nature of Iterative Development</div>
+  <p>Almost every gap traces back to the same root cause: the booking flow was <em>designed</em> with multi-attendee support in mind, but the <em>first implementation</em> shipped with single-attendee support because "the simplest thing that works" is the correct starting point. Then the design evolved in the images/diagrams, but the code wasn't updated to match. This is completely normal — it's called <strong>design drift</strong>.</p>
+  <p>The lesson: diagrams and code are two different representations of the same system. Without regular reconciliation (exactly what we did in this session), they diverge. Good engineering teams schedule "design review" sessions specifically to catch this before it causes customer-facing bugs.</p>
+</div>
+
+<!-- ═══ IMPLEMENTATION PLAN ═══ -->
+<h2 id="implementation-plan">The Implementation Plan</h2>
+
+<p>We organized the 10 gaps into 6 tasks (A–F). Each task represents a coherent unit of work that can be reviewed independently. The tasks have dependencies — you can't test "payment multiplied by attendees" until you have the attendee count UI built.</p>
+
+<table>
+<thead><tr><th>Task</th><th>What It Does</th><th>Depends On</th></tr></thead>
+<tbody>
+<tr><td><strong>A</strong></td><td>Add message + company name fields (Gaps 4, 5, 6)</td><td>Nothing — isolated change</td></tr>
+<tr><td><strong>B</strong></td><td>Add extra attendees UI (Gap 1)</td><td>Task A (shares form patterns)</td></tr>
+<tr><td><strong>C</strong></td><td>Per-attendee waiver validation (Gap 2)</td><td>Task B</td></tr>
+<tr><td><strong>D</strong></td><td>Multiply payment by attendee count (Gap 3)</td><td>Task B</td></tr>
+<tr><td><strong>E</strong></td><td>Per-attendee Square customer creation + fallback (Gaps 7, 8)</td><td>Task B + D</td></tr>
+<tr><td><strong>F</strong></td><td>Add booking note with names + waiver status (Gaps 9, 10)</td><td>Task B + E</td></tr>
+</tbody>
+</table>
+
+<div class="callout tip">
+  <div class="callout-title"><span class="callout-icon">💡</span>Dependency Ordering</div>
+  <p>Task A and B can be started in parallel because they're independent. C, D, E, F must be sequential because each uses the <code>extraAttendees</code> state introduced in B. This is called a <strong>task dependency graph</strong> and is how engineering teams plan sprints in tools like Linear, Jira, or GitHub Projects.</p>
+</div>
+
+<!-- ═══ FILES AFFECTED ═══ -->
+<h2 id="files-affected">Files That Would Be Changed</h2>
+
+<p>Before writing a single line of code, we mapped out which files needed changes and why. This prevents scope creep and makes code review easier.</p>
+
+<div class="code-wrap">
+  <div class="code-header"><span class="code-lang">File Change Map</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><code>src/App.tsx
+  <span class="cm">↳ New state variables (extraAttendees, privateMessage, corpCompanyName, corpMessage)</span>
+  <span class="cm">↳ Extra attendee cards UI in Regular Class contact step</span>
+  <span class="cm">↳ Payment summary: groupSize = 1 + extraAttendees.length</span>
+  <span class="cm">↳ Message textarea in Private Event contact form</span>
+  <span class="cm">↳ Company name + message in Corporate contact form</span>
+
+src/i18n/siteStrings.ts
+  <span class="cm">↳ 7 new string keys (EN + FR) for new UI elements</span>
+
+api/booking.ts
+  <span class="cm">↳ Accept extraAttendees[] in request body</span>
+  <span class="cm">↳ Per-attendee Square customer creation with rate-limit fallback</span>
+  <span class="cm">↳ Order line item quantity: String(totalPeople) instead of '1'</span>
+  <span class="cm">↳ customerNote on booking: names + waiver confirmation</span>
+
+api/inquiry.ts
+  <span class="cm">↳ Accept companyName and message in request body</span>
+  <span class="cm">↳ Include both in email + Zapier payload</span>
+
+src/index.css
+  <span class="cm">↳ New styles for extra attendee card components</span></code></pre>
+</div>
+
+<!-- ═══ DESIGN DECISIONS ═══ -->
+<h2 id="design-decisions">Design Decisions</h2>
+
+<table>
+<thead><tr><th>Decision</th><th>Alternatives</th><th>Why We Chose This</th><th>Trade-off</th></tr></thead>
+<tbody>
+<tr>
+  <td>Max 4 extra attendees (5 total)</td>
+  <td>Unlimited; max 20</td>
+  <td>Diagram specified 1–4 extras. Regular class seats are scarce — 5 spots per booking is reasonable.</td>
+  <td>Groups larger than 5 must contact studio directly for a private event</td>
+</tr>
+<tr>
+  <td>Each extra attendee has their own waiver checkbox</td>
+  <td>One "I agree for everyone" checkbox; waiver by email later</td>
+  <td>Legal requirement — each participant must individually consent</td>
+  <td>More friction in the booking flow</td>
+</tr>
+<tr>
+  <td>Per-attendee Square customer with fallback</td>
+  <td>Always one customer; one customer per booking</td>
+  <td>Square's CRM works better with individual records; fallback prevents booking failures</td>
+  <td>More API calls (up to 5); rate limit risk</td>
+</tr>
+<tr>
+  <td>Quantity in Square order line item (not custom amount)</td>
+  <td>Multiply price client-side, send custom total</td>
+  <td>Square computes tax correctly per-unit when quantity > 1; catalog price is authoritative</td>
+  <td>Must match catalog variation price</td>
+</tr>
+</tbody>
+</table>
+
+<!-- ═══ EXERCISES ═══ -->
+<h2 id="exercises">Exercises</h2>
+
+<div class="callout exercise">
+  <div class="callout-title"><span class="callout-icon">🧪</span>🟢 Practice — Read the Flow Type</div>
+  <p>Open <code>src/App.tsx</code> and find the <code>Flow</code> type definition. Draw (on paper or in a tool) the complete state machine: all the valid transitions between states. For example: <code>chooseClass → public.mat</code>, <code>public.mat → public.date</code>, etc. Can you find any transitions that skip steps? Any back-navigation paths?</p>
+  <details><summary>💡 Hint</summary>
+    <p>Look for the <code>goBack()</code> function — it documents all reverse transitions. Look for every place <code>setFlow()</code> is called to find forward transitions.</p>
+  </details>
+</div>
+
+<div class="callout exercise">
+  <div class="callout-title"><span class="callout-icon">🧪</span>🟡 Stretch — Add a New Gap</div>
+  <p>The Private Event flow in the diagram shows "How many attendees?" but the design says attendees pay per-person too (same as Regular). Currently the Private Event inquiry doesn't go through Square at all — it's just an email to the studio. Write a gap description for this: what would be needed to make Private Events also charge online? List at least 5 things that would need to change.</p>
+  <details><summary>💡 Hint</summary>
+    <p>Think about: Square order creation, card form UI, waiver for all attendees, email confirmation vs. "we'll contact you" flow, whether the studio wants to handle the money now or later.</p>
+  </details>
+</div>
+
+<div class="callout exercise">
+  <div class="callout-title"><span class="callout-icon">🧪</span>🔴 Challenge — Design a Corporate Quote Flow</div>
+  <p>The current Corporate flow sends an inquiry with no price shown. Design (in writing — no code needed) a new flow that: (1) collects group size, (2) shows a price estimate based on group size × $46, (3) lets the user book and pay online. What changes to the <code>Flow</code> type would be needed? What new API endpoints? What Square API calls?</p>
+</div>
+
+<!-- ═══ GLOSSARY ═══ -->
+<h2 id="glossary">Glossary</h2>
+
+<table>
+<thead><tr><th>Term</th><th>Definition</th></tr></thead>
+<tbody>
+<tr><td><strong>CRM</strong></td><td>Customer Relationship Management — software that stores customer contact info and interaction history. Zapier syncs leads into Studio Yopaw's CRM.</td></tr>
+<tr><td><strong>Design Drift</strong></td><td>When the written/visual design of a feature diverges from its implementation over time, because both evolve independently without reconciliation.</td></tr>
+<tr><td><strong>Discriminated Union</strong></td><td>A TypeScript type that can hold one of several specific data shapes, distinguished by a "kind" or "type" field. Prevents impossible states.</td></tr>
+<tr><td><strong>Gap Analysis</strong></td><td>A structured comparison between intended design and actual implementation, producing a list of differences with severity ratings.</td></tr>
+<tr><td><strong>Idempotency Key</strong></td><td>A unique string sent with API requests so that if the request is retried (due to network failure), the server knows to not process it twice. Used heavily with Square.</td></tr>
+<tr><td><strong>Rate Limit</strong></td><td>A restriction on how many API calls you can make in a time window. Square limits calls per second. If you exceed it, calls fail with HTTP 429.</td></tr>
+<tr><td><strong>Resend</strong></td><td>An email delivery service (resend.com) used to send transactional emails (booking confirmations, inquiry notifications) programmatically.</td></tr>
+<tr><td><strong>Serverless Function</strong></td><td>A small piece of code that runs on demand in the cloud without a persistent server. Vercel hosts these as API endpoints in the <code>api/</code> folder.</td></tr>
+<tr><td><strong>Square</strong></td><td>A payment processing company. Studio Yopaw uses Square for payments, appointment booking, and customer management.</td></tr>
+<tr><td><strong>State Machine</strong></td><td>A design pattern where a system is always in one of a finite set of states. The Flow type implements a state machine for the booking wizard.</td></tr>
+<tr><td><strong>Vercel</strong></td><td>A cloud hosting platform where both the React frontend and API functions are deployed. Handles HTTPS, CDN, and serverless execution.</td></tr>
+<tr><td><strong>Zapier</strong></td><td>A no-code automation platform. Studio Yopaw sends booking and inquiry data to Zapier webhooks, which forward them to a CRM or spreadsheet.</td></tr>
+</tbody>
+</table>
+
+</main>
+</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div>Session 01A — Studio Yopaw Learning Series · Generated June 2026</div>
+  <div class="footer-nav">
+    <a href="session-01b-implementation-and-testing.html">Part B: Implementation & Testing →</a>
+  </div>
+</footer>
+
+<script>
+// ── THEME TOGGLE ──
+function toggleTheme() {
+  const html = document.documentElement;
+  const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('yopaw-theme', next);
+}
+(function() {
+  const saved = localStorage.getItem('yopaw-theme');
+  if (saved) document.documentElement.setAttribute('data-theme', saved);
+})();
+
+// ── COPY CODE ──
+function copyCode(btn) {
+  const pre = btn.closest('.code-wrap').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ── SCROLL PROGRESS ──
+window.addEventListener('scroll', () => {
+  const scrolled = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+  document.getElementById('progressBar').style.width = (scrolled * 100) + '%';
+});
+
+// ── ACTIVE SIDEBAR LINK ──
+const links = document.querySelectorAll('.sidebar-link');
+const sections = [];
+links.forEach(l => { const id = l.getAttribute('href').slice(1); const el = document.getElementById(id); if (el) sections.push({ id, el, link: l }); });
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { links.forEach(l => l.classList.remove('active')); const s = sections.find(s => s.el === e.target); if (s) s.link.classList.add('active'); }});
+}, { rootMargin: '-20% 0px -75% 0px' });
+sections.forEach(s => observer.observe(s.el));
+</script>
+</body>
+</html>
