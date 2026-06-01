@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Payment Resilience — Studio Yopaw</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="header">
+        <h1>Payment Resilience</h1>
+        <div class="sub">Ghost-booking prevention, friendly error messages, booking status normalization</div>
+      </div>
+
+      <nav class="nav" aria-label="Site">
+        <ul>
+          <li><a href="./index.html">Overview</a></li>
+          <li><a href="./01-booking-flow.html">Booking Flow</a></li>
+          <li><a href="./02-api-layer.html">API Layer</a></li>
+          <li><a href="./03-integrations.html">3rd-Party Integrations</a></li>
+          <li><a href="./04-payment-resilience.html" aria-current="page">Payment Resilience</a></li>
+          <li><a href="./05-ui-cleanup.html">UI Cleanup</a></li>
+        </ul>
+      </nav>
+
+      <!-- The problem -->
+      <section class="card">
+        <h2>The Problem: Ghost Appointments</h2>
+        <p>The booking flow in <code>api/booking.ts</code> has three steps that must all succeed:</p>
+        <ol>
+          <li>Create the Square booking (adds the appointment to the calendar)</li>
+          <li>Create a Square Order (computes taxes)</li>
+          <li>Process payment (charges the card)</li>
+        </ol>
+        <p>Before this fix, steps 2 and 3 ran without error handling. If payment was declined <em>after</em> the booking was already created in step 1, the appointment would sit in Square Appointments permanently with no associated payment — a <strong>ghost appointment</strong> that blocks the calendar slot for future customers.</p>
+      </section>
+
+      <!-- The fix -->
+      <section class="card">
+        <h2>The Fix: Cancel on Payment Failure</h2>
+        <p>Steps 4 and 5 (Order + Payment) are now wrapped in a try/catch. If either throws, the booking created in step 3 is immediately cancelled:</p>
+        <pre><code>// 3. Create booking first — this puts it in Square Appointments
+const &#123; booking &#125; = await square.bookings.create(&#123; ... &#125;)
+
+let payment: ...
+try &#123;
+  // 4. Create Order (with taxes)
+  if (gstTaxId &amp;&amp; qstTaxId) &#123;
+    const &#123; order &#125; = await square.orders.create(&#123; ... &#125;)
+    chargeAmount = order!.totalMoney!.amount!
+    orderId = order!.id
+  &#125; else &#123;
+    chargeAmount = BigInt(baseAmountCents)
+  &#125;
+
+  // 5. Process payment
+  const result = await square.payments.create(&#123; ... &#125;)
+  payment = result.payment
+
+  if (payment!.status !== 'COMPLETED' &amp;&amp; payment!.status !== 'APPROVED') &#123;
+    throw new Error(`Payment not approved (status: $&#123;payment!.status&#125;)`)
+  &#125;
+&#125; catch (paymentErr) &#123;
+  // Payment failed — cancel the booking to avoid ghost appointment
+  console.error('Payment failed — cancelling booking', &#123;
+    bookingId: booking!.id,
+    error: paymentErr instanceof Error ? paymentErr.message : paymentErr,
+  &#125;)
+  try &#123;
+    await square.bookings.cancel(&#123;
+      bookingId: booking!.id!,
+      idempotencyKey: randomUUID(),
+      bookingVersion: booking!.version,
+    &#125;)
+  &#125; catch (cancelErr) &#123;
+    // Both payment AND cancellation failed — manual cleanup needed
+    console.error('CRITICAL: Payment failed AND booking cancellation failed', &#123;
+      bookingId: booking!.id,
+      cancelErr,
+    &#125;)
+  &#125;
+  throw paymentErr  // re-throw so the outer catch returns an error response
+&#125;</code></pre>
+
+        <div class="callout warn">
+          <strong>The <code>CRITICAL</code> log</strong> means a ghost appointment exists in Square Appointments that could block future bookings for that time slot. If you see this in Vercel logs, go to Square Dashboard → Appointments and manually cancel/delete the appointment with that <code>bookingId</code>.
+        </div>
+      </section>
+
+      <!-- Why booking first -->
+      <section class="card">
+        <h2>Why Create the Booking Before the Payment?</h2>
+        <p>This is counterintuitive — why not process payment first, then create the booking? The comment in the code explains:</p>
+        <div class="callout">
+          "Create the booking first so we have an ID to link the order and payment against. This is what makes Square's calendar display the booking as <strong>paid</strong> rather than 'balance due'."
+        </div>
+        <p>The Order's <code>referenceId</code> and the Payment's <code>referenceId</code> both point to <code>booking.id</code>. Square uses these references to correlate the payment with the appointment in its Appointments dashboard. If the order/payment were created without this reference, Square would show the appointment as unpaid even if the card was charged successfully.</p>
+      </section>
+
+      <!-- Payment status check -->
+      <section class="card">
+        <h2>Payment Status Validation</h2>
+        <p>After calling <code>square.payments.create()</code>, the handler now explicitly checks the returned status:</p>
+        <pre><code>if (payment!.status !== 'COMPLETED' &amp;&amp; payment!.status !== 'APPROVED') &#123;
+  throw new Error(`Payment not approved (status: $&#123;payment!.status&#125;)`)
+&#125;</code></pre>
+        <p>This catches cases where Square returns a 200 response but with a status like <code>PENDING</code> or <code>FAILED</code>. Without this check, a technically-failed payment could be treated as a success.</p>
+      </section>
+
+      <!-- Friendly errors -->
+      <section class="card">
+        <h2>Friendly Payment Error Messages</h2>
+        <p>Before, the error response was:</p>
+        <pre><code>return res.status(500).json(&#123; error: err.message &#125;)</code></pre>
+        <p>This would expose raw Square error strings like <code>"Status code: 402 Body: &#123;\"errors\":[&#123;\"code\":\"GENERIC_DECLINE\",...&#125;]&#125;"</code> directly to the user.</p>
+
+        <p>Now, the error goes through <code>friendlyPaymentError(err)</code>:</p>
+        <pre><code>function friendlyPaymentError(err: unknown): string &#123;
+  if (!(err instanceof Error)) return 'Booking failed. Please try again.'
+
+  // Parse Square SDK error body: "Status code: 4xx Body: &#123;...&#125;"
+  const bodyMatch = err.message.match(/Body:\s*(\&#123;[\s\S]*\&#125;)\s*$/)
+  if (bodyMatch) &#123;
+    try &#123;
+      const parsed = JSON.parse(bodyMatch[1])
+      const code = parsed.errors?.[0]?.code ?? ''
+      const category = parsed.errors?.[0]?.category ?? ''
+
+      if (code === 'GENERIC_DECLINE' || code === 'CARD_DECLINED')
+        return 'Your card was declined. Please check your details or try a different card.'
+      if (code === 'INSUFFICIENT_FUNDS')
+        return 'Insufficient funds. Please try a different card.'
+      if (code === 'CARD_EXPIRED')
+        return 'Your card has expired. Please use a different card.'
+      if (code === 'CVV_FAILURE')
+        return 'The security code (CVV) is incorrect. Please try again.'
+      if (code === 'ADDRESS_VERIFICATION_FAILURE')
+        return 'Address verification failed. Please check your billing address.'
+      if (code === 'INVALID_CARD')
+        return 'The card number is invalid. Please check and try again.'
+      if (category === 'PAYMENT_METHOD_ERROR')
+        return 'Payment declined. Please check your card details and try again.'
+      if (category === 'RATE_LIMIT_ERROR')
+        return 'Too many attempts. Please wait a moment and try again.'
+    &#125; catch &#123;
+      // JSON parse failed — fall through to generic message
+    &#125;
+  &#125;
+
+  return 'Booking failed. Please try again.'
+&#125;</code></pre>
+
+        <table>
+          <thead><tr><th>Square error code / category</th><th>Message shown to user</th></tr></thead>
+          <tbody>
+            <tr><td><code>GENERIC_DECLINE</code> / <code>CARD_DECLINED</code></td><td>Your card was declined. Please check your details or try a different card.</td></tr>
+            <tr><td><code>INSUFFICIENT_FUNDS</code></td><td>Insufficient funds. Please try a different card.</td></tr>
+            <tr><td><code>CARD_EXPIRED</code></td><td>Your card has expired. Please use a different card.</td></tr>
+            <tr><td><code>CVV_FAILURE</code></td><td>The security code (CVV) is incorrect. Please try again.</td></tr>
+            <tr><td><code>ADDRESS_VERIFICATION_FAILURE</code></td><td>Address verification failed. Please check your billing address.</td></tr>
+            <tr><td><code>INVALID_CARD</code></td><td>The card number is invalid. Please check and try again.</td></tr>
+            <tr><td><code>PAYMENT_METHOD_ERROR</code> (category)</td><td>Payment declined. Please check your card details and try again.</td></tr>
+            <tr><td><code>RATE_LIMIT_ERROR</code> (category)</td><td>Too many attempts. Please wait a moment and try again.</td></tr>
+            <tr><td><em>Anything else</em></td><td>Booking failed. Please try again.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Booking status fix in availability -->
+      <section class="card">
+        <h2>Booking Status &amp; Timestamp Normalization</h2>
+        <p>Both <code>api/booking.ts</code> (race-condition seat check) and <code>api/availability.ts</code> (listing booked slots) had two related bugs fixed:</p>
+
+        <h3>1. Wrong cancellation status strings</h3>
+        <p>In the seat-check inside <code>booking.ts</code>:</p>
+        <div class="diff-block">
+          <span class="del">- b.status !== 'CANCELLED'</span>
+          <br>
+          <span class="add">+ b.status !== 'CANCELLED_BY_SELLER' &amp;&amp;</span>
+          <br>
+          <span class="add">+ b.status !== 'CANCELLED_BY_CUSTOMER'</span>
+        </div>
+        <p>The string <code>'CANCELLED'</code> is not a valid Square booking status. The real ones are <code>CANCELLED_BY_SELLER</code> and <code>CANCELLED_BY_CUSTOMER</code>. Without this fix, cancelled bookings would still count toward the seat limit, and a cancelled class slot would appear full.</p>
+        <p>In <code>availability.ts</code> the same logic was applied when counting booked seats, plus <code>DECLINED</code> was also excluded.</p>
+
+        <h3>2. Timestamp fractional seconds mismatch</h3>
+        <pre><code>// Normalize before comparing:
+const norm = (s: string) =&gt; s.replace(/\.\d+Z$/, 'Z')
+const taken = bookings.filter(
+  b =&gt; norm(b.startAt ?? '') === norm(startAt) &amp;&amp; ...
+).length</code></pre>
+        <p>Square sometimes returns timestamps with fractional seconds (<code>2026-06-14T14:30:00.000Z</code>) and sometimes without (<code>2026-06-14T14:30:00Z</code>). A direct string comparison would miss matches. The <code>norm()</code> helper strips the fractional part before comparing.</p>
+      </section>
+
+      <div class="footer">← <a href="./03-integrations.html">3rd-Party Integrations</a> &nbsp;|&nbsp; <a href="./05-ui-cleanup.html">UI Cleanup →</a></div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Glossary — Sync a Fork Safely (Git)</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="header">
+        <h1>Glossary</h1>
+        <div class="sub">Jargon explained (with examples)</div>
+      </div>
+
+      <nav class="nav" aria-label="Site">
+        <ul>
+          <li><a href="./index.html">Home</a></li>
+          <li><a href="./01-forks-remotes.html">Forks &amp; Remotes</a></li>
+          <li><a href="./02-spotting-problems.html">Spotting Problems</a></li>
+          <li><a href="./03-safe-recovery.html">Safe Recovery</a></li>
+          <li><a href="./04-sync-workflow.html">Sync Workflow</a></li>
+          <li><a href="./05-checklist.html">Checklist</a></li>
+          <li><a href="./glossary.html" aria-current="page">Glossary</a></li>
+        </ul>
+      </nav>
+
+      <section class="card">
+        <h2>Core terms</h2>
+        <h3>Commit</h3>
+        <p>
+          A snapshot of your project with a unique ID (hash) like <code>f3bcadb83c...</code>.
+          Commits form a history chain.
+        </p>
+
+        <h3>Branch</h3>
+        <p>
+          A named pointer to a commit. Example: <code>main</code> points to a specific commit.
+          When new commits are added, the branch pointer moves forward.
+        </p>
+
+        <h3>HEAD</h3>
+        <p>
+          The commit your current checkout points to. Usually it’s “the tip” of your current branch.
+          You can inspect it with <code>git rev-parse HEAD</code>.
+        </p>
+
+        <h3>Remote</h3>
+        <p>
+          A saved nickname for a Git server URL. Example: <code>origin</code> and <code>upstream</code>.
+          You can list them with <code>git remote -v</code>.
+        </p>
+
+        <h3>Remote-tracking branch</h3>
+        <p>
+          A local reference to “what the remote branch looked like the last time you fetched”.
+          Examples: <code>origin/main</code>, <code>upstream/main</code>.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>Operations</h2>
+        <h3>Fetch</h3>
+        <p>
+          Downloads updates from a remote into remote-tracking branches, but does not modify your working files.
+          Example: <code>git fetch upstream</code>.
+        </p>
+
+        <h3>Merge</h3>
+        <p>
+          Combines two histories. Example: <code>git merge upstream/main</code> brings upstream changes into your local branch.
+        </p>
+
+        <h3>Merge conflict</h3>
+        <p>
+          Happens when Git can’t automatically combine changes to the same lines/files.
+          Git marks affected files as “unmerged” until you resolve them.
+        </p>
+
+        <h3>Reset (hard)</h3>
+        <p>
+          Moves your branch pointer and rewrites your working directory to match a target commit.
+          Example: <code>git reset --hard origin/main</code> makes your local branch match the fork’s branch.
+        </p>
+        <div class="callout bad">
+          <strong>Hard reset warning</strong>
+          <p>
+            It can delete uncommitted work. Use backups/branches if you might need the work later.
+          </p>
+        </div>
+
+        <h3>Prune</h3>
+        <p>
+          When fetching, <code>--prune</code> cleans remote-tracking branches that were deleted on the server.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>Fork workflow vocabulary</h2>
+        <h3>Origin</h3>
+        <p>
+          Usually your fork’s remote. You push your work here: <code>git push origin main</code>.
+        </p>
+
+        <h3>Upstream</h3>
+        <p>
+          Usually the original project’s remote. You fetch from here to get new changes: <code>git fetch upstream</code>.
+        </p>
+      </section>
+
+      <div class="footer">
+        Back to <a href="./index.html">Home</a>
+      </div>
+    </div>
+  </body>
+</html>
+

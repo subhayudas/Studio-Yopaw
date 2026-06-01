@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Spotting Problems — Sync a Fork Safely (Git)</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="header">
+        <h1>Spotting Problems</h1>
+        <div class="sub">How we diagnosed “not synced” and “stuck merge”</div>
+      </div>
+
+      <nav class="nav" aria-label="Site">
+        <ul>
+          <li><a href="./index.html">Home</a></li>
+          <li><a href="./01-forks-remotes.html">Forks &amp; Remotes</a></li>
+          <li><a href="./02-spotting-problems.html" aria-current="page">Spotting Problems</a></li>
+          <li><a href="./03-safe-recovery.html">Safe Recovery</a></li>
+          <li><a href="./04-sync-workflow.html">Sync Workflow</a></li>
+          <li><a href="./05-checklist.html">Checklist</a></li>
+          <li><a href="./glossary.html">Glossary</a></li>
+        </ul>
+      </nav>
+
+      <section class="card">
+        <h2>1) Check your current state</h2>
+        <p>
+          Start with:
+        </p>
+        <pre><code>git status -sb</code></pre>
+        <p>
+          In our case earlier, it showed things like:
+        </p>
+        <ul>
+          <li><code>[ahead X, behind Y]</code> → your local branch is not aligned with <code>origin/main</code></li>
+          <li><code>UU some-file</code> → unresolved merge conflicts (“unmerged” files)</li>
+        </ul>
+        <div class="callout">
+          <strong>What does ahead/behind mean?</strong>
+          <p>
+            Git compares commit history. “Ahead 1” means you have 1 local commit not in the remote branch.
+            “Behind 18” means the remote has 18 commits you don’t have locally (yet).
+          </p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>2) Detect an in-progress merge/rebase</h2>
+        <p>
+          Sometimes Git is mid-operation (merge, rebase, cherry-pick). The easiest signal is:
+        </p>
+        <ul>
+          <li><code>git status</code> says something like “You have unmerged paths” or “You are in the middle of a merge”</li>
+        </ul>
+        <p>
+          Another “low-level” way is checking these internal markers:
+        </p>
+        <pre><code>git rev-parse -q --verify MERGE_HEAD
+git rev-parse -q --verify REBASE_HEAD
+git rev-parse -q --verify CHERRY_PICK_HEAD
+git rev-parse -q --verify REVERT_HEAD</code></pre>
+        <p class="muted">
+          If a command prints a hash, it means that operation is in progress.
+        </p>
+        <div class="callout warn">
+          <strong>Why this matters</strong>
+          <p>
+            If you’re mid-merge, trying to “sync with upstream” can get messy because Git is already trying to combine two histories.
+            First: return to a clean, consistent state.
+          </p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>3) Know your remotes</h2>
+        <p>
+          Always confirm which URL is <code>origin</code> and which is <code>upstream</code>:
+        </p>
+        <pre><code>git remote -v
+git remote show origin
+git remote show upstream</code></pre>
+        <div class="callout bad">
+          <strong>Big risk</strong>
+          <p>
+            If you accidentally set <code>origin</code> to the upstream repo, <code>git push</code> could publish changes to the wrong place.
+            That’s why we explicitly disabled pushes to <code>upstream</code>.
+          </p>
+        </div>
+      </section>
+
+      <div class="footer">
+        Next: <a href="./03-safe-recovery.html">Safe Recovery</a>
+      </div>
+    </div>
+  </body>
+</html>
+

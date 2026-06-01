@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>API Layer — Studio Yopaw</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="header">
+        <h1>API Layer Changes</h1>
+        <div class="sub">Availability &amp; breeds rewrites, class-schedule.json, vercel.json, dev plugin</div>
+      </div>
+
+      <nav class="nav" aria-label="Site">
+        <ul>
+          <li><a href="./index.html">Overview</a></li>
+          <li><a href="./01-booking-flow.html">Booking Flow</a></li>
+          <li><a href="./02-api-layer.html" aria-current="page">API Layer</a></li>
+          <li><a href="./03-integrations.html">3rd-Party Integrations</a></li>
+          <li><a href="./04-payment-resilience.html">Payment Resilience</a></li>
+          <li><a href="./05-ui-cleanup.html">UI Cleanup</a></li>
+        </ul>
+      </nav>
+
+      <!-- Big picture -->
+      <section class="card">
+        <h2>The Big Picture: From Square Catalog to a JSON File</h2>
+        <p>Before this batch of changes, the session schedule was stored in Square Catalog as a special item named <em>"Class Session Dates"</em> under a <em>"class schedule"</em> category, with one catalog variation per date. The availability API fetched this catalog entry to know which dates were valid, and the breeds API fetched <em>all-day bookings</em> in Square to find which dog breed was attending each session (using customer given/family name as the EN/FR breed name).</p>
+        <p>This was clever but fragile — it depended on obscure Square Catalog conventions and a custom naming convention for customers. Both APIs were rewritten to read a plain <code>class-schedule.json</code> file that lives in the repo root.</p>
+
+        <div class="callout good">
+          <strong>Result:</strong> Zero extra Square API calls for schedule/breed data. The schedule can be updated by editing one JSON file and deploying. Breed information is explicit and bilingual.
+        </div>
+      </section>
+
+      <!-- class-schedule.json -->
+      <section class="card">
+        <h2><code>class-schedule.json</code> — Structure</h2>
+        <p>Sits at the repo root. Bundled into Vercel API functions via <code>vercel.json</code>. Loaded at request time with <code>readFileSync</code>.</p>
+        <pre><code>&#123;
+  "dates": [
+    "2026-06-14",
+    "2026-06-21",
+    "2026-06-28",
+    "2026-07-04",
+    "2026-07-05"
+  ],
+  "times": ["10:30", "12:00", "13:30", "15:00"],
+  "maxSeats": 20,
+  "breeds": &#123;
+    "2026-06-14": &#123; "en": "Red Labrador",      "fr": "Labrador roux"     &#125;,
+    "2026-06-21": &#123; "en": "Silver Labrador",   "fr": "Labrador argenté"  &#125;,
+    "2026-06-28": &#123; "en": "Medium Goldendoodle","fr": "Goldendoodle moyen"&#125;,
+    "2026-07-04": &#123; "en": "Goldendoodle",      "fr": "Goldendoodle"      &#125;,
+    "2026-07-05": &#123; "en": "Goldendoodle",      "fr": "Goldendoodle"      &#125;
+  &#125;
+&#125;</code></pre>
+        <table>
+          <thead><tr><th>Field</th><th>Type</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>dates</code></td><td><code>string[]</code></td><td>YYYY-MM-DD session dates. Availability API generates time slots for each date.</td></tr>
+            <tr><td><code>times</code></td><td><code>string[]</code></td><td>Montreal-local start times (HH:MM). Combined with <code>dates</code> to build UTC slot timestamps.</td></tr>
+            <tr><td><code>maxSeats</code></td><td><code>number</code></td><td>Capacity per slot. Subtract confirmed bookings to get <code>seatsRemaining</code>.</td></tr>
+            <tr><td><code>breeds</code></td><td><code>Record&lt;date, &#123;en, fr&#125;&gt;</code></td><td>Dog breed displayed on each session date. Optional — if a date has no breed entry it simply shows nothing.</td></tr>
+          </tbody>
+        </table>
+        <div class="callout warn">
+          <strong>To update the schedule:</strong> edit <code>class-schedule.json</code>, commit, and deploy. Changes are live immediately — no Square Dashboard work needed.
+        </div>
+      </section>
+
+      <!-- vercel.json -->
+      <section class="card">
+        <h2><code>vercel.json</code> — <code>includeFiles</code></h2>
+        <p>Vercel serverless functions run from a bundle. Static files not referenced by <code>import</code>/<code>require</code> are not included by default. <code>class-schedule.json</code> is loaded with <code>readFileSync</code> (a runtime FS read), so it must be explicitly listed:</p>
+        <div class="diff-block">
+          <span class="ctx">  "functions": &#123;</span>
+          <br>
+          <span class="ctx">    "api/**/*.ts": &#123;</span>
+          <br>
+          <span class="ctx">      "memory": 256,</span>
+          <br>
+          <span class="del">-     "maxDuration": 15</span>
+          <br>
+          <span class="add">+     "maxDuration": 15,</span>
+          <br>
+          <span class="add">+     "includeFiles": "class-schedule.json"</span>
+          <br>
+          <span class="ctx">    &#125;</span>
+          <br>
+          <span class="ctx">  &#125;</span>
+        </div>
+        <p>Without this, <code>readFileSync(...'class-schedule.json'...)</code> would throw <code>ENOENT</code> in production.</p>
+      </section>
+
+      <!-- availability.ts rewrite -->
+      <section class="card">
+        <h2><code>api/availability.ts</code> — Full Rewrite</h2>
+
+        <h3>Before</h3>
+        <ol>
+          <li>Called <code>square.catalog.list(&#123;types:['CATEGORY']&#125;)</code> to find the "class schedule" category.</li>
+          <li>Called <code>square.catalog.list(&#123;types:['ITEM']&#125;)</code> to find the "Class Session Dates" item under that category.</li>
+          <li>Extracted allowed dates from catalog item variation names.</li>
+          <li>Called <code>square.bookings.searchAvailability()</code> with <code>serviceVariationId</code> and optional <code>teamMemberId</code> to get Square's own availability view.</li>
+          <li>Listed existing bookings to subtract counts from Square's slots.</li>
+          <li>Merged Square slots with synthetic slots for any catalog-date/time combos Square didn't know about.</li>
+        </ol>
+        <p class="muted">Required query params: <code>serviceVariationId</code>, <code>startDate</code>, <code>endDate</code>, <code>teamMemberId</code>.</p>
+
+        <h3>After</h3>
+        <ol>
+          <li>Reads <code>class-schedule.json</code> synchronously with <code>readFileSync</code>.</li>
+          <li>Filters <code>schedule.dates</code> to the requested range.</li>
+          <li>For each date × time pair, converts the Montreal-local time to a UTC ISO string (DST-aware, same algorithm as before).</li>
+          <li>Lists existing Square bookings to subtract booked seats. This step is now <strong>non-fatal</strong> — if the Square API is unavailable, all seats appear available (better UX than a hard error).</li>
+          <li>Returns only slots with <code>seatsRemaining &gt; 0</code>.</li>
+        </ol>
+        <p class="muted">Required query params: <code>startDate</code>, <code>endDate</code> only. <code>serviceVariationId</code> is no longer needed.</p>
+
+        <div class="callout good">
+          <strong>Booking status fix:</strong> the old code checked <code>booking.status === 'ACCEPTED'</code>. The new code skips <code>CANCELLED_BY_SELLER</code>, <code>CANCELLED_BY_CUSTOMER</code>, and <code>DECLINED</code>, which are the actual Square cancellation enum values. Also normalises timestamps to strip fractional seconds before comparing (<code>/\.\d+Z$/ → 'Z'</code>).
+        </div>
+
+        <h3>Montreal → UTC Time Conversion (DST-aware)</h3>
+        <pre><code>// Given a date like "2026-06-14" and a time like "10:30" (Montreal local):
+const [h, m] = timeStr.split(':').map(Number)
+const utcGuess = new Date(`$&#123;dateIso&#125;T$&#123;h&#125;:$&#123;m&#125;:00Z`)          // pretend it's UTC
+const checkTime = slotMontrealTime(utcGuess.toISOString())  // what Montreal time is this?
+const [ch, cm] = checkTime.split(':').map(Number)
+const offsetMinutes = (h * 60 + m) - (ch * 60 + cm)        // compute the offset
+const corrected = new Date(utcGuess.getTime() + offsetMinutes * 60_000)
+const startAt = corrected.toISOString().replace(/\.\d&#123;3&#125;Z$/, 'Z') // strip ms</code></pre>
+        <p>This handles both EDT (UTC−4) and EST (UTC−5) correctly because <code>slotMontrealTime</code> uses <code>Intl.DateTimeFormat</code> with <code>timeZone: 'America/Toronto'</code>.</p>
+
+        <h3>Cache Header</h3>
+        <p>A new <code>Cache-Control: no-store</code> header was added to the response. This prevents stale availability data from being cached by the browser or CDN between requests.</p>
+
+        <h3>Better Error Logging</h3>
+        <p>The catch block now logs structured error details instead of just the raw error object:</p>
+        <pre><code>console.error('availability error', &#123;
+  message: (err as Error)?.message,
+  statusCode: (err as &#123; statusCode?: number &#125;)?.statusCode,
+  errors: (err as &#123; errors?: unknown &#125;)?.errors,
+&#125;)</code></pre>
+      </section>
+
+      <!-- breeds.ts rewrite -->
+      <section class="card">
+        <h2><code>api/breeds.ts</code> — Full Rewrite</h2>
+
+        <h3>Before (Square all-day bookings approach)</h3>
+        <ol>
+          <li>Split the date range into ≤30-day chunks.</li>
+          <li>Called <code>square.bookings.list()</code> for each chunk, filtered to <code>allDay === true &amp;&amp; status === 'ACCEPTED'</code> bookings.</li>
+          <li>Fetched each such booking's <code>customerId</code> from <code>square.customers.get()</code>.</li>
+          <li>Used <code>customer.givenName</code> as the EN breed name and <code>customer.familyName</code> as the FR breed name.</li>
+          <li>Extracted <code>serviceVariationId</code> from appointment segments to filter by service type.</li>
+        </ol>
+        <p class="muted">Required making N+1 Square API calls (one per unique customer ID). Was async.</p>
+
+        <h3>After (class-schedule.json breeds field)</h3>
+        <pre><code>export default function handler(req: VercelRequest, res: VercelResponse) &#123;
+  // ...
+  const schedule = loadSchedule()
+  const breeds = schedule.breeds ?? &#123;&#125;
+  const result: Record&lt;string, &#123; breed: &#123;en: string; fr: string&#125;; serviceIds: string[] &#125;[]&gt; = &#123;&#125;
+
+  for (const [date, breed] of Object.entries(breeds)) &#123;
+    if (date &lt; startDate || date &gt; endDate) continue
+    if (!breed.en &amp;&amp; !breed.fr) continue
+    result[date] = [&#123; breed, serviceIds: [] &#125;]
+  &#125;
+  return res.status(200).json(&#123; schedule: result &#125;)
+&#125;</code></pre>
+
+        <p>The handler is now synchronous (<code>async</code> keyword removed). Zero Square API calls. Response is instant.</p>
+
+        <div class="callout">
+          <strong><code>serviceIds: []</code> means "all services".</strong> In the front-end rendering logic, the breed is shown for a date if <code>e.serviceIds.length === 0 || e.serviceIds.includes(currentServiceVariationId)</code>. An empty array matches any service — so the breed info shows up regardless of which yoga style the user is booking.
+        </div>
+      </section>
+
+      <!-- serviceIds filter fix -->
+      <section class="card">
+        <h2>Front-End Breed Filter Fix (<code>src/App.tsx</code>)</h2>
+        <p>Two places in <code>App.tsx</code> filter breed entries by service ID. Both were updated to accept <code>serviceIds: []</code> as "matches all":</p>
+        <h3>In the <code>availableDates</code> memo</h3>
+        <div class="diff-block">
+          <span class="del">- return entries.some(e =&gt; e.serviceIds.includes(currentServiceVariationId))</span>
+          <br>
+          <span class="add">+ return entries.some(e =&gt; e.serviceIds.length === 0 || e.serviceIds.includes(currentServiceVariationId))</span>
+        </div>
+        <h3>In the date row rendering</h3>
+        <div class="diff-block">
+          <span class="del">- .filter(e =&gt; e.serviceIds.includes(currentServiceVariationId))</span>
+          <br>
+          <span class="add">+ .filter(e =&gt; e.serviceIds.length === 0 || e.serviceIds.includes(currentServiceVariationId))</span>
+        </div>
+        <p>Without this fix, the breed badge would never appear because the new API always returns <code>serviceIds: []</code>.</p>
+      </section>
+
+      <!-- vite dev plugin -->
+      <section class="card">
+        <h2><code>vite.config.ts</code> — Dev API Plugin</h2>
+        <p>Previously, testing the booking flow locally required running <code>vercel dev</code> (which spins up a local Vercel runtime). Now, <code>vite dev</code> alone is sufficient for UI development.</p>
+        <p>A custom Vite plugin <code>devApiPlugin()</code> was added that registers Connect middleware for <code>/api/breeds</code> and <code>/api/availability</code>:</p>
+
+        <h3>Structure</h3>
+        <pre><code>function devApiPlugin(): Plugin &#123;
+  return &#123;
+    name: 'dev-api',
+    configureServer(server) &#123;
+      server.middlewares.use('/api/breeds', (req, res) =&gt; &#123;
+        // reads class-schedule.json, filters by date range, returns schedule
+      &#125;)
+      server.middlewares.use('/api/availability', (req, res) =&gt; &#123;
+        // reads class-schedule.json, generates synthetic UTC slots
+      &#125;)
+    &#125;,
+  &#125;
+&#125;
+
+export default defineConfig(&#123;
+  plugins: [react(), tailwindcss(), devApiPlugin()],
+&#125;)</code></pre>
+
+        <div class="callout warn">
+          <strong>Dev-only.</strong> This plugin is part of the Vite config, so it only runs during <code>vite dev</code>. Production uses the real Vercel functions in <code>api/</code>. The dev plugin intentionally uses <code>Intl.DateTimeFormat</code> directly (rather than <code>slotMontrealTime</code> from <code>_config.js</code>) because that helper is a CJS module not available in the Vite context.
+        </div>
+
+        <h3>Montreal → UTC in the Dev Plugin</h3>
+        <pre><code>function montrealLocalToUtc(dateIso: string, timeStr: string): string &#123;
+  const [h, m] = timeStr.split(':').map(Number)
+  const utcGuess = new Date(`$&#123;dateIso&#125;T$&#123;h&#125;:$&#123;m&#125;:00Z`)
+  const parts = new Intl.DateTimeFormat('en-CA', &#123;
+    timeZone: 'America/Toronto',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  &#125;).formatToParts(utcGuess)
+  const localH = Number(parts.find(p =&gt; p.type === 'hour')?.value ?? h)
+  const localM = Number(parts.find(p =&gt; p.type === 'minute')?.value ?? m)
+  const offsetMinutes = (h * 60 + m) - (localH * 60 + localM)
+  const corrected = new Date(utcGuess.getTime() + offsetMinutes * 60_000)
+  return corrected.toISOString().replace(/\.\d&#123;3&#125;Z$/, 'Z')
+&#125;</code></pre>
+      </section>
+
+      <!-- .env.local.example -->
+      <section class="card">
+        <h2><code>.env.local.example</code> Changes</h2>
+        <table>
+          <thead><tr><th>Change</th><th>Details</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Added <code>SQUARE_GST_TAX_ID</code></td>
+              <td>Square catalog tax object ID for TPS/GST (5%). Find in Square Dashboard → Taxes.</td>
+            </tr>
+            <tr>
+              <td>Added <code>SQUARE_QST_TAX_ID</code></td>
+              <td>Square catalog tax object ID for TVQ/QST (9.975%). Find in Square Dashboard → Taxes.</td>
+            </tr>
+            <tr>
+              <td><code>VITE_SQUARE_YIN_AMOUNT_CENTS</code> → <code>VITE_SQUARE_YIN_BASE_CENTS</code></td>
+              <td>Renamed to clarify this is the pre-tax base (mat rental may be added on top).</td>
+            </tr>
+            <tr>
+              <td><code>VITE_SQUARE_GENTLE_AMOUNT_CENTS</code> → <code>VITE_SQUARE_GENTLE_BASE_CENTS</code></td>
+              <td>Same rename.</td>
+            </tr>
+            <tr>
+              <td><code>VITE_SQUARE_CORP_AMOUNT_CENTS</code> → <code>VITE_SQUARE_CORP_BASE_CENTS</code></td>
+              <td>Same rename.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <div class="footer">← <a href="./01-booking-flow.html">Booking Flow</a> &nbsp;|&nbsp; <a href="./03-integrations.html">3rd-Party Integrations →</a></div>
+    </div>
+  </body>
+</html>

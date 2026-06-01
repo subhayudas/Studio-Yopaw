@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Booking Flow Changes — Studio Yopaw</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="header">
+        <h1>Booking Flow Changes</h1>
+        <div class="sub">Mat rental step, progress bar, state management, payment summary</div>
+      </div>
+
+      <nav class="nav" aria-label="Site">
+        <ul>
+          <li><a href="./index.html">Overview</a></li>
+          <li><a href="./01-booking-flow.html" aria-current="page">Booking Flow</a></li>
+          <li><a href="./02-api-layer.html">API Layer</a></li>
+          <li><a href="./03-integrations.html">3rd-Party Integrations</a></li>
+          <li><a href="./04-payment-resilience.html">Payment Resilience</a></li>
+          <li><a href="./05-ui-cleanup.html">UI Cleanup</a></li>
+        </ul>
+      </nav>
+
+      <!-- Flow before / after -->
+      <section class="card">
+        <h2>Flow Diagram: Yin (Regular Class)</h2>
+        <h3>Before</h3>
+        <div class="flow-diagram">
+          <span class="flow-step">chooseClass</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-step">public · date</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-step">public · contact</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-step">public · payment</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-step">publicSuccess (regular)</span>
+        </div>
+
+        <h3>After (new <code>mat</code> step inserted)</h3>
+        <div class="flow-diagram">
+          <span class="flow-step">chooseClass</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-step new">public · mat ★</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-step">public · date</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-step">public · contact</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-step">public · payment</span>
+          <span class="flow-arrow">→</span>
+          <span class="flow-step">publicSuccess (regular)</span>
+        </div>
+
+        <p class="muted">The Gentle (Private Event) and Corporate flows are unchanged — they go directly to the <em>people</em> step.</p>
+      </section>
+
+      <!-- Flow type change -->
+      <section class="card">
+        <h2>Flow Type Union — What Changed</h2>
+        <p>In <code>src/App.tsx</code>, the <code>Flow</code> discriminated union had the <code>public</code> step literal updated:</p>
+        <div class="diff-block">
+          <span class="del">- | &#123; kind: 'public'; step: 'people' | 'date' | 'contact' | 'payment'; yoga: YogaStyle &#125;</span>
+          <br>
+          <span class="add">+ | &#123; kind: 'public'; step: 'mat' | 'people' | 'date' | 'contact' | 'payment'; yoga: YogaStyle &#125;</span>
+        </div>
+        <p><code>YogaStyle</code> is <code>'yin' | 'gentle'</code>. The <code>mat</code> step is only ever entered from the <code>yin</code> path.</p>
+      </section>
+
+      <!-- State -->
+      <section class="card">
+        <h2>New State: <code>needsMatRental</code></h2>
+        <pre><code>const [needsMatRental, setNeedsMatRental] = useState(false)</code></pre>
+        <p>A boolean that lives in <code>PricingSection</code>. It is:</p>
+        <ul>
+          <li>Set to <code>true</code> when the user picks "No, I will rent one on-site"</li>
+          <li>Set to <code>false</code> when the user picks "Yes, I'll bring my own" <em>or</em> on <code>resetFlow()</code></li>
+          <li>Read in the payment step to add $5 (500 cents) to <code>baseAmountCents</code></li>
+          <li>Read in the payment summary to show a separate "Mat rental" line item</li>
+        </ul>
+      </section>
+
+      <!-- pickMat handler -->
+      <section class="card">
+        <h2>The <code>pickMat(renting)</code> Handler</h2>
+        <pre><code>const pickMat = (renting: boolean) => &#123;
+  setNeedsMatRental(renting)
+  requestScrollPricingCardAfterAdvance()
+  setFlow(prev =>
+    prev.kind === 'public' &amp;&amp; prev.step === 'mat'
+      ? &#123; ...prev, step: 'date' &#125;
+      : prev
+  )
+  setSelectedSessionIso(null)
+  setPendingSessionIso(null)
+  setSelectedTimeSlotId(null)
+&#125;</code></pre>
+        <div class="callout">
+          <strong>Why reset the date state here?</strong> The user hasn't seen the date step yet when they pick the mat option, but if they somehow came back to this step (via "Back") after already picking a date, those stale values would cause the next step to skip the date picker. Clearing them guarantees a clean slate.
+        </div>
+      </section>
+
+      <!-- Entry point -->
+      <section class="card">
+        <h2>Entry Point: <code>pickClass(id)</code> Change</h2>
+        <p>When the user clicks a class card, <code>pickClass</code> decides the first step:</p>
+        <div class="diff-block">
+          <span class="del">- const firstStep = id === 'gentle' ? 'people' : 'date'</span>
+          <br>
+          <span class="add">+ const firstStep = id === 'gentle' ? 'people' : 'mat'</span>
+        </div>
+        <p>So selecting "Regular Class" (yin) now lands on <code>mat</code> instead of jumping straight to <code>date</code>.</p>
+      </section>
+
+      <!-- Back button -->
+      <section class="card">
+        <h2>Back Navigation from <code>mat</code> Step</h2>
+        <p>The <code>goBack()</code> function handles the mat step:</p>
+        <pre><code>if (flow.kind === 'public') &#123;
+  if (flow.step === 'mat') &#123;
+    setFlow(&#123; kind: 'chooseClass' &#125;)
+    return
+  &#125;
+  // ...
+  if (flow.step === 'date') &#123;
+    if (flow.yoga === 'gentle') &#123;
+      setFlow(&#123; kind: 'public', step: 'people', yoga: flow.yoga &#125;)
+    &#125; else &#123;
+      // ← previously went to chooseClass; now goes back to mat
+      setFlow(&#123; kind: 'public', step: 'mat', yoga: flow.yoga &#125;)
+    &#125;
+    // ...
+  &#125;
+&#125;</code></pre>
+        <p>And the <code>showBack</code> flag now includes the mat step:</p>
+        <div class="diff-block">
+          <span class="add">+ if (flow.kind === 'public' &amp;&amp; flow.step === 'mat') showBack = true</span>
+          <br>
+          <span class="ctx">  else if (flow.kind === 'public' &amp;&amp; flow.step === 'people') showBack = true</span>
+        </div>
+      </section>
+
+      <!-- Progress bar -->
+      <section class="card">
+        <h2>Progress Bar Percentages</h2>
+        <p>The <code>progressPercent()</code> function maps flow steps to fill widths:</p>
+        <table>
+          <thead><tr><th>Step</th><th>Before</th><th>After</th></tr></thead>
+          <tbody>
+            <tr><td><code>chooseClass</code></td><td>25 %</td><td>25 %</td></tr>
+            <tr><td><code>public · mat</code></td><td>—</td><td><strong>35 %</strong> (new)</td></tr>
+            <tr><td><code>public · people</code></td><td>45 %</td><td>45 %</td></tr>
+            <tr><td><code>public · date</code></td><td>62 %</td><td>62 %</td></tr>
+            <tr><td><code>public · contact</code></td><td>80 %</td><td>80 %</td></tr>
+            <tr><td><code>public · payment</code></td><td>95 %</td><td>95 %</td></tr>
+            <tr><td><code>publicSuccess</code></td><td>100 %</td><td>100 %</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- UI rendering -->
+      <section class="card">
+        <h2>Mat Step UI (JSX)</h2>
+        <p>The mat step renders two large choice buttons inside the <code>pricing-step-block</code> container, using existing CSS classes (<code>pricing-choice-stack--pair</code>):</p>
+        <pre><code>&#123;flow.kind === 'public' &amp;&amp; flow.step === 'mat' &amp;&amp; (
+  &lt;div className="pricing-step-block"&gt;
+    &lt;h3 className="pricing-step-title"&gt;&#123;s.pricingAskMat&#125;&lt;/h3&gt;
+    &lt;div className="pricing-choice-stack pricing-choice-stack--pair"&gt;
+      &lt;button type="button" className="pricing-choice-card"
+              onClick=&#123;() =&gt; pickMat(false)&#125;&gt;
+        &#123;s.pricingMatYes&#125;
+      &lt;/button&gt;
+      &lt;button type="button" className="pricing-choice-card"
+              onClick=&#123;() =&gt; pickMat(true)&#125;&gt;
+        &#123;s.pricingMatNo&#125;
+      &lt;/button&gt;
+    &lt;/div&gt;
+    &lt;p className="pricing-helper-text"&gt;&#123;s.pricingMatHelper&#125;&lt;/p&gt;
+  &lt;/div&gt;
+)&#125;</code></pre>
+        <p>No new CSS was needed — <code>pricing-choice-stack--pair</code> already styles two equal-width cards side-by-side.</p>
+      </section>
+
+      <!-- i18n strings -->
+      <section class="card">
+        <h2>i18n Strings Added (<code>src/i18n/siteStrings.ts</code>)</h2>
+        <table>
+          <thead><tr><th>Key</th><th>EN</th><th>FR</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>pricingAskMat</code></td>
+              <td>Do you have your own yoga mat?</td>
+              <td>Avez-vous votre propre tapis de yoga ?</td>
+            </tr>
+            <tr>
+              <td><code>pricingMatYes</code></td>
+              <td>Yes, I'll bring my own</td>
+              <td>Oui, j'apporte le mien</td>
+            </tr>
+            <tr>
+              <td><code>pricingMatNo</code></td>
+              <td>No, I will rent one on-site</td>
+              <td>Non, je louerai un tapis sur place</td>
+            </tr>
+            <tr>
+              <td><code>pricingMatHelper</code></td>
+              <td>Mats are available at the studio for $5 + taxes.</td>
+              <td>Des tapis sont disponibles au studio pour 5 $ + taxes.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>These were also added to the <code>SiteStrings</code> interface so both <code>siteStrings.en</code> and <code>siteStrings.fr</code> implement it fully.</p>
+      </section>
+
+      <!-- Payment total -->
+      <section class="card">
+        <h2>Mat Rental in the Payment Total</h2>
+        <h3>Amount sent to the API</h3>
+        <div class="diff-block">
+          <span class="del">- baseAmountCents = serviceInfo.baseAmountCents</span>
+          <br>
+          <span class="add">+ baseAmountCents = serviceInfo.baseAmountCents + (needsMatRental ? 500 : 0)</span>
+        </div>
+        <p>So if the user chose to rent a mat, 500 cents ($5 CAD) is added to the order before taxes are applied. The GST and QST are then computed on top of the new total, so the mat rental is also taxed.</p>
+
+        <h3>Payment summary UI</h3>
+        <p>In the payment step, the price breakdown was updated to show the mat rental as a separate line:</p>
+        <pre><code>const matRentalCents = flow.yoga === 'yin' &amp;&amp; needsMatRental ? 500 : 0
+const baseCents = svc.baseAmountCents * groupSize + matRentalCents
+
+// Base session line shows WITHOUT mat rental
+&lt;span&gt;&#123;fmtCAD(baseCents - matRentalCents, lang)&#125;&lt;/span&gt;
+
+// Conditional mat rental line
+&#123;matRentalCents &gt; 0 &amp;&amp; (
+  &lt;div className="pricing-payment-summary-row"&gt;
+    &lt;span&gt;&#123;lang === 'fr' ? 'Location de tapis' : 'Mat rental'&#125;&lt;/span&gt;
+    &lt;span&gt;&#123;fmtCAD(matRentalCents, lang)&#125;&lt;/span&gt;
+  &lt;/div&gt;
+)&#125;</code></pre>
+      </section>
+
+      <!-- groupSize field -->
+      <section class="card">
+        <h2>New <code>groupSize</code> Field Sent to Booking API</h2>
+        <p>The booking request body now includes a <code>groupSize</code> field used by Zapier webhooks:</p>
+        <pre><code>body: JSON.stringify(&#123;
+  // ... existing fields
+  groupSize:
+    flow.kind === 'corporate' || (flow.kind === 'public' &amp;&amp; flow.yoga === 'gentle')
+      ? privateGroupCount
+      : '1',
+&#125;)</code></pre>
+        <p>For regular yin sessions the server receives <code>'1'</code>. For private/corporate it receives the selected group size (e.g., <code>'8'</code>).</p>
+      </section>
+
+      <div class="footer">← <a href="./index.html">Overview</a> &nbsp;|&nbsp; <a href="./02-api-layer.html">API Layer →</a></div>
+    </div>
+  </body>
+</html>

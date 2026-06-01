@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UI Cleanup — Studio Yopaw</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="header">
+        <h1>UI Cleanup</h1>
+        <div class="sub">Testimonials removed, pricing card header simplified, nav links pruned</div>
+      </div>
+
+      <nav class="nav" aria-label="Site">
+        <ul>
+          <li><a href="./index.html">Overview</a></li>
+          <li><a href="./01-booking-flow.html">Booking Flow</a></li>
+          <li><a href="./02-api-layer.html">API Layer</a></li>
+          <li><a href="./03-integrations.html">3rd-Party Integrations</a></li>
+          <li><a href="./04-payment-resilience.html">Payment Resilience</a></li>
+          <li><a href="./05-ui-cleanup.html" aria-current="page">UI Cleanup</a></li>
+        </ul>
+      </nav>
+
+      <!-- Testimonials -->
+      <section class="card">
+        <h2>Testimonials Section — Removed</h2>
+        <p>The <code>TestimonialsSection</code> component, along with its supporting components <code>TestimonialCarouselArrow</code> and <code>StarIcon</code>, were entirely removed from <code>src/App.tsx</code>.</p>
+
+        <h3>What was removed</h3>
+        <ul>
+          <li><code>StarIcon()</code> — SVG star used in the 5-star rating display (18 lines of JSX)</li>
+          <li><code>TestimonialCarouselArrow(&#123; dir &#125;)</code> — left/right arrow SVG (18 lines)</li>
+          <li><code>TestimonialsSection()</code> — the full carousel component: auto-advance timer, prev/next buttons, dot navigation, testimonial cards with quotes and author info (~107 lines)</li>
+        </ul>
+
+        <h3>Where it was removed from <code>MarketingSite</code></h3>
+        <div class="diff-block">
+          <span class="ctx">  &lt;PricingSection /&gt;</span>
+          <br>
+          <span class="del">- &lt;TestimonialsSection /&gt;</span>
+          <br>
+          <span class="ctx">  &lt;GallerySection /&gt;</span>
+        </div>
+
+        <div class="callout warn">
+          The i18n strings for testimonials (<code>testimonialCards</code>, <code>testimonialsBadge</code>, etc.) are still in <code>siteStrings.ts</code> and the <code>SiteStrings</code> interface — they were not cleaned up. They are just unused strings for now.
+        </div>
+      </section>
+
+      <!-- Nav/Footer links -->
+      <section class="card">
+        <h2>Nav &amp; Footer — "Reviews" Link Removed</h2>
+        <p>Because the Testimonials section no longer exists, the <code>/#testimonials</code> anchor link was removed from three places:</p>
+
+        <h3><code>src/components/Navbar.tsx</code> (desktop nav)</h3>
+        <div class="diff-block">
+          <span class="del">- &lt;li&gt;&lt;a href="/#testimonials"&gt;&#123;s.navLinks.reviews&#125;&lt;/a&gt;&lt;/li&gt;</span>
+        </div>
+
+        <h3><code>src/components/Navbar.tsx</code> (mobile menu)</h3>
+        <div class="diff-block">
+          <span class="del">- &lt;a href="/#testimonials" onClick=&#123;() =&gt; setMenuOpen(false)&#125;&gt;&#123;s.navLinks.reviews&#125;&lt;/a&gt;</span>
+        </div>
+
+        <h3><code>src/components/Footer.tsx</code></h3>
+        <div class="diff-block">
+          <span class="del">- &lt;li&gt;&lt;a href="/#testimonials"&gt;&#123;s.navLinks.reviews&#125;&lt;/a&gt;&lt;/li&gt;</span>
+        </div>
+      </section>
+
+      <!-- Pricing card header -->
+      <section class="card">
+        <h2>Pricing Card Header — Simplified</h2>
+        <p>The pricing card previously showed a different header depending on which step the user was on. The logic was refactored.</p>
+
+        <h3>Before — two separate display conditions</h3>
+        <pre><code>const showFullPricingCardHeader = flow.kind === 'chooseClass'
+
+&#123;showFullPricingCardHeader ? (
+  &lt;&gt;
+    &lt;div className="pricing-amount"&gt;
+      &lt;span className="price-value"&gt;&#123;s.pricingAmount&#125;&lt;/span&gt;
+      &lt;span className="price-suffix"&gt;&#123;s.pricingPlusTaxes&#125;&lt;/span&gt;
+    &lt;/div&gt;
+    &lt;div className="price-type"&gt;&#123;s.pricingDropInRow&#125;&lt;/div&gt;
+    &lt;ul className="price-features"&gt;
+      &#123;[s.pricingFeat1, ..., s.pricingFeat5].filter(...).map(...) &#125;
+    &lt;/ul&gt;
+    &lt;hr className="pricing-card-divider" /&gt;
+  &lt;/&gt;
+) : (
+  !isBookingSuccessScreen &amp;&amp;
+    &lt;p className="pricing-header-summary"&gt;&#123;s.pricingHeaderSummary&#125;&lt;/p&gt;
+)&#125;</code></pre>
+
+        <h3>After — single condition, always show summary during booking steps</h3>
+        <pre><code>const showPricingStepSummary = !isBookingSuccessScreen &amp;&amp; flow.kind !== 'chooseClass'
+
+&#123;showPricingStepSummary &amp;&amp; (
+  &lt;&gt;
+    &lt;p className="pricing-header-summary"&gt;&#123;s.pricingHeaderSummary&#125;&lt;/p&gt;
+    &lt;ul className="price-features"&gt;
+      &#123;[s.pricingFeat1, s.pricingFeat2]  // ← only 2 features, not 5
+        .filter(line =&gt; line.trim().length &gt; 0)
+        .map((line, i) =&gt; &lt;li key=&#123;i&#125;&gt;&#123;line&#125;&lt;/li&gt;)&#125;
+    &lt;/ul&gt;
+    &lt;hr className="pricing-card-divider" /&gt;
+  &lt;/&gt;
+)&#125;</code></pre>
+
+        <table>
+          <thead><tr><th>Flow state</th><th>Before</th><th>After</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>chooseClass</code></td>
+              <td>Full header: price, drop-in label, 5 features, divider</td>
+              <td><em>Nothing</em> (no header shown during class selection)</td>
+            </tr>
+            <tr>
+              <td>Any booking step (mat, date, contact, payment)</td>
+              <td>Summary text only (no features list)</td>
+              <td>Summary text + 2-item features list + divider</td>
+            </tr>
+            <tr>
+              <td>Success screens</td>
+              <td>Nothing</td>
+              <td>Nothing</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout">
+          <strong>Why only <code>pricingFeat1</code> and <code>pricingFeat2</code>?</strong> <code>pricingFeat3</code>, <code>pricingFeat4</code>, and <code>pricingFeat5</code> are currently empty strings (<code>''</code>) in <code>siteStrings.ts</code>. The filter <code>.filter(line =&gt; line.trim().length &gt; 0)</code> would remove them anyway, so switching to explicitly only using the first two is just cleaner.
+        </div>
+      </section>
+
+      <!-- Summary of all removals -->
+      <section class="card">
+        <h2>Complete List of Removed Code</h2>
+        <table>
+          <thead><tr><th>Item</th><th>File</th><th>Lines removed</th></tr></thead>
+          <tbody>
+            <tr><td><code>StarIcon()</code> component</td><td><code>src/App.tsx</code></td><td>~9</td></tr>
+            <tr><td><code>TestimonialCarouselArrow()</code> component</td><td><code>src/App.tsx</code></td><td>~18</td></tr>
+            <tr><td><code>TestimonialsSection()</code> component</td><td><code>src/App.tsx</code></td><td>~107</td></tr>
+            <tr><td><code>&lt;TestimonialsSection /&gt;</code> render call</td><td><code>src/App.tsx</code></td><td>1</td></tr>
+            <tr><td>"Reviews" desktop nav link</td><td><code>src/components/Navbar.tsx</code></td><td>1</td></tr>
+            <tr><td>"Reviews" mobile menu link</td><td><code>src/components/Navbar.tsx</code></td><td>1</td></tr>
+            <tr><td>"Reviews" footer link</td><td><code>src/components/Footer.tsx</code></td><td>1</td></tr>
+            <tr><td><code>showFullPricingCardHeader</code> variable + full header block</td><td><code>src/App.tsx</code></td><td>~16</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <div class="footer">← <a href="./04-payment-resilience.html">Payment Resilience</a> &nbsp;|&nbsp; <a href="./index.html">Overview →</a></div>
+    </div>
+  </body>
+</html>

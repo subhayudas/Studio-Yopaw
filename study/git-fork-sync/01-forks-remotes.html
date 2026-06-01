@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Forks & Remotes — Sync a Fork Safely (Git)</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="header">
+        <h1>Forks &amp; Remotes</h1>
+        <div class="sub">Origin vs upstream, and why both matter</div>
+      </div>
+
+      <nav class="nav" aria-label="Site">
+        <ul>
+          <li><a href="./index.html">Home</a></li>
+          <li><a href="./01-forks-remotes.html" aria-current="page">Forks &amp; Remotes</a></li>
+          <li><a href="./02-spotting-problems.html">Spotting Problems</a></li>
+          <li><a href="./03-safe-recovery.html">Safe Recovery</a></li>
+          <li><a href="./04-sync-workflow.html">Sync Workflow</a></li>
+          <li><a href="./05-checklist.html">Checklist</a></li>
+          <li><a href="./glossary.html">Glossary</a></li>
+        </ul>
+      </nav>
+
+      <section class="card">
+        <h2>The model (keep this picture in your head)</h2>
+        <p>
+          A <strong>fork</strong> means you have <em>two</em> GitHub repos involved:
+        </p>
+        <ul>
+          <li><strong>Upstream</strong>: the original/main repo you forked from (source of “official changes”)</li>
+          <li><strong>Your fork</strong>: your copy on GitHub (where you push your work)</li>
+        </ul>
+        <p>
+          On your machine, Git stores those as <strong>remotes</strong>:
+        </p>
+        <ul>
+          <li><code>origin</code> → usually your fork</li>
+          <li><code>upstream</code> → usually the original repo</li>
+        </ul>
+        <div class="callout">
+          <strong>Why name them like this?</strong>
+          <p>
+            It’s a common convention. Git doesn’t require these names, but lots of tutorials assume them.
+          </p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>What we set in this repo</h2>
+        <p>
+          These are the remotes we configured:
+        </p>
+        <pre><code>git remote -v</code></pre>
+        <div class="callout good">
+          <strong>Important safety detail</strong>
+          <p>
+            We disabled pushes to upstream by setting its push URL to a dummy value:
+          </p>
+          <pre><code>git remote set-url --push upstream DISABLE</code></pre>
+          <p class="muted">
+            Result: even if you accidentally run <code>git push upstream main</code>, it fails instead of pushing.
+          </p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Remote branches vs local branches</h2>
+        <p>
+          When you run <code>git fetch</code>, Git downloads “snapshots” of branches from a remote and stores them
+          locally as <strong>remote-tracking branches</strong> like <code>origin/main</code> and <code>upstream/main</code>.
+        </p>
+        <p>
+          Your working branch is typically a <strong>local branch</strong> like <code>main</code>.
+        </p>
+        <div class="callout warn">
+          <strong>Common confusion</strong>
+          <p>
+            <code>main</code> (local) and <code>origin/main</code> (remote-tracking) are not the same thing.
+            They can point to different commits until you merge/rebase/reset.
+          </p>
+        </div>
+      </section>
+
+      <div class="footer">
+        Next: <a href="./02-spotting-problems.html">Spotting Problems</a>
+      </div>
+    </div>
+  </body>
+</html>
+
