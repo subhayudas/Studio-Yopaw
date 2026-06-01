@@ -49,7 +49,10 @@ Studio-Yopaw/
 ├── public/                       # Static assets served as-is
 │   ├── yopawlogo.png
 │   ├── step1Logo.png / step2Logo.png / step3Logo.png
-│   ├── *.webp / *.png            # Gallery + class card images
+│   ├── class-regular.jpg         # Regular Class card image
+│   ├── class-private.jpg         # Private Event card image (kids birthday)
+│   ├── class-corporate.jpg       # Corporate card image (group on mats)
+│   ├── *.webp / *.png            # Gallery + other images
 │   └── 182991340eeb459d952466dcb9f2d778.mp4  # Hero background video
 ├── src/
 │   ├── App.tsx                   # Root component + all page sections
@@ -155,7 +158,7 @@ type Flow =
   | { kind: 'chooseClass' }
   | { kind: 'public'; step: 'mat' | 'people' | 'date' | 'contact' | 'payment'; yoga: YogaStyle }
   | { kind: 'publicSuccess'; source: 'regular' | 'private' }
-  | { kind: 'corporate'; step: 'people' | 'date' | 'contact' | 'payment' }
+  | { kind: 'corporate'; step: 'people' | 'date' | 'contact' }
   | { kind: 'corporateSuccess' }
 
 type YogaStyle = 'yin' | 'gentle'
@@ -183,11 +186,13 @@ chooseClass
 public { step: 'people' }     → group size picker (2–20), defaults to 2
   ↓
 public { step: 'date' }
-  ↓ (pick date + time)
+  ↓ (click date → time modal → pick slot)
 public { step: 'contact' }    → name / email / phone (no waiver required)
-  ↓ (submit → Zapier lead capture fires here → POST /api/inquiry for email)
-publicSuccess { source: 'private' }  → "Request received" confirmation
+  ↓ (submit → await POST /api/inquiry → Resend email + Zapier)
+publicSuccess { source: 'private' }  → "Request received" confirmation (clock icon)
 ```
+
+> **No Square payment.** The inquiry submission is the terminal action. On API failure the contact form shows an error and lets the user retry.
 
 ### Corporate Path
 ```
@@ -198,9 +203,11 @@ corporate { step: 'people' }  → group size picker
 corporate { step: 'date' }
   ↓
 corporate { step: 'contact' } → corp contact form
-  ↓ (submit → Zapier lead capture fires here → POST /api/inquiry for email)
-corporateSuccess              → "Request received" confirmation
+  ↓ (submit → await POST /api/inquiry → Resend email + Zapier)
+corporateSuccess              → "Request received" confirmation (clock icon)
 ```
+
+> **No Square payment.** Same as Gentle — inquiry is the terminal action, no `payment` step exists in the corporate flow.
 
 ### Key Booking State Variables
 | Variable | Type | Purpose |
@@ -210,16 +217,18 @@ corporateSuccess              → "Request received" confirmation
 | `selectedSessionIso` | `string \| null` | `"YYYY-MM-DD"` chosen date |
 | `selectedTimeSlotId` | `string \| null` | Full UTC ISO timestamp for chosen time slot |
 | `pendingSessionIso` | `string \| null` | Date clicked but time not yet chosen — triggers time modal |
+| `inquiryLoading` | `boolean` | True while `/api/inquiry` awaited (gentle / corporate submit) |
+| `inquiryError` | `string \| null` | Error message shown on contact form if inquiry call fails |
 
 ### Progress Bar Percentages (`progressPercent()`)
 | Step | % |
 |---|---|
 | `chooseClass` | 25 |
 | `public · mat` | 35 |
-| `public · people` | 45 |
-| `public · date` | 62 |
-| `public · contact` | 80 |
-| `public · payment` | 95 |
+| `public · people` (gentle) / `corporate · people` | 45 |
+| `public · date` / `corporate · date` | 62 |
+| `public · contact` / `corporate · contact` | 80 |
+| `public · payment` (yin only) | 95 |
 | `publicSuccess` / `corporateSuccess` | 100 |
 
 ### Mat Rental
@@ -230,7 +239,8 @@ corporateSuccess              → "Request received" confirmation
 - Time slot modal: clicking a date row sets `pendingSessionIso`, shows available times. Clicking a time sets `selectedTimeSlotId` and advances flow.
 
 ### Lead Capture Timing
-The `fetch('/api/inquiry', ...)` call fires from the **frontend** (`submitPublic` / `submitCorporate`) as the very first thing when the contact form is submitted — before the waiver gate. This means leads are captured even if the user abandons at the waiver or payment step.
+- **Yin (Regular Class):** `fetch('/api/inquiry', ...)` fires **fire-and-forget** (`.catch(() => {})`) the moment the contact form is submitted, before the waiver gate. Lead is captured even if the user abandons at the waiver or payment step.
+- **Gentle (Private Event) and Corporate:** `/api/inquiry` is the **primary, awaited action**. The contact form shows a loading state (`inquiryLoading`) and an error message (`inquiryError`) on failure. There is no separate payment step — inquiry submission IS the terminal action. On success the user advances to the "request received" screen.
 
 ---
 
@@ -243,6 +253,7 @@ Single file containing all user-visible text for EN and FR. The `SiteStrings` in
 - `FAQ_REFUND_POLICY_LINK_TOKEN = '<<REFUND_POLICY_LINK>>'` — replaced by `FaqAnswerBody` with a real `<a>` to the refund policy page
 - `interpolate(template, vars)` — replaces `{key}` placeholders (used in success messages: `{email}`, `{date}`, `{time}`, `{phone}`)
 - Mat rental strings: `pricingAskMat`, `pricingMatYes`, `pricingMatNo`, `pricingMatHelper`
+- Inquiry strings: `inquirySubmitLabel` ("Send my request"), `inquirySubmitting` ("Sending…"), `inquirySubmitError` (failure message) — used on Gentle and Corporate contact forms
 
 ### `LanguageProvider.tsx`
 - Persists language in `localStorage` under key `studio-yopaw-lang`
@@ -293,7 +304,6 @@ Body: `{ givenName, familyName, email, phone, serviceVariationId, serviceVariati
 
 Flow:
 1. `square.customers.search()` by email → create customer if not found
-   - If new customer: fires `ZAPIER_NEW_CONTACT_URL` (fire-and-forget)
 2. Race-condition seat check: lists bookings for the slot, returns 409 if full
 3. `square.bookings.create()` — adds appointment to Square calendar
 4. **Try/catch wrapper** around steps 4–5:
@@ -301,29 +311,31 @@ Flow:
    - `square.payments.create()` — charges card nonce
    - Payment status validated: must be `COMPLETED` or `APPROVED`
    - **On any failure:** `square.bookings.cancel()` called immediately to prevent ghost appointments
-5. Fires `ZAPIER_NEW_BOOKING_URL` (booking details + payment status)
-6. Fires `ZAPIER_FORM_URL` (form-style fields including `groupSize`)
-7. Sends notification email via Resend to `LEAD_NOTIFY_EMAIL`
+5. Fires `ZAPIER_REGULAR_URL` — single webhook: `{ firstName, lastName, fullName, email, phone, classType, attendeeCount: 1, startAt, bookingId, totalDollars, paymentStatus }`
+6. Sends notification email via Resend to `LEAD_NOTIFY_EMAIL`
 
 Returns: `{ bookingId, paymentStatus }` or `{ error: string }` with human-readable message via `friendlyPaymentError()`.
 
 **`friendlyPaymentError(err)`** maps Square error codes to user-facing messages:
 `GENERIC_DECLINE`, `CARD_DECLINED`, `INSUFFICIENT_FUNDS`, `CARD_EXPIRED`, `CVV_FAILURE`, `ADDRESS_VERIFICATION_FAILURE`, `INVALID_CARD`, `PAYMENT_METHOD_ERROR` (category), `RATE_LIMIT_ERROR` (category).
 
-**Zapier webhook URLs (defined as constants in `booking.ts`):**
-- `ZAPIER_NEW_CONTACT_URL` — `…/4oigr6o/`
-- `ZAPIER_NEW_BOOKING_URL` — `…/4oig0ml/`
-- `ZAPIER_FORM_URL` — `…/4ok9t5x/`
+**Zapier webhook URLs:**
+- `ZAPIER_REGULAR_URL` (`booking.ts`) — `…/4oig0ml/` — fires once per confirmed regular booking
+- `ZAPIER_INQUIRY_URL` (`inquiry.ts`) — `…/4ok9t5x/` — fires for private/corporate inquiries only (skipped for regular class lead-capture)
 
 ### `POST /api/inquiry`
 Body: `{ fullName, email, phone, classType, preferredDate?, preferredTime?, groupSize? }`
 
-Used for Private Event and Corporate inquiries (no Square payment — studio follows up). Flow:
-1. Sends email to `LEAD_NOTIFY_EMAIL` via Resend
-2. Fires `ZAPIER_FORM_URL`
-3. Fires `ZAPIER_NEW_CONTACT_URL` (with `source: 'inquiry'`)
+Used for Private Event and Corporate inquiries, and as a fire-and-forget lead capture for Regular Class. Flow:
+1. Sends email to `LEAD_NOTIFY_EMAIL` via Resend — `preferredDate` formatted as `"June 14, 2026"`, `preferredTime` formatted as `"10:30 AM (Montréal)"` using `Intl.DateTimeFormat` helpers `fmtDate()` / `fmtTime()` defined in the file.
+2. Fires `ZAPIER_INQUIRY_URL` — **only when `classType !== 'Regular Class'`** (private/corporate only). Regular class uses this endpoint as lead-capture only (Resend email fires, Zapier skipped — `booking.ts` fires the definitive webhook after payment).
+   Payload: `{ firstName, lastName, fullName, email, phone, classType, attendeeCount, preferredDate, preferredTime }`
 
-Also called from the **frontend** as a fire-and-forget lead capture when the contact form is submitted (before waiver gate or payment step).
+Returns `{ ok: true }` on success, `{ error: 'Failed to send inquiry' }` on failure.
+
+**Callers:**
+- Gentle / Corporate contact form: **awaited** — failure shows error to user.
+- Yin contact form: **fire-and-forget** — failure is silently swallowed, user proceeds to payment.
 
 ### `POST /api/square-webhook`
 Validates HMAC-SHA256 signature (`x-square-hmacsha256-signature` header).  
@@ -380,14 +392,15 @@ All IDs read from `VITE_*` env vars. `baseAmountCents` is the pre-tax base; mat 
 ## Third-Party Integrations
 
 ### Zapier (lead capture)
-Three webhook endpoints defined in both `booking.ts` and `inquiry.ts`. All calls are fire-and-forget (`.catch(() => {})`). A Zapier failure never breaks the booking or inquiry response.
+Three webhook endpoints defined in both `booking.ts` and `inquiry.ts`. All Zapier calls are fire-and-forget (`.catch(() => {})`). A Zapier failure never blocks the user flow.
 
-Frontend fires `/api/inquiry` as a lead capture on contact form submit — before the waiver check — so leads are captured even on abandonment.
+- **Yin:** frontend fires `/api/inquiry` fire-and-forget on contact submit (before waiver) as lead capture; Square booking flow proceeds independently.
+- **Gentle / Corporate:** `/api/inquiry` is awaited as the primary action; Zapier webhooks fire server-side inside that handler.
 
 ### Google Ads Conversion Tracking
 In `index.html`: Google Tag Manager script loads `gtag` with account `AW-18168099243`.  
 In `src/App.tsx`: `declare function gtag(...args: unknown[]): void` (TypeScript global declaration).  
-Conversion fires in `submitPublic()` after the waiver check passes, targeting label `YPflCLS3wLAcEKvjnNdD`. Guarded by `typeof gtag !== 'undefined'` (ad-blocker safety).
+Conversion fires in `submitPublic()` after the waiver check passes (yin path only), targeting label `YPflCLS3wLAcEKvjnNdD`. Guarded by `typeof gtag !== 'undefined'` (ad-blocker safety). Does **not** fire for Gentle or Corporate (those go direct to inquiry).
 
 ### Microsoft Clarity
 Snippet in `index.html` with tag `wunf2gg5tc`. Passive — records session replays and heatmaps. No other code changes needed.

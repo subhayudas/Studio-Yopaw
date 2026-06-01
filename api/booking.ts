@@ -4,9 +4,7 @@ import { Resend } from 'resend'
 import { square, getLocationId, stripBom } from './_square.js'
 import { getMaxSeats } from './_config.js'
 
-const ZAPIER_NEW_CONTACT_URL = 'https://hooks.zapier.com/hooks/catch/23258168/4oigr6o/'
-const ZAPIER_NEW_BOOKING_URL = 'https://hooks.zapier.com/hooks/catch/23258168/4oig0ml/'
-const ZAPIER_FORM_URL = 'https://hooks.zapier.com/hooks/catch/23258168/4ok9t5x/'
+const ZAPIER_REGULAR_URL = 'https://hooks.zapier.com/hooks/catch/23258168/4oig0ml/'
 
 const resend = new Resend(stripBom(process.env.RESEND_API_KEY ?? ''))
 
@@ -25,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     cardNonce,
     baseAmountCents,
     serviceName,
-    groupSize,
+    needsMatRental,
   } = req.body as {
     givenName: string
     familyName: string
@@ -38,11 +36,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     cardNonce: string
     baseAmountCents: number
     serviceName: string
-    groupSize?: string
+    needsMatRental?: boolean
   }
-
-  const gstTaxId = stripBom(process.env.SQUARE_GST_TAX_ID ?? '')
-  const qstTaxId = stripBom(process.env.SQUARE_QST_TAX_ID ?? '')
 
   try {
     // 1. Find or create customer
@@ -60,18 +55,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         phoneNumber: phone,
       })
       customerId = customer!.id!
-      await fetch(ZAPIER_NEW_CONTACT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: givenName,
-          lastName: familyName,
-          fullName: `${givenName} ${familyName}`,
-          email,
-          phone,
-          source: 'booking',
-        }),
-      }).catch((err) => console.error('[Zapier] new-contact webhook failed:', err))
     }
 
     // 2. Guard: reject if class is already full (race condition protection)
@@ -112,42 +95,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Steps 4 & 5 are wrapped so that if either fails we immediately cancel the booking,
     // preventing a ghost appointment from sitting in the calendar unpaid.
     let chargeAmount: bigint
-    let orderId: string | undefined
     let payment: Awaited<ReturnType<typeof square.payments.create>>['payment']
 
     try {
-      // 4. Create Order (with taxes when configured) referencing the booking ID.
-      //    Square reads this referenceId to link the payment to the booking in Appointments.
-      if (gstTaxId && qstTaxId) {
-        const { order } = await square.orders.create({
-          idempotencyKey: randomUUID(),
-          order: {
-            locationId: getLocationId(),
-            customerId,
-            referenceId: booking!.id,
-            lineItems: [
-              {
-                quantity: '1',
-                name: serviceName,
-                basePriceMoney: { amount: BigInt(baseAmountCents), currency: 'CAD' },
-                appliedTaxes: [
-                  { taxUid: 'gst' },
-                  { taxUid: 'qst' },
-                ],
-              },
-            ],
-            taxes: [
-              { uid: 'gst', catalogObjectId: gstTaxId, scope: 'LINE_ITEM' },
-              { uid: 'qst', catalogObjectId: qstTaxId, scope: 'LINE_ITEM' },
-            ],
-          },
+      // 4. Create Order referencing the catalog service — always with GST + QST inline.
+      //    Using catalogObjectId ensures Square charges the actual catalog price, not a custom amount.
+      //    Square reads referenceId to link the payment to the booking in Appointments.
+      const lineItems: object[] = [
+        {
+          quantity: '1',
+          catalogObjectId: serviceVariationId,
+          catalogVersion: BigInt(serviceVariationVersion),
+          appliedTaxes: [{ taxUid: 'gst' }, { taxUid: 'qst' }],
+        },
+      ]
+      if (needsMatRental) {
+        lineItems.push({
+          quantity: '1',
+          name: 'Mat Rental / Location de tapis',
+          basePriceMoney: { amount: 500n, currency: 'CAD' },
         })
-        chargeAmount = order!.totalMoney!.amount!
-        orderId = order!.id
-      } else {
-        // Tax IDs not yet configured — charge base amount only
-        chargeAmount = BigInt(baseAmountCents)
       }
+
+      const { order } = await square.orders.create({
+        idempotencyKey: randomUUID(),
+        order: {
+          locationId: getLocationId(),
+          customerId,
+          referenceId: booking!.id,
+          lineItems,
+          taxes: [
+            { uid: 'gst', name: 'TPS/GST', percentage: '5',     scope: 'LINE_ITEM' },
+            { uid: 'qst', name: 'TVQ/QST', percentage: '9.975', scope: 'LINE_ITEM' },
+          ],
+        },
+      })
+      chargeAmount = order!.totalMoney!.amount!
 
       // 5. Process payment, referencing both the order and the booking ID.
       const result = await square.payments.create({
@@ -157,7 +140,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         locationId: getLocationId(),
         customerId,
         referenceId: booking!.id,
-        ...(orderId ? { orderId } : {}),
+        orderId: order!.id,
       })
       payment = result.payment
 
@@ -186,8 +169,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw paymentErr
     }
 
-    // 6. Fire Zapier new-booking webhook
-    await fetch(ZAPIER_NEW_BOOKING_URL, {
+    // 6. Fire Zapier booking webhook (one webhook for regular class)
+    await fetch(ZAPIER_REGULAR_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -196,33 +179,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         fullName: `${givenName} ${familyName}`,
         email,
         phone,
-        bookingId: booking!.id,
+        classType: serviceName,
+        attendeeCount: 1,
         startAt,
-        serviceName,
-        totalCents: Number(chargeAmount),
+        bookingId: booking!.id,
         totalDollars: (Number(chargeAmount) / 100).toFixed(2),
         paymentStatus: payment!.status,
       }),
-    }).catch((err) => console.error('[Zapier] new-booking webhook failed:', err))
-
-    await fetch(ZAPIER_FORM_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        firstName: givenName,
-        lastName: familyName,
-        phone,
-        email,
-        dateWanted: startAt,
-        eventType: serviceName,
-        peopleCount: groupSize ?? '1',
-      }),
-    }).catch((err) => console.error('[Zapier] form-submission webhook failed:', err))
+    }).catch((err) => console.error('[Zapier] regular-booking webhook failed:', err))
 
     // 7. Send lead notification email
     const totalDollars = (Number(chargeAmount) / 100).toFixed(2)
     const baseDollars = (baseAmountCents / 100).toFixed(2)
-    const taxDollars = ((Number(chargeAmount) - baseAmountCents) / 100).toFixed(2)
+    const taxDollars = ((Number(chargeAmount) - baseAmountCents - (needsMatRental ? 500 : 0)) / 100).toFixed(2)
 
     await resend.emails.send({
       from: stripBom(process.env.RESEND_FROM_EMAIL ?? 'Studio Yopaw <noreply@studio-yopaw.com>'),
@@ -234,9 +203,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         <p><strong>Phone:</strong> ${phone}</p>
         <p><strong>Start:</strong> ${startAt}</p>
         <p><strong>Booking ID:</strong> ${booking!.id}</p>
-        <p><strong>Service:</strong> ${serviceName}</p>
+        <p><strong>Service:</strong> ${serviceName}${needsMatRental ? ' + Mat Rental' : ''}</p>
         <p><strong>Subtotal:</strong> $${baseDollars} CAD</p>
-        ${gstTaxId && qstTaxId ? `<p><strong>Taxes:</strong> $${taxDollars} CAD (TPS/GST + TVQ/QST)</p>` : ''}
+        <p><strong>Taxes:</strong> $${taxDollars} CAD (TPS/GST + TVQ/QST)</p>
         <p><strong>Total charged:</strong> $${totalDollars} CAD — ${payment!.status}</p>
       `,
     })
