@@ -24,6 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     baseAmountCents,
     serviceName,
     needsMatRental,
+    extraAttendees,
   } = req.body as {
     givenName: string
     familyName: string
@@ -37,24 +38,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     baseAmountCents: number
     serviceName: string
     needsMatRental?: boolean
+    extraAttendees?: Array<{ name: string }>
+  }
+
+  const totalPeople = 1 + (extraAttendees?.length ?? 0)
+
+  async function findOrCreateCustomer(
+    gName: string, fName: string, emailAddr: string, phoneNum: string,
+  ): Promise<string> {
+    const search = await square.customers.search({
+      query: { filter: { emailAddress: { exact: emailAddr } } },
+    })
+    const existing = search.customers?.[0]?.id
+    if (existing) return existing
+    const { customer } = await square.customers.create({
+      idempotencyKey: randomUUID(),
+      givenName: gName,
+      familyName: fName,
+      emailAddress: emailAddr,
+      phoneNumber: phoneNum,
+    })
+    return customer!.id!
   }
 
   try {
-    // 1. Find or create customer
-    const searchResult = await square.customers.search({
-      query: { filter: { emailAddress: { exact: email } } },
-    })
+    // 1. Find or create a Square customer for every attendee.
+    //    On API rate-limit failure, fall back to primary client only.
+    const allAttendees = [
+      { givenName, familyName },
+      ...(extraAttendees ?? []).map(a => {
+        const parts = a.name.trim().split(' ')
+        return { givenName: parts[0] ?? a.name, familyName: parts.slice(1).join(' ') || parts[0] ?? a.name }
+      }),
+    ]
 
-    let customerId = searchResult.customers?.[0]?.id
-    if (!customerId) {
-      const { customer } = await square.customers.create({
-        idempotencyKey: randomUUID(),
-        givenName,
-        familyName,
-        emailAddress: email,
-        phoneNumber: phone,
-      })
-      customerId = customer!.id!
+    let customerId: string
+    try {
+      const ids = await Promise.all(
+        allAttendees.map(a => findOrCreateCustomer(a.givenName, a.familyName, email, phone)),
+      )
+      customerId = ids[0]
+    } catch (batchErr) {
+      console.warn('Customer batch creation hit API limit — falling back to primary client only', batchErr)
+      customerId = await findOrCreateCustomer(givenName, familyName, email, phone)
     }
 
     // 2. Guard: reject if class is already full (race condition protection)
@@ -76,12 +102,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // 3. Create the booking first so we have an ID to link the order and payment against.
     //    This is what makes Square's calendar display the booking as paid rather than "balance due".
+    const allNames = [
+      `${givenName} ${familyName}`,
+      ...(extraAttendees ?? []).map(a => a.name),
+    ].join(', ')
+    const bookingNote = `Total attendees: ${totalPeople} · Names: ${allNames} · Waiver confirmed: yes`
+
     const { booking } = await square.bookings.create({
       idempotencyKey: randomUUID(),
       booking: {
         locationId: getLocationId(),
         customerId,
         startAt,
+        customerNote: bookingNote,
         appointmentSegments: [
           {
             serviceVariationId,
@@ -103,7 +136,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       //    Square reads referenceId to link the payment to the booking in Appointments.
       const lineItems: object[] = [
         {
-          quantity: '1',
+          quantity: String(totalPeople),
           catalogObjectId: serviceVariationId,
           catalogVersion: BigInt(serviceVariationVersion),
           appliedTaxes: [{ taxUid: 'gst' }, { taxUid: 'qst' }],
@@ -180,7 +213,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         email,
         phone,
         classType: serviceName,
-        attendeeCount: 1,
+        attendeeCount: totalPeople,
+        attendeeNames: allNames,
         startAt,
         bookingId: booking!.id,
         totalDollars: (Number(chargeAmount) / 100).toFixed(2),
@@ -190,21 +224,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // 7. Send lead notification email
     const totalDollars = (Number(chargeAmount) / 100).toFixed(2)
-    const baseDollars = (baseAmountCents / 100).toFixed(2)
-    const taxDollars = ((Number(chargeAmount) - baseAmountCents - (needsMatRental ? 500 : 0)) / 100).toFixed(2)
+    const baseForEmail = baseAmountCents * totalPeople
+    const taxDollars = ((Number(chargeAmount) - baseForEmail - (needsMatRental ? 500 : 0)) / 100).toFixed(2)
 
     await resend.emails.send({
       from: stripBom(process.env.RESEND_FROM_EMAIL ?? 'Studio Yopaw <noreply@studio-yopaw.com>'),
       to: stripBom(process.env.LEAD_NOTIFY_EMAIL ?? ''),
-      subject: `New Booking — ${givenName} ${familyName}`,
+      subject: `New Booking — ${givenName} ${familyName} (${totalPeople} ${totalPeople === 1 ? 'person' : 'people'})`,
       html: `
         <h2>New booking confirmed</h2>
-        <p><strong>Customer:</strong> ${givenName} ${familyName} (${email})</p>
+        <p><strong>Lead:</strong> ${givenName} ${familyName} (${email})</p>
         <p><strong>Phone:</strong> ${phone}</p>
+        <p><strong>All attendees (${totalPeople}):</strong> ${allNames}</p>
         <p><strong>Start:</strong> ${startAt}</p>
         <p><strong>Booking ID:</strong> ${booking!.id}</p>
         <p><strong>Service:</strong> ${serviceName}${needsMatRental ? ' + Mat Rental' : ''}</p>
-        <p><strong>Subtotal:</strong> $${baseDollars} CAD</p>
+        <p><strong>Subtotal:</strong> $${(baseForEmail / 100).toFixed(2)} CAD (${totalPeople} × $${(baseAmountCents / 100).toFixed(2)})</p>
         <p><strong>Taxes:</strong> $${taxDollars} CAD (TPS/GST + TVQ/QST)</p>
         <p><strong>Total charged:</strong> $${totalDollars} CAD — ${payment!.status}</p>
       `,

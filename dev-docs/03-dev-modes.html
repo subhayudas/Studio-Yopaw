@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dev Modes — Dev Docs</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.7; }
+
+    .topbar { background: #1e2130; border-bottom: 1px solid #2d3148; padding: 0 2rem; display: flex; align-items: center; gap: 1rem; height: 56px; position: sticky; top: 0; z-index: 100; }
+    .topbar .logo { font-weight: 700; color: #818cf8; font-size: 1rem; }
+    .topbar nav { margin-left: auto; display: flex; gap: 0.25rem; }
+    .topbar nav a { color: #94a3b8; text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.75rem; border-radius: 6px; transition: all 0.15s; }
+    .topbar nav a:hover, .topbar nav a.active { background: #2d3148; color: #e2e8f0; }
+
+    .page-hero { background: linear-gradient(135deg, #1a1d2e 0%, #0f1117 60%); border-bottom: 1px solid #2d3148; padding: 3.5rem 2rem 3rem; }
+    .page-hero .breadcrumb { color: #475569; font-size: 0.82rem; margin-bottom: 1rem; }
+    .page-hero .breadcrumb a { color: #818cf8; text-decoration: none; }
+    .page-hero h1 { font-size: 2.2rem; font-weight: 800; color: #f1f5f9; line-height: 1.2; max-width: 700px; }
+    .page-hero p { color: #94a3b8; max-width: 680px; margin-top: 0.75rem; font-size: 1rem; }
+
+    .layout { display: flex; max-width: 1100px; margin: 0 auto; gap: 2.5rem; padding: 3rem 2rem; }
+    .toc { width: 220px; flex-shrink: 0; position: sticky; top: 76px; height: fit-content; }
+    .toc .toc-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; color: #475569; text-transform: uppercase; margin-bottom: 0.75rem; }
+    .toc a { display: block; color: #94a3b8; text-decoration: none; font-size: 0.85rem; padding: 0.3rem 0; border-left: 2px solid transparent; padding-left: 0.75rem; transition: all 0.15s; }
+    .toc a:hover { color: #e2e8f0; border-left-color: #818cf8; }
+    .content { flex: 1; min-width: 0; }
+
+    h2 { font-size: 1.5rem; font-weight: 800; color: #f1f5f9; margin: 2.5rem 0 1rem; padding-top: 0.5rem; border-top: 1px solid #1e2130; }
+    h2:first-child { border-top: none; margin-top: 0; }
+    h3 { font-size: 1.1rem; font-weight: 700; color: #e2e8f0; margin: 1.75rem 0 0.75rem; }
+    p { color: #94a3b8; margin-bottom: 1rem; font-size: 0.95rem; }
+    strong { color: #e2e8f0; }
+    a { color: #818cf8; text-decoration: none; border-bottom: 1px solid #312e81; }
+    a:hover { border-bottom-color: #818cf8; }
+    ul { color: #94a3b8; padding-left: 1.5rem; margin-bottom: 1rem; }
+    ul li { margin-bottom: 0.4rem; font-size: 0.95rem; }
+
+    code { background: #1e2130; border: 1px solid #2d3148; border-radius: 4px; padding: 0.15em 0.45em; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.85em; color: #a5b4fc; }
+    pre { background: #161923; border: 1px solid #2d3148; border-radius: 8px; padding: 1.25rem 1.5rem; overflow-x: auto; margin: 1rem 0 1.5rem; }
+    pre code { background: none; border: none; padding: 0; font-size: 0.88rem; color: #e2e8f0; }
+    .comment { color: #475569; }
+    .keyword { color: #818cf8; }
+    .string { color: #86efac; }
+    .fn { color: #fbbf24; }
+    .prompt { color: #22c55e; user-select: none; }
+
+    .callout { border-radius: 8px; padding: 1.1rem 1.4rem; margin: 1.25rem 0; font-size: 0.9rem; }
+    .callout.info { background: #1a1f35; border: 1px solid #312e81; border-left: 4px solid #818cf8; }
+    .callout.tip { background: #14211a; border: 1px solid #166534; border-left: 4px solid #22c55e; }
+    .callout.warn { background: #231a10; border: 1px solid #92400e; border-left: 4px solid #f59e0b; }
+    .callout strong { display: block; margin-bottom: 0.4rem; }
+    .callout.info strong { color: #a5b4fc; }
+    .callout.tip strong { color: #86efac; }
+    .callout.warn strong { color: #fcd34d; }
+
+    /* Mode cards */
+    .mode-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+    .mode-card {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      padding: 1.5rem;
+      position: relative;
+    }
+    .mode-card.mode-1 { border-top: 3px solid #22c55e; }
+    .mode-card.mode-2 { border-top: 3px solid #f59e0b; }
+    .mode-card.mode-3 { border-top: 3px solid #818cf8; }
+    .mode-card .mode-tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+    .mode-1 .mode-tag { color: #22c55e; }
+    .mode-2 .mode-tag { color: #f59e0b; }
+    .mode-3 .mode-tag { color: #818cf8; }
+    .mode-card h3 { font-size: 1rem; margin: 0 0 0.5rem; color: #f1f5f9; }
+    .mode-card .cmd { font-family: monospace; font-size: 0.85rem; background: #161923; padding: 0.5rem 0.75rem; border-radius: 6px; color: #86efac; margin-bottom: 0.75rem; display: block; }
+    .mode-card p { font-size: 0.85rem; color: #94a3b8; margin: 0; }
+
+    /* What works table */
+    .works-table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; font-size: 0.88rem; }
+    .works-table th { text-align: left; padding: 0.6rem 1rem; background: #1e2130; color: #818cf8; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+    .works-table td { padding: 0.7rem 1rem; border-bottom: 1px solid #1e2130; color: #94a3b8; }
+    .works-table tr:hover td { background: #161923; }
+    .yes { color: #22c55e; font-weight: 700; }
+    .no { color: #ef4444; font-weight: 700; }
+    .partial { color: #f59e0b; font-weight: 700; }
+
+    /* Architecture diagram */
+    .arch-diagram {
+      background: #161923;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      padding: 2rem;
+      margin: 1.5rem 0;
+      font-family: monospace;
+      font-size: 0.85rem;
+    }
+    .arch-diagram .box {
+      border: 1px solid #2d3148;
+      border-radius: 6px;
+      padding: 0.6rem 1rem;
+      display: inline-block;
+      margin: 0.25rem;
+    }
+    .arch-diagram .browser { border-color: #3b82f6; color: #93c5fd; }
+    .arch-diagram .vite { border-color: #22c55e; color: #86efac; }
+    .arch-diagram .vercel { border-color: #818cf8; color: #a5b4fc; }
+    .arch-diagram .fn { border-color: #f59e0b; color: #fcd34d; }
+    .arch-row { display: flex; align-items: center; gap: 1rem; margin: 0.75rem 0; flex-wrap: wrap; }
+    .arch-arrow { color: #475569; }
+
+    .nav-footer { display: flex; justify-content: space-between; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #2d3148; }
+    .nav-btn { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 0.75rem 1.25rem; color: #94a3b8; text-decoration: none; border-bottom: none; font-size: 0.9rem; transition: all 0.15s; }
+    .nav-btn:hover { border-color: #818cf8; color: #e2e8f0; }
+    .nav-btn.next { color: #818cf8; border-color: #312e81; }
+    .nav-btn.next:hover { background: #1a1f35; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">Studio Yopaw — Dev Docs</span>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="01-frontend.html">Frontend</a>
+    <a href="02-backend.html">Backend</a>
+    <a href="03-dev-modes.html" class="active">Dev Modes</a>
+    <a href="04-this-project.html">This Project</a>
+    <a href="05-resources.html">Resources</a>
+  </nav>
+</div>
+
+<div class="page-hero">
+  <div class="breadcrumb"><a href="index.html">Home</a> / Page 3</div>
+  <h1>The Three Dev Modes</h1>
+  <p>Why <code>npm run dev</code>, <code>vercel dev</code>, and production are three completely different environments — and when you need each one.</p>
+</div>
+
+<div class="layout">
+  <aside class="toc">
+    <div class="toc-title">On this page</div>
+    <a href="#three-modes">The three modes</a>
+    <a href="#mode-1">Mode 1: npm run dev</a>
+    <a href="#mode-2">Mode 2: vercel dev</a>
+    <a href="#mode-3">Mode 3: Production</a>
+    <a href="#what-works">What works in each mode</a>
+    <a href="#why-two-dev">Why have two dev modes?</a>
+    <a href="#package-json">package.json scripts</a>
+    <a href="#flow">Request flow diagrams</a>
+  </aside>
+
+  <main class="content">
+
+    <h2 id="three-modes">The three modes at a glance</h2>
+
+    <div class="mode-cards">
+      <div class="mode-card mode-1">
+        <div class="mode-tag">Mode 1 — Fast Dev</div>
+        <h3>Vite Dev Server</h3>
+        <code class="cmd">npm run dev</code>
+        <p>Only the React frontend runs. API endpoints are either mocked or unavailable. Hot reload active. Fastest to start.</p>
+      </div>
+      <div class="mode-card mode-2">
+        <div class="mode-tag">Mode 2 — Full Dev</div>
+        <h3>Vercel Dev</h3>
+        <code class="cmd">vercel dev</code>
+        <p>Both the React frontend AND the serverless functions run locally. Slower to start. Needed for testing real payments, emails, webhooks.</p>
+      </div>
+      <div class="mode-card mode-3">
+        <div class="mode-tag">Mode 3 — Live</div>
+        <h3>Production on Vercel</h3>
+        <code class="cmd">git push → auto-deploy</code>
+        <p>Built React app served as static files. Functions run on Vercel's actual serverless infrastructure. Real money, real emails.</p>
+      </div>
+    </div>
+
+    <h2 id="mode-1">Mode 1: <code>npm run dev</code> — Vite dev server</h2>
+    <p>When you type <code>npm run dev</code>, you are starting <strong>only Vite</strong>. Vite spins up a local web server (usually on port 5173) that serves your React app with instant hot reload.</p>
+
+    <pre><code><span class="prompt">$</span> npm run dev
+
+  VITE v8.x  ready in 312 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://192.168.x.x:5173/</code></pre>
+
+    <p>What is actually running when you open <code>localhost:5173</code>:</p>
+    <ul>
+      <li>Vite serves your <code>index.html</code> and TypeScript/React files directly (no build needed — Vite transforms files on the fly)</li>
+      <li>When you change a <code>.tsx</code> file and save, Vite sends the update to your browser over a WebSocket — the browser hot-swaps the component in under 100ms</li>
+      <li>Requests to <code>/api/*</code>? They go to the Vite server, which has NO idea what to do with them — <em>unless</em> you add custom middleware (which is exactly what this project does — see <a href="04-this-project.html">page 4</a>)</li>
+    </ul>
+
+    <div class="callout info">
+      <strong>Python analogy</strong>
+      <code>npm run dev</code> is like running <code>python -m http.server 5173</code> — but smarter, because it compiles TypeScript on the fly and does hot reload. It is NOT running your API routes.
+    </div>
+
+    <h2 id="mode-2">Mode 2: <code>vercel dev</code> — the full local simulator</h2>
+    <p><code>vercel dev</code> is a separate CLI tool from Vercel that simulates the <em>entire</em> Vercel platform on your machine. It:</p>
+    <ul>
+      <li>Starts the Vite frontend (same as <code>npm run dev</code>)</li>
+      <li>Also starts a local Node.js server that handles <code>/api/*</code> requests by running your <code>api/*.ts</code> functions</li>
+      <li>Reads your <code>vercel.json</code> config and applies the same routing rules as production</li>
+      <li>Injects environment variables from your <code>.env.local</code> file</li>
+    </ul>
+
+    <pre><code><span class="prompt">$</span> vercel dev
+
+Vercel CLI 40.x
+> Running Dev Command "vite"
+> Ready! Available at http://localhost:3000
+
+<span class="comment">Now /api/booking actually works — it runs your TypeScript code
+with real Square API calls, real Resend emails, etc.</span></code></pre>
+
+    <p>The downside: <code>vercel dev</code> is slower to start because it is compiling your TypeScript API functions and running them inside a Node.js process. For every API request, it re-executes the function (similar to the production serverless behavior).</p>
+
+    <div class="callout warn">
+      <strong>Why not always use vercel dev?</strong>
+      Because <code>vercel dev</code> simulates <em>real</em> API calls. If you're testing the UI flow for a booking, you don't want to accidentally charge a real card or create real Square bookings. Using <code>npm run dev</code> with mocked API responses is safer for UI development.
+    </div>
+
+    <h2 id="mode-3">Mode 3: Production — deployed on Vercel</h2>
+    <p>When you push to GitHub (or run <code>vercel --prod</code>), this is what happens on Vercel's servers:</p>
+
+    <pre><code><span class="comment">What Vercel does automatically on every git push:</span>
+
+1. npm run build
+   <span class="comment">└─ tsc -b (TypeScript type check)</span>
+   <span class="comment">└─ vite build (compiles React → dist/)</span>
+
+2. Bundle each api/*.ts file
+   <span class="comment">└─ Each file becomes a separate Lambda function</span>
+   <span class="comment">└─ class-schedule.json is bundled in (per vercel.json)</span>
+
+3. Deploy:
+   <span class="comment">└─ dist/ → Vercel's global CDN (static files)</span>
+   <span class="comment">└─ api/* → Vercel's serverless function runtime</span></code></pre>
+
+    <p>A <strong>CDN (Content Delivery Network)</strong> is a network of servers distributed worldwide. Your <code>dist/</code> files (HTML, CSS, JS) get copied to servers in 40+ cities. When a user in Paris opens the site, they download the files from a server in Frankfurt, not from wherever your Vercel project is hosted. This is why static sites load so fast globally.</p>
+
+    <h2 id="what-works">What works in each mode</h2>
+
+    <table class="works-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>npm run dev</th>
+          <th>vercel dev</th>
+          <th>Production</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>React UI with hot reload</td>
+          <td class="yes">✓ Yes</td>
+          <td class="yes">✓ Yes</td>
+          <td class="no">✗ No (built, not live)</td>
+        </tr>
+        <tr>
+          <td><code>/api/availability</code> (schedule data)</td>
+          <td class="partial">~ Mocked</td>
+          <td class="yes">✓ Real</td>
+          <td class="yes">✓ Real</td>
+        </tr>
+        <tr>
+          <td><code>/api/breeds</code> (dog breed data)</td>
+          <td class="partial">~ Mocked</td>
+          <td class="yes">✓ Real</td>
+          <td class="yes">✓ Real</td>
+        </tr>
+        <tr>
+          <td><code>/api/booking</code> (Square payment)</td>
+          <td class="no">✗ No</td>
+          <td class="yes">✓ Real (sandbox)</td>
+          <td class="yes">✓ Real (production)</td>
+        </tr>
+        <tr>
+          <td><code>/api/inquiry</code> (Resend email)</td>
+          <td class="no">✗ No</td>
+          <td class="yes">✓ Real</td>
+          <td class="yes">✓ Real</td>
+        </tr>
+        <tr>
+          <td><code>/api/square-webhook</code></td>
+          <td class="no">✗ No</td>
+          <td class="partial">~ Needs tunnel</td>
+          <td class="yes">✓ Real</td>
+        </tr>
+        <tr>
+          <td>Speed of startup</td>
+          <td class="yes">✓ Very fast (0.3s)</td>
+          <td class="partial">~ Slow (3–10s)</td>
+          <td class="yes">✓ CDN fast</td>
+        </tr>
+        <tr>
+          <td>Env vars loaded from</td>
+          <td><code>.env.local</code></td>
+          <td><code>.env.local</code></td>
+          <td>Vercel Dashboard</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="why-two-dev">Why does having two dev modes make sense?</h2>
+    <p>This pattern — a fast frontend-only server AND a full-stack simulator — is very common in modern web development. Here is the reasoning:</p>
+    <p><strong>90% of development time is spent on UI work</strong>: making a button look right, fixing a layout, adjusting the booking flow steps. For all of that, you don't need real API calls. You just need the UI to render with some fake data.</p>
+    <p><strong>10% of development time requires real API testing</strong>: verifying that the Square payment actually goes through, checking that the Resend email arrives, testing the webhook signature validation. For that, you use <code>vercel dev</code>.</p>
+    <p>Keeping the fast dev server for the 90% case makes daily development much more pleasant.</p>
+
+    <div class="callout tip">
+      <strong>How Python projects handle the same problem</strong>
+      A Python FastAPI app might use <code>pytest</code> with a test client that mocks external API calls (using <code>unittest.mock</code> or <code>respx</code>). The concept is the same: you want most of your development loop to be fast and isolated from external services.
+    </div>
+
+    <h2 id="package-json">What the npm scripts actually run</h2>
+    <p>Open <code>package.json</code> and you'll see a <code>"scripts"</code> section. These are just shortcuts:</p>
+
+    <pre><code>{
+  <span class="string">"scripts"</span>: {
+    <span class="string">"dev"</span>: <span class="string">"vite"</span>,
+    <span class="comment">// ↑ "npm run dev" just runs "vite"</span>
+
+    <span class="string">"build"</span>: <span class="string">"tsc -b && vite build"</span>,
+    <span class="comment">// ↑ "npm run build" runs TypeScript compiler THEN Vite build</span>
+
+    <span class="string">"preview"</span>: <span class="string">"vite preview"</span>,
+    <span class="comment">// ↑ Serves the built dist/ folder locally (not dev server)</span>
+    <span class="comment">//   Useful to test the production build before deploying</span>
+
+    <span class="string">"lint"</span>: <span class="string">"eslint ."</span>
+    <span class="comment">// ↑ Checks code style with ESLint (like flake8 or ruff in Python)</span>
+  }
+}</code></pre>
+
+    <p><code>npm</code> (Node Package Manager) is the JavaScript equivalent of <code>pip</code>. <code>package.json</code> is the equivalent of <code>pyproject.toml</code> or <code>requirements.txt</code> — it lists dependencies and scripts.</p>
+
+    <h2 id="flow">Request flow in each mode</h2>
+
+    <h3>Mode 1: npm run dev (frontend request)</h3>
+    <div class="arch-diagram">
+      <div class="arch-row">
+        <span class="box browser">Browser</span>
+        <span class="arch-arrow">──GET /api/availability──▶</span>
+        <span class="box vite">Vite dev server :5173</span>
+        <span class="arch-arrow">──▶</span>
+        <span class="box vite">devApiPlugin() middleware</span>
+        <span class="arch-arrow">──reads──▶</span>
+        <span class="box fn">class-schedule.json</span>
+      </div>
+      <div style="color:#475569; font-size:0.82rem; margin-top:0.75rem;">
+        /api/booking would return 404 — no handler for it in Vite
+      </div>
+    </div>
+
+    <h3>Mode 2: vercel dev (full request)</h3>
+    <div class="arch-diagram">
+      <div class="arch-row">
+        <span class="box browser">Browser</span>
+        <span class="arch-arrow">──POST /api/booking──▶</span>
+        <span class="box vercel">vercel dev router :3000</span>
+        <span class="arch-arrow">──▶</span>
+        <span class="box fn">api/booking.ts (Node.js)</span>
+        <span class="arch-arrow">──▶</span>
+        <span class="box fn">Square API (real/sandbox)</span>
+      </div>
+      <div style="color:#475569; font-size:0.82rem; margin-top:0.75rem;">
+        vercel dev intercepts the request and routes to the correct function
+      </div>
+    </div>
+
+    <h3>Mode 3: Production</h3>
+    <div class="arch-diagram">
+      <div class="arch-row">
+        <span class="box browser">Browser</span>
+        <span class="arch-arrow">──GET /──▶</span>
+        <span class="box vercel">Vercel CDN (global)</span>
+        <span class="arch-arrow">──▶</span>
+        <span class="box vite">dist/index.html (static)</span>
+      </div>
+      <div class="arch-row" style="margin-top:0.5rem;">
+        <span class="box browser">Browser</span>
+        <span class="arch-arrow">──POST /api/booking──▶</span>
+        <span class="box vercel">Vercel Serverless</span>
+        <span class="arch-arrow">──spawns──▶</span>
+        <span class="box fn">api/booking.ts (Lambda)</span>
+      </div>
+    </div>
+
+    <div class="nav-footer">
+      <a href="02-backend.html" class="nav-btn">← Backend</a>
+      <a href="04-this-project.html" class="nav-btn next">Next: The Clever Trick in This Project →</a>
+    </div>
+
+  </main>
+</div>
+
+</body>
+</html>

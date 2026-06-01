@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Backend — Serverless Functions — Dev Docs</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.7; }
+
+    .topbar { background: #1e2130; border-bottom: 1px solid #2d3148; padding: 0 2rem; display: flex; align-items: center; gap: 1rem; height: 56px; position: sticky; top: 0; z-index: 100; }
+    .topbar .logo { font-weight: 700; color: #818cf8; font-size: 1rem; }
+    .topbar nav { margin-left: auto; display: flex; gap: 0.25rem; }
+    .topbar nav a { color: #94a3b8; text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.75rem; border-radius: 6px; transition: all 0.15s; }
+    .topbar nav a:hover, .topbar nav a.active { background: #2d3148; color: #e2e8f0; }
+
+    .page-hero { background: linear-gradient(135deg, #1a1d2e 0%, #0f1117 60%); border-bottom: 1px solid #2d3148; padding: 3.5rem 2rem 3rem; }
+    .page-hero .breadcrumb { color: #475569; font-size: 0.82rem; margin-bottom: 1rem; }
+    .page-hero .breadcrumb a { color: #818cf8; text-decoration: none; }
+    .page-hero h1 { font-size: 2.2rem; font-weight: 800; color: #f1f5f9; line-height: 1.2; max-width: 700px; }
+    .page-hero p { color: #94a3b8; max-width: 680px; margin-top: 0.75rem; font-size: 1rem; }
+
+    .layout { display: flex; max-width: 1100px; margin: 0 auto; gap: 2.5rem; padding: 3rem 2rem; }
+    .toc { width: 220px; flex-shrink: 0; position: sticky; top: 76px; height: fit-content; }
+    .toc .toc-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; color: #475569; text-transform: uppercase; margin-bottom: 0.75rem; }
+    .toc a { display: block; color: #94a3b8; text-decoration: none; font-size: 0.85rem; padding: 0.3rem 0; border-left: 2px solid transparent; padding-left: 0.75rem; transition: all 0.15s; }
+    .toc a:hover { color: #e2e8f0; border-left-color: #818cf8; }
+    .content { flex: 1; min-width: 0; }
+
+    h2 { font-size: 1.5rem; font-weight: 800; color: #f1f5f9; margin: 2.5rem 0 1rem; padding-top: 0.5rem; border-top: 1px solid #1e2130; }
+    h2:first-child { border-top: none; margin-top: 0; }
+    h3 { font-size: 1.1rem; font-weight: 700; color: #e2e8f0; margin: 1.75rem 0 0.75rem; }
+    p { color: #94a3b8; margin-bottom: 1rem; font-size: 0.95rem; }
+    strong { color: #e2e8f0; }
+    a { color: #818cf8; text-decoration: none; border-bottom: 1px solid #312e81; }
+    a:hover { border-bottom-color: #818cf8; }
+    ul { color: #94a3b8; padding-left: 1.5rem; margin-bottom: 1rem; }
+    ul li { margin-bottom: 0.4rem; font-size: 0.95rem; }
+
+    code { background: #1e2130; border: 1px solid #2d3148; border-radius: 4px; padding: 0.15em 0.45em; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.85em; color: #a5b4fc; }
+    pre { background: #161923; border: 1px solid #2d3148; border-radius: 8px; padding: 1.25rem 1.5rem; overflow-x: auto; margin: 1rem 0 1.5rem; }
+    pre code { background: none; border: none; padding: 0; font-size: 0.88rem; color: #e2e8f0; }
+    .comment { color: #475569; }
+    .keyword { color: #818cf8; }
+    .string { color: #86efac; }
+    .fn { color: #fbbf24; }
+    .type { color: #67e8f9; }
+
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.25rem 0; }
+    .compare-box { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 1.25rem; }
+    .compare-box.python { border-top: 3px solid #3b82f6; }
+    .compare-box.js { border-top: 3px solid #f59e0b; }
+    .compare-box .lang { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
+    .compare-box.python .lang { color: #3b82f6; }
+    .compare-box.js .lang { color: #f59e0b; }
+    .compare-box pre { background: #161923; border-radius: 6px; margin: 0; }
+
+    .callout { border-radius: 8px; padding: 1.1rem 1.4rem; margin: 1.25rem 0; font-size: 0.9rem; }
+    .callout.info { background: #1a1f35; border: 1px solid #312e81; border-left: 4px solid #818cf8; }
+    .callout.tip { background: #14211a; border: 1px solid #166534; border-left: 4px solid #22c55e; }
+    .callout.warn { background: #231a10; border: 1px solid #92400e; border-left: 4px solid #f59e0b; }
+    .callout strong { display: block; margin-bottom: 0.4rem; }
+    .callout.info strong { color: #a5b4fc; }
+    .callout.tip strong { color: #86efac; }
+    .callout.warn strong { color: #fcd34d; }
+
+    .file-tree { background: #161923; border: 1px solid #2d3148; border-radius: 8px; padding: 1.25rem 1.5rem; font-family: monospace; font-size: 0.88rem; margin: 1rem 0; }
+    .file-tree .dir { color: #818cf8; }
+    .file-tree .file { color: #94a3b8; }
+    .file-tree .highlight { color: #fbbf24; font-weight: 600; }
+    .file-tree .note { color: #475569; margin-left: 1rem; }
+
+    .lifecycle {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1.25rem 0;
+    }
+    .lifecycle h4 { color: #818cf8; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1rem; }
+    .lc-step { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 0.75rem; }
+    .lc-step:last-child { margin-bottom: 0; }
+    .lc-dot { width: 8px; height: 8px; border-radius: 50%; background: #818cf8; flex-shrink: 0; margin-top: 0.6rem; }
+    .lc-step p { margin: 0; font-size: 0.9rem; color: #94a3b8; }
+    .lc-step strong { color: #e2e8f0; }
+
+    .route-table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.88rem; }
+    .route-table th { text-align: left; padding: 0.6rem 1rem; background: #1e2130; color: #818cf8; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+    .route-table td { padding: 0.7rem 1rem; border-bottom: 1px solid #1e2130; color: #94a3b8; vertical-align: top; }
+    .route-table tr:hover td { background: #161923; }
+    .route-table code { font-size: 0.82rem; }
+    .method { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
+    .get { background: #14211a; color: #86efac; }
+    .post { background: #1a1d35; color: #818cf8; }
+
+    .nav-footer { display: flex; justify-content: space-between; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #2d3148; }
+    .nav-btn { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 0.75rem 1.25rem; color: #94a3b8; text-decoration: none; border-bottom: none; font-size: 0.9rem; transition: all 0.15s; }
+    .nav-btn:hover { border-color: #818cf8; color: #e2e8f0; }
+    .nav-btn.next { color: #818cf8; border-color: #312e81; }
+    .nav-btn.next:hover { background: #1a1f35; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">Studio Yopaw — Dev Docs</span>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="01-frontend.html">Frontend</a>
+    <a href="02-backend.html" class="active">Backend</a>
+    <a href="03-dev-modes.html">Dev Modes</a>
+    <a href="04-this-project.html">This Project</a>
+    <a href="05-resources.html">Resources</a>
+  </nav>
+</div>
+
+<div class="page-hero">
+  <div class="breadcrumb"><a href="index.html">Home</a> / Page 2</div>
+  <h1>The Backend — Vercel Serverless Functions</h1>
+  <p>How each file in <code>api/</code> becomes an HTTP endpoint. What "serverless" means, how it compares to a Flask route, and why this is different from a traditional server.</p>
+</div>
+
+<div class="layout">
+  <aside class="toc">
+    <div class="toc-title">On this page</div>
+    <a href="#traditional-server">Traditional server</a>
+    <a href="#what-is-serverless">What is serverless?</a>
+    <a href="#vercel-functions">Vercel Functions</a>
+    <a href="#file-to-endpoint">File → endpoint mapping</a>
+    <a href="#cold-start">Cold starts</a>
+    <a href="#env-vars">Environment variables</a>
+    <a href="#vercel-json">vercel.json</a>
+    <a href="#all-endpoints">All API endpoints</a>
+  </aside>
+
+  <main class="content">
+
+    <h2 id="traditional-server">How a traditional backend server works</h2>
+    <p>If you built a backend in Python, you would probably write something like this with Flask or FastAPI:</p>
+
+    <pre><code><span class="comment"># A traditional Flask server</span>
+<span class="keyword">from</span> flask <span class="keyword">import</span> Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route(<span class="string">'/api/availability'</span>)
+<span class="keyword">def</span> <span class="fn">get_availability</span>():
+    <span class="keyword">return</span> jsonify({ <span class="string">'slots'</span>: [...] })
+
+@app.route(<span class="string">'/api/booking'</span>, methods=[<span class="string">'POST'</span>])
+<span class="keyword">def</span> <span class="fn">create_booking</span>():
+    data = request.get_json()
+    <span class="keyword">return</span> jsonify({ <span class="string">'bookingId'</span>: <span class="string">'123'</span> })
+
+<span class="comment"># This server runs CONTINUOUSLY, 24/7,</span>
+<span class="comment"># waiting for requests to come in.</span>
+app.run(port=5000)</code></pre>
+
+    <p>The server starts up, loads everything into memory, and stays running forever. Even when nobody is using it at 3am, your server process is alive, using memory, consuming CPU cycles (even if just idle), and costs money every hour.</p>
+
+    <h2 id="what-is-serverless">What is "serverless"?</h2>
+    <p><strong>Serverless</strong> is a confusing name — there absolutely is a server. What it means is: <em>you don't manage a continuously-running server process.</em> Instead, your code runs only when a request comes in, and stops immediately after.</p>
+
+    <div class="lifecycle">
+      <h4>Lifecycle of a serverless function call</h4>
+      <div class="lc-step">
+        <div class="lc-dot"></div>
+        <p><strong>User hits /api/booking</strong> — request arrives at Vercel's infrastructure</p>
+      </div>
+      <div class="lc-step">
+        <div class="lc-dot"></div>
+        <p><strong>Vercel spins up a container</strong> — a tiny, isolated execution environment starts from scratch in &lt;1 second</p>
+      </div>
+      <div class="lc-step">
+        <div class="lc-dot"></div>
+        <p><strong>Your function runs</strong> — Node.js loads <code>api/booking.ts</code>, runs the handler, returns a response</p>
+      </div>
+      <div class="lc-step">
+        <div class="lc-dot"></div>
+        <p><strong>Container shuts down</strong> — everything is discarded. No memory persists between calls.</p>
+      </div>
+      <div class="lc-step">
+        <div class="lc-dot"></div>
+        <p><strong>You are billed only for execution time</strong> — typically milliseconds. Vercel's free tier is extremely generous.</p>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <strong>Python analogy for serverless</strong>
+      Imagine instead of a running Flask server, each of your route functions is a separate script. When a request comes in, the system runs <code>python booking.py</code>, waits for it to finish, and returns the output. When it's done, the process exits. That is essentially what serverless is.
+    </div>
+
+    <h2 id="vercel-functions">How Vercel Functions work</h2>
+    <p>Vercel looks at your <code>api/</code> folder and automatically converts each <code>.ts</code> file into a serverless function. You do not configure routes manually — <strong>the filename IS the route</strong>.</p>
+
+    <div class="file-tree">
+      <div><span class="dir">api/</span></div>
+      <div>&nbsp;&nbsp;├── <span class="highlight">availability.ts</span>  <span class="note">→ becomes GET /api/availability</span></div>
+      <div>&nbsp;&nbsp;├── <span class="highlight">booking.ts</span>  <span class="note">→ becomes POST /api/booking</span></div>
+      <div>&nbsp;&nbsp;├── <span class="highlight">inquiry.ts</span>  <span class="note">→ becomes POST /api/inquiry</span></div>
+      <div>&nbsp;&nbsp;├── <span class="highlight">breeds.ts</span>  <span class="note">→ becomes GET /api/breeds</span></div>
+      <div>&nbsp;&nbsp;├── <span class="highlight">square-webhook.ts</span>  <span class="note">→ becomes POST /api/square-webhook</span></div>
+      <div>&nbsp;&nbsp;├── <span class="file">_square.ts</span>  <span class="note">→ NOT a route (underscore = private helper)</span></div>
+      <div>&nbsp;&nbsp;└── <span class="file">_config.ts</span>  <span class="note">→ NOT a route (underscore = private helper)</span></div>
+    </div>
+
+    <p>Files starting with <code>_</code> (underscore) are private helpers — Vercel does not create endpoints for them. They are just TypeScript modules that the other functions import.</p>
+
+    <h2 id="file-to-endpoint">What a function file looks like</h2>
+    <p>Each function file exports one default function — the handler. Compare this to a Flask route handler:</p>
+
+    <div class="compare-grid">
+      <div class="compare-box python">
+        <div class="lang">Python (Flask route)</div>
+        <pre><code><span class="keyword">from</span> flask <span class="keyword">import</span> request, jsonify
+
+<span class="comment"># This is ONE route in a larger app</span>
+@app.route(<span class="string">'/api/availability'</span>)
+<span class="keyword">def</span> <span class="fn">availability</span>():
+    start = request.args.get(<span class="string">'startDate'</span>)
+    end = request.args.get(<span class="string">'endDate'</span>)
+    slots = compute_slots(start, end)
+    <span class="keyword">return</span> jsonify({ <span class="string">'availabilities'</span>: slots })</code></pre>
+      </div>
+      <div class="compare-box js">
+        <div class="lang">TypeScript (Vercel Function)</div>
+        <pre><code><span class="comment">// This IS the entire file: api/availability.ts</span>
+<span class="keyword">import</span> type { <span class="type">VercelRequest</span>, <span class="type">VercelResponse</span> }
+    <span class="keyword">from</span> <span class="string">'@vercel/node'</span>
+
+<span class="keyword">export default async function</span> <span class="fn">handler</span>(
+    req: <span class="type">VercelRequest</span>,
+    res: <span class="type">VercelResponse</span>
+) {
+    <span class="keyword">const</span> { startDate, endDate } = req.query
+    <span class="keyword">const</span> slots = await computeSlots(startDate, endDate)
+    res.json({ availabilities: slots })
+}</code></pre>
+      </div>
+    </div>
+
+    <p>Both do the same thing: receive an HTTP request, do some work, return a JSON response. The structure is nearly identical — just different syntax.</p>
+
+    <h2 id="cold-start">Cold starts — the main trade-off of serverless</h2>
+    <p>The first time a function is called after it has been idle, Vercel needs to spin up a new container. This takes extra time — usually 200ms to 1 second. This is called a <strong>cold start</strong>. Subsequent requests within a short window hit a <strong>warm</strong> container and respond much faster.</p>
+
+    <p>For a booking site with low traffic, this is usually acceptable. For a high-traffic API needing sub-100ms response times on every request, you might need a traditional always-running server instead.</p>
+
+    <div class="callout warn">
+      <strong>No persistent memory between requests</strong>
+      Because each invocation may get a fresh container, you cannot store data in a global variable and expect it to persist. Every call to <code>api/booking.ts</code> starts with a clean slate. This is why the app uses Square's API (external persistent storage) for bookings, not an in-memory dictionary.
+    </div>
+
+    <h2 id="env-vars">Environment Variables — secrets on the server</h2>
+    <p>Your functions need API keys (Square, Resend, etc.) but you cannot put these in your source code — anyone could see them on GitHub. The solution is <strong>environment variables</strong>: values set directly in Vercel's dashboard that get injected into your function at runtime.</p>
+
+    <div class="compare-grid">
+      <div class="compare-box python">
+        <div class="lang">Python (os.environ)</div>
+        <pre><code><span class="keyword">import</span> os
+
+api_key = os.environ.get(<span class="string">'SQUARE_API_KEY'</span>)
+<span class="comment"># Set in shell: export SQUARE_API_KEY=abc123</span>
+<span class="comment"># Set in .env file with python-dotenv</span></code></pre>
+      </div>
+      <div class="compare-box js">
+        <div class="lang">TypeScript (process.env)</div>
+        <pre><code><span class="comment">// Identical concept, different syntax:</span>
+<span class="keyword">const</span> apiKey = process.env.SQUARE_API_KEY
+
+<span class="comment">// Set in Vercel dashboard (production)</span>
+<span class="comment">// Set in .env.local file (local dev)</span></code></pre>
+      </div>
+    </div>
+
+    <p>There are two types of env vars in this project:</p>
+    <ul>
+      <li><strong>Server-only</strong> (no prefix) — only available in <code>api/*.ts</code> functions. Never sent to the browser. Example: <code>SQUARE_ACCESS_TOKEN</code>.</li>
+      <li><strong>Browser-safe</strong> (<code>VITE_</code> prefix) — baked into the compiled JavaScript that Vite sends to the browser. Anyone can read them in DevTools. Only put public IDs here, never secrets. Example: <code>VITE_SQUARE_APP_ID</code>.</li>
+    </ul>
+
+    <h2 id="vercel-json">vercel.json — the deployment configuration</h2>
+    <p>This small config file controls how Vercel deploys the project. Let's read through this project's <code>vercel.json</code>:</p>
+
+    <pre><code>{
+  <span class="comment">// Apply these settings to every file inside api/</span>
+  <span class="string">"functions"</span>: {
+    <span class="string">"api/**/*.ts"</span>: {
+      <span class="string">"memory"</span>: 256,         <span class="comment">// Max RAM per function: 256 MB</span>
+      <span class="string">"maxDuration"</span>: 15,     <span class="comment">// Kill the function if it runs &gt; 15 seconds</span>
+      <span class="string">"includeFiles"</span>: <span class="string">"class-schedule.json"</span>
+      <span class="comment">// ↑ Bundle this JSON file INTO the function package</span>
+      <span class="comment">// (otherwise functions can't read it at runtime)</span>
+    }
+  },
+
+  <span class="comment">// URL rewrite rules:</span>
+  <span class="string">"rewrites"</span>: [
+    <span class="comment">// /api/* → route to the matching serverless function</span>
+    { <span class="string">"source"</span>: <span class="string">"/api/(.*)"</span>, <span class="string">"destination"</span>: <span class="string">"/api/$1"</span> },
+
+    <span class="comment">// Everything else (/, /about, /refund-policy, etc.)</span>
+    <span class="comment">// → serve index.html (SPA routing trick)</span>
+    { <span class="string">"source"</span>: <span class="string">"/((?!src/|node_modules/|...).*)"</span>,
+      <span class="string">"destination"</span>: <span class="string">"/index.html"</span> }
+  ]
+}</code></pre>
+
+    <p>The rewrite rule that sends everything to <code>index.html</code> is what makes the SPA routing work. When someone types <code>www.yopaw.ca/refund-policy</code> in their browser, Vercel serves <code>index.html</code> — then React's JavaScript reads the URL and shows the correct page component. Without this rule, a direct URL visit would return a 404 because there is no actual file at <code>/refund-policy</code>.</p>
+
+    <h2 id="all-endpoints">All API endpoints in this project</h2>
+    <table class="route-table">
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Method</th>
+          <th>URL</th>
+          <th>What it does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>availability.ts</code></td>
+          <td><span class="method get">GET</span></td>
+          <td><code>/api/availability</code></td>
+          <td>Returns available time slots (reads schedule, checks Square for existing bookings)</td>
+        </tr>
+        <tr>
+          <td><code>breeds.ts</code></td>
+          <td><span class="method get">GET</span></td>
+          <td><code>/api/breeds</code></td>
+          <td>Returns dog breed for each session date (reads schedule JSON)</td>
+        </tr>
+        <tr>
+          <td><code>booking.ts</code></td>
+          <td><span class="method post">POST</span></td>
+          <td><code>/api/booking</code></td>
+          <td>Creates a Square booking, charges the card, sends confirmation email</td>
+        </tr>
+        <tr>
+          <td><code>inquiry.ts</code></td>
+          <td><span class="method post">POST</span></td>
+          <td><code>/api/inquiry</code></td>
+          <td>Saves a lead inquiry, sends email via Resend, fires Zapier webhook</td>
+        </tr>
+        <tr>
+          <td><code>square-webhook.ts</code></td>
+          <td><span class="method post">POST</span></td>
+          <td><code>/api/square-webhook</code></td>
+          <td>Receives events FROM Square (payment completed, customer created)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout tip">
+      <strong>For your portfolio site</strong>
+      You might only need one serverless function — something like <code>api/contact.ts</code> that receives a contact form submission and sends you an email. Everything else (your bio, projects, etc.) can be pure static HTML. This is the perfect use case for Vercel's free tier.
+    </div>
+
+    <div class="nav-footer">
+      <a href="01-frontend.html" class="nav-btn">← Frontend</a>
+      <a href="03-dev-modes.html" class="nav-btn next">Next: Dev Modes — vite vs vercel dev →</a>
+    </div>
+
+  </main>
+</div>
+
+</body>
+</html>

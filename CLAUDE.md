@@ -239,8 +239,8 @@ corporateSuccess              → "Request received" confirmation (clock icon)
 - Time slot modal: clicking a date row sets `pendingSessionIso`, shows available times. Clicking a time sets `selectedTimeSlotId` and advances flow.
 
 ### Lead Capture Timing
-- **Yin (Regular Class):** `fetch('/api/inquiry', ...)` fires **fire-and-forget** (`.catch(() => {})`) the moment the contact form is submitted, before the waiver gate. Lead is captured even if the user abandons at the waiver or payment step.
-- **Gentle (Private Event) and Corporate:** `/api/inquiry` is the **primary, awaited action**. The contact form shows a loading state (`inquiryLoading`) and an error message (`inquiryError`) on failure. There is no separate payment step — inquiry submission IS the terminal action. On success the user advances to the "request received" screen.
+- **Yin (Regular Class):** `fetch('/api/inquiry', ...)` fires **fire-and-forget** (`.catch(() => {})`) the moment the contact form is submitted, before the waiver gate. This sends a Resend email to the studio (lead captured even if user abandons at waiver/payment). **Zapier is NOT fired** by this call — `booking.ts` fires the definitive Zapier webhook after payment succeeds.
+- **Gentle (Private Event) and Corporate:** `/api/inquiry` is the **primary, awaited action**. The contact form shows a loading state (`inquiryLoading`) and an error message (`inquiryError`) on failure. There is no separate payment step — inquiry submission IS the terminal action. On success the user advances to the "request received" screen. Zapier fires inside this call.
 
 ---
 
@@ -300,15 +300,21 @@ Reads `class-schedule.json` `breeds` field. Synchronous — no Square API calls.
 > Previously fetched all-day Square bookings and used customer given/family name as EN/FR breed names. Rewritten to read from `class-schedule.json`.
 
 ### `POST /api/booking`
-Body: `{ givenName, familyName, email, phone, serviceVariationId, serviceVariationVersion, teamMemberId, startAt, cardNonce, baseAmountCents, serviceName, groupSize? }`
+Body: `{ givenName, familyName, email, phone, serviceVariationId, serviceVariationVersion, teamMemberId, startAt, cardNonce, baseAmountCents, serviceName, needsMatRental? }`
+
+> `baseAmountCents` is sent for notification email display only — it is NOT used to determine the charge amount. The actual charge comes from the Square Order total (see step 4).
 
 Flow:
 1. `square.customers.search()` by email → create customer if not found
 2. Race-condition seat check: lists bookings for the slot, returns 409 if full
 3. `square.bookings.create()` — adds appointment to Square calendar
 4. **Try/catch wrapper** around steps 4–5:
-   - `square.orders.create()` with `referenceId: booking.id` (so Square shows booking as "paid")
-   - `square.payments.create()` — charges card nonce
+   - `square.orders.create()` — always created, with:
+     - Main line item: `catalogObjectId: serviceVariationId` (charges catalog price, not a custom amount)
+     - Optional mat rental line item: custom `basePriceMoney: 500n CAD` (no taxes — flat $5)
+     - Inline taxes: `{ name: 'TPS/GST', percentage: '5' }` + `{ name: 'TVQ/QST', percentage: '9.975' }` always applied to the service line item
+     - `referenceId: booking.id` so Square links the payment to the appointment
+   - `square.payments.create()` — charges `order.totalMoney.amount` (the Square-computed total)
    - Payment status validated: must be `COMPLETED` or `APPROVED`
    - **On any failure:** `square.bookings.cancel()` called immediately to prevent ghost appointments
 5. Fires `ZAPIER_REGULAR_URL` — single webhook: `{ firstName, lastName, fullName, email, phone, classType, attendeeCount: 1, startAt, bookingId, totalDollars, paymentStatus }`
@@ -392,10 +398,10 @@ All IDs read from `VITE_*` env vars. `baseAmountCents` is the pre-tax base; mat 
 ## Third-Party Integrations
 
 ### Zapier (lead capture)
-Three webhook endpoints defined in both `booking.ts` and `inquiry.ts`. All Zapier calls are fire-and-forget (`.catch(() => {})`). A Zapier failure never blocks the user flow.
+Two webhook URLs — one per booking type. All Zapier calls are fire-and-forget (`.catch(() => {})`). A Zapier failure never blocks the user flow.
 
-- **Yin:** frontend fires `/api/inquiry` fire-and-forget on contact submit (before waiver) as lead capture; Square booking flow proceeds independently.
-- **Gentle / Corporate:** `/api/inquiry` is awaited as the primary action; Zapier webhooks fire server-side inside that handler.
+- **Regular class (`booking.ts`):** `ZAPIER_REGULAR_URL` fires once after payment is confirmed with `{ firstName, lastName, fullName, email, phone, classType, attendeeCount: 1, startAt, bookingId, totalDollars, paymentStatus }`. The earlier fire-and-forget inquiry call (lead capture) does **not** fire Zapier.
+- **Private Event / Corporate (`inquiry.ts`):** `ZAPIER_INQUIRY_URL` fires when the inquiry is submitted with `{ firstName, lastName, fullName, email, phone, classType, attendeeCount, preferredDate, preferredTime }`.
 
 ### Google Ads Conversion Tracking
 In `index.html`: Google Tag Manager script loads `gtag` with account `AW-18168099243`.  
@@ -454,8 +460,8 @@ SQUARE_LOCATION_ID=                    # Square location ID
 SQUARE_WEBHOOK_SIGNATURE_KEY=          # For webhook HMAC verification
 SQUARE_MAX_SEATS=20                    # Capacity per slot
 SQUARE_CLASS_TIMES=10:30,12:00,13:30,15:00  # Montreal-local times (used by _config.ts)
-SQUARE_GST_TAX_ID=                     # Square catalog tax object ID for TPS/GST (5%)
-SQUARE_QST_TAX_ID=                     # Square catalog tax object ID for TVQ/QST (9.975%)
+# SQUARE_GST_TAX_ID / SQUARE_QST_TAX_ID — no longer used. Taxes are applied as inline
+# percentages (5% GST + 9.975% QST) directly in each order. No catalog tax IDs needed.
 
 # Email via Resend — server-only
 RESEND_API_KEY=
@@ -484,7 +490,7 @@ VITE_SQUARE_CORP_BASE_CENTS=4600
 
 `VITE_SQUARE_APP_ID` is read at module level in `App.tsx`. If empty, the payment step shows a configuration error instead of the card form.
 
-Tax IDs (`SQUARE_GST_TAX_ID` / `SQUARE_QST_TAX_ID`): if both are set, `booking.ts` creates a Square Order with line-item taxes so Square computes the authoritative total. If either is missing, only the base amount is charged (no tax line items on the Square order).
+Taxes are always applied as inline percentages in `booking.ts` — no catalog tax IDs are required. The charge amount always comes from `order.totalMoney.amount` (Square-computed, based on the catalog service price + inline taxes).
 
 ---
 
@@ -520,6 +526,5 @@ Before going live with real bookings:
 2. Fill all `VITE_SQUARE_*` variation IDs/versions from Square Dashboard → Items → Services
 3. Fill `VITE_SQUARE_TEAM_MEMBER_ID` from Square Dashboard → Team
 4. Fill `VITE_SQUARE_APP_ID` and `VITE_SQUARE_LOCATION_ID` (production values)
-5. Fill `SQUARE_GST_TAX_ID` and `SQUARE_QST_TAX_ID` from Square Dashboard → Taxes
-6. Register webhook URL `https://studio-yopaw.vercel.app/api/square-webhook` in Square Dashboard → Webhooks; copy signature key to `SQUARE_WEBHOOK_SIGNATURE_KEY`
-7. Verify `VITE_SQUARE_YIN_BASE_CENTS=4600` matches the price in Square Dashboard ($46.00)
+5. Register webhook URL `https://studio-yopaw.vercel.app/api/square-webhook` in Square Dashboard → Webhooks; copy signature key to `SQUARE_WEBHOOK_SIGNATURE_KEY`
+6. Verify the service variation price in Square Dashboard = $46.00 (catalog price is what actually gets charged — `VITE_SQUARE_YIN_BASE_CENTS` is display-only)
