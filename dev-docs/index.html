@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How Studio Yopaw Runs — Dev Docs</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.7; }
+
+    .topbar {
+      background: #1e2130;
+      border-bottom: 1px solid #2d3148;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .topbar .logo { font-weight: 700; color: #818cf8; font-size: 1rem; letter-spacing: 0.02em; }
+    .topbar nav { margin-left: auto; display: flex; gap: 0.25rem; }
+    .topbar nav a {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.85rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .topbar nav a:hover, .topbar nav a.active { background: #2d3148; color: #e2e8f0; }
+
+    .hero {
+      background: linear-gradient(135deg, #1a1d2e 0%, #0f1117 60%);
+      border-bottom: 1px solid #2d3148;
+      padding: 5rem 2rem 4rem;
+      text-align: center;
+    }
+    .hero h1 { font-size: 2.8rem; font-weight: 800; color: #f1f5f9; line-height: 1.2; margin-bottom: 1.25rem; }
+    .hero h1 span { color: #818cf8; }
+    .hero p { color: #94a3b8; font-size: 1.15rem; max-width: 680px; margin: 0 auto 0.75rem; }
+    .hero .tag {
+      display: inline-block;
+      background: #312e81;
+      color: #a5b4fc;
+      padding: 0.25rem 0.75rem;
+      border-radius: 99px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-top: 1rem;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 3.5rem 2rem; }
+
+    .section-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #818cf8;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; }
+    .card {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 1.75rem;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .card:hover { border-color: #818cf8; background: #1e2138; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(129,140,248,0.1); }
+    .card .icon { font-size: 2rem; }
+    .card h3 { font-size: 1.1rem; font-weight: 700; color: #f1f5f9; }
+    .card p { font-size: 0.9rem; color: #94a3b8; line-height: 1.6; }
+    .card .badge {
+      margin-top: auto;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #818cf8;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .flow-section { margin-top: 3.5rem; }
+    .flow-steps { display: flex; flex-direction: column; gap: 0; }
+    .flow-step {
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-start;
+      position: relative;
+    }
+    .flow-step:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      left: 23px;
+      top: 52px;
+      bottom: -8px;
+      width: 2px;
+      background: #2d3148;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: #2d3148;
+      border: 2px solid #4338ca;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #818cf8;
+      font-size: 1rem;
+    }
+    .step-body { padding: 0.6rem 0 2rem; }
+    .step-body h4 { font-size: 1rem; font-weight: 700; color: #f1f5f9; margin-bottom: 0.4rem; }
+    .step-body p { font-size: 0.9rem; color: #94a3b8; }
+
+    .callout {
+      background: #1a1f35;
+      border: 1px solid #312e81;
+      border-left: 4px solid #818cf8;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-top: 3rem;
+    }
+    .callout h4 { color: #a5b4fc; font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .callout p { color: #94a3b8; font-size: 0.9rem; }
+    .callout a { color: #818cf8; text-decoration: none; border-bottom: 1px solid #4338ca; }
+
+    footer { border-top: 1px solid #2d3148; padding: 1.5rem 2rem; text-align: center; color: #475569; font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">Studio Yopaw — Dev Docs</span>
+  <nav>
+    <a href="index.html" class="active">Home</a>
+    <a href="01-frontend.html">Frontend</a>
+    <a href="02-backend.html">Backend</a>
+    <a href="03-dev-modes.html">Dev Modes</a>
+    <a href="04-this-project.html">This Project</a>
+    <a href="05-resources.html">Resources</a>
+  </nav>
+</div>
+
+<section class="hero">
+  <h1>How does this project <span>actually run?</span></h1>
+  <p>A plain-English guide for Python developers learning how modern JavaScript web apps are built, served, and deployed on Vercel — no prior knowledge of Node.js or Next.js required.</p>
+  <span class="tag">You are a Python dev — everything will be compared to Python concepts</span>
+</section>
+
+<div class="container">
+
+  <div class="section-title">Pages in this guide</div>
+  <div class="card-grid">
+    <a href="01-frontend.html" class="card">
+      <span class="icon">🖥️</span>
+      <h3>1. The Frontend — What runs in the browser</h3>
+      <p>What Vite is, what React does, how TypeScript compiles, and what "the build" actually means. Compared to serving a static Python site.</p>
+      <span class="badge">→ Start here</span>
+    </a>
+    <a href="02-backend.html" class="card">
+      <span class="icon">⚡</span>
+      <h3>2. The Backend — Vercel Serverless Functions</h3>
+      <p>How <code>api/booking.ts</code> becomes an HTTP endpoint. What "serverless" means, how it differs from a Flask app, and why each file is its own mini-server.</p>
+      <span class="badge">→ The interesting part</span>
+    </a>
+    <a href="03-dev-modes.html" class="card">
+      <span class="icon">🔧</span>
+      <h3>3. Dev Modes — vite vs vercel dev vs production</h3>
+      <p>The three different ways this app runs and what each one does. When to use which, and why they exist as separate tools.</p>
+      <span class="badge">→ Core of your question</span>
+    </a>
+    <a href="04-this-project.html" class="card">
+      <span class="icon">🧠</span>
+      <h3>4. The Clever Trick in This Project</h3>
+      <p>How <code>devApiPlugin()</code> in <code>vite.config.ts</code> fakes two API endpoints so you never need <code>vercel dev</code> for most development work.</p>
+      <span class="badge">→ Studio Yopaw specific</span>
+    </a>
+    <a href="05-resources.html" class="card">
+      <span class="icon">📚</span>
+      <h3>5. Resources to go deeper</h3>
+      <p>Exactly what to read and watch to fully understand every concept in this project — ordered by what to learn first.</p>
+      <span class="badge">→ Study plan</span>
+    </a>
+  </div>
+
+  <div class="flow-section">
+    <div class="section-title">The big picture in 4 steps</div>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>You write code in TypeScript and React (frontend) + TypeScript (backend)</h4>
+          <p>TypeScript is JavaScript with types — like Python with type hints but enforced at compile time. React is a JavaScript library for building UIs. Your API files in <code>api/</code> look like Python Flask handlers but written in TypeScript.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>Vite compiles and bundles the frontend</h4>
+          <p>Vite turns your React+TypeScript code into plain HTML+CSS+JS that any browser can read. This is like compiling a C program — the output is simpler than the source. The output goes into a <code>dist/</code> folder.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Vercel deploys two things at once</h4>
+          <p>It serves the <code>dist/</code> folder as static files (like Nginx serving HTML), AND it takes every file in <code>api/*.ts</code> and turns each one into a separate serverless function — an HTTP endpoint that runs on demand.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>Users hit one domain, Vercel routes everything</h4>
+          <p><code>www.yopaw.ca/</code> serves the React app. <code>www.yopaw.ca/api/booking</code> runs your <code>api/booking.ts</code> function. Same domain, completely different systems underneath.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <h4>Why is this interesting for your portfolio site?</h4>
+    <p>Vercel lets you build a static frontend (just HTML/CSS/JS — no server required) AND serverless backend functions, all from one repo, all on the same free tier. For a portfolio site you probably only need the static side — but knowing how the API layer works means you can add a contact form, analytics endpoint, or any dynamic feature later without spinning up a separate server. <a href="05-resources.html">See resources →</a></p>
+  </div>
+
+</div>
+
+<footer>Made for understanding Studio Yopaw's architecture. Not a public doc.</footer>
+
+</body>
+</html>

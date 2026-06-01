@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resources — Dev Docs</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.7; }
+
+    .topbar { background: #1e2130; border-bottom: 1px solid #2d3148; padding: 0 2rem; display: flex; align-items: center; gap: 1rem; height: 56px; position: sticky; top: 0; z-index: 100; }
+    .topbar .logo { font-weight: 700; color: #818cf8; font-size: 1rem; }
+    .topbar nav { margin-left: auto; display: flex; gap: 0.25rem; }
+    .topbar nav a { color: #94a3b8; text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.75rem; border-radius: 6px; transition: all 0.15s; }
+    .topbar nav a:hover, .topbar nav a.active { background: #2d3148; color: #e2e8f0; }
+
+    .page-hero { background: linear-gradient(135deg, #1a1d2e 0%, #0f1117 60%); border-bottom: 1px solid #2d3148; padding: 3.5rem 2rem 3rem; }
+    .page-hero .breadcrumb { color: #475569; font-size: 0.82rem; margin-bottom: 1rem; }
+    .page-hero .breadcrumb a { color: #818cf8; text-decoration: none; }
+    .page-hero h1 { font-size: 2.2rem; font-weight: 800; color: #f1f5f9; line-height: 1.2; max-width: 700px; }
+    .page-hero p { color: #94a3b8; max-width: 680px; margin-top: 0.75rem; font-size: 1rem; }
+
+    .layout { display: flex; max-width: 1100px; margin: 0 auto; gap: 2.5rem; padding: 3rem 2rem; }
+    .toc { width: 220px; flex-shrink: 0; position: sticky; top: 76px; height: fit-content; }
+    .toc .toc-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; color: #475569; text-transform: uppercase; margin-bottom: 0.75rem; }
+    .toc a { display: block; color: #94a3b8; text-decoration: none; font-size: 0.85rem; padding: 0.3rem 0; border-left: 2px solid transparent; padding-left: 0.75rem; transition: all 0.15s; }
+    .toc a:hover { color: #e2e8f0; border-left-color: #818cf8; }
+    .content { flex: 1; min-width: 0; }
+
+    h2 { font-size: 1.5rem; font-weight: 800; color: #f1f5f9; margin: 2.5rem 0 1rem; padding-top: 0.5rem; border-top: 1px solid #1e2130; }
+    h2:first-child { border-top: none; margin-top: 0; }
+    h3 { font-size: 1.1rem; font-weight: 700; color: #e2e8f0; margin: 1.75rem 0 0.75rem; }
+    p { color: #94a3b8; margin-bottom: 1rem; font-size: 0.95rem; }
+    strong { color: #e2e8f0; }
+    a { color: #818cf8; text-decoration: none; border-bottom: 1px solid #312e81; }
+    a:hover { border-bottom-color: #818cf8; }
+
+    .callout { border-radius: 8px; padding: 1.1rem 1.4rem; margin: 1.25rem 0; font-size: 0.9rem; }
+    .callout.info { background: #1a1f35; border: 1px solid #312e81; border-left: 4px solid #818cf8; }
+    .callout.tip { background: #14211a; border: 1px solid #166534; border-left: 4px solid #22c55e; }
+    .callout strong { display: block; margin-bottom: 0.4rem; }
+    .callout.info strong { color: #a5b4fc; }
+    .callout.tip strong { color: #86efac; }
+    .callout p { margin: 0; }
+
+    .phase-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.75rem;
+      border-radius: 99px;
+      display: inline-block;
+      margin-bottom: 1rem;
+    }
+    .phase-1 { background: #14211a; color: #86efac; }
+    .phase-2 { background: #1a1f35; color: #818cf8; }
+    .phase-3 { background: #231a10; color: #fcd34d; }
+    .phase-4 { background: #2d1515; color: #f87171; }
+
+    .resource-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; }
+    .resource-item {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 1.1rem 1.25rem;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      transition: border-color 0.15s;
+    }
+    .resource-item:hover { border-color: #4338ca; }
+    .resource-item .icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 0.1rem; }
+    .resource-item .body { flex: 1; }
+    .resource-item .title { font-weight: 700; color: #f1f5f9; font-size: 0.95rem; margin-bottom: 0.2rem; }
+    .resource-item a.title { color: #818cf8; border-bottom: 1px solid #312e81; }
+    .resource-item a.title:hover { border-bottom-color: #818cf8; }
+    .resource-item .desc { font-size: 0.85rem; color: #94a3b8; }
+    .resource-item .tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin-right: 0.4rem;
+    }
+    .tag-free { background: #14211a; color: #86efac; }
+    .tag-video { background: #1a1d35; color: #818cf8; }
+    .tag-docs { background: #231a10; color: #fcd34d; }
+    .tag-interactive { background: #2d1515; color: #f87171; }
+    .tag-article { background: #1e1a2e; color: #c4b5fd; }
+
+    .glossary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 1.25rem 0; }
+    .glossary-item {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+    }
+    .glossary-item .term { font-weight: 700; color: #818cf8; font-size: 0.9rem; margin-bottom: 0.35rem; font-family: monospace; }
+    .glossary-item .def { font-size: 0.85rem; color: #94a3b8; }
+
+    .path-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin: 1.25rem 0; }
+    .path-card {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 10px;
+      padding: 1.5rem;
+    }
+    .path-card .path-title { font-weight: 700; color: #f1f5f9; margin-bottom: 0.5rem; }
+    .path-card ol { color: #94a3b8; padding-left: 1.25rem; }
+    .path-card ol li { font-size: 0.85rem; margin-bottom: 0.35rem; }
+
+    .nav-footer { display: flex; justify-content: space-between; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #2d3148; }
+    .nav-btn { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 0.75rem 1.25rem; color: #94a3b8; text-decoration: none; border-bottom: none; font-size: 0.9rem; transition: all 0.15s; }
+    .nav-btn:hover { border-color: #818cf8; color: #e2e8f0; }
+    .nav-btn.next { color: #818cf8; border-color: #312e81; }
+    .nav-btn.next:hover { background: #1a1f35; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">Studio Yopaw — Dev Docs</span>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="01-frontend.html">Frontend</a>
+    <a href="02-backend.html">Backend</a>
+    <a href="03-dev-modes.html">Dev Modes</a>
+    <a href="04-this-project.html">This Project</a>
+    <a href="05-resources.html" class="active">Resources</a>
+  </nav>
+</div>
+
+<div class="page-hero">
+  <div class="breadcrumb"><a href="index.html">Home</a> / Page 5</div>
+  <h1>Resources to go deeper</h1>
+  <p>Everything you need to fully understand and independently replicate this architecture — ordered from "start here" to "advanced". Tailored for a Python developer.</p>
+</div>
+
+<div class="layout">
+  <aside class="toc">
+    <div class="toc-title">On this page</div>
+    <a href="#phase-1">Phase 1: JavaScript basics</a>
+    <a href="#phase-2">Phase 2: The toolchain</a>
+    <a href="#phase-3">Phase 3: Vercel + serverless</a>
+    <a href="#phase-4">Phase 4: Advanced (this project)</a>
+    <a href="#portfolio-path">Portfolio site path</a>
+    <a href="#glossary">Quick glossary</a>
+  </aside>
+
+  <main class="content">
+
+    <div class="callout info">
+      <strong>How to use this list</strong>
+      Don't try to learn everything at once. Follow the phases in order. For your portfolio site, Phases 1 and 3 are the most directly relevant. Phase 2 will deepen your understanding. Phase 4 is only needed if you want to build something as complex as Studio Yopaw.
+    </div>
+
+    <h2 id="phase-1">Phase 1 — JavaScript / TypeScript for Python developers</h2>
+    <span class="phase-label phase-1">Start here</span>
+
+    <div class="resource-list">
+      <div class="resource-item">
+        <span class="icon">📄</span>
+        <div class="body">
+          <div class="title">JavaScript for Python developers (MDN)</div>
+          <div class="desc">
+            <span class="tag tag-free">Free</span>
+            <span class="tag tag-article">Article</span>
+            MDN (Mozilla Developer Network) is the gold-standard reference for everything web. Read "JavaScript — Dynamic client-side scripting" — it's the most accurate reference that exists, written like Python docs. Search "MDN JavaScript guide" and start with the basics section.
+          </div>
+        </div>
+      </div>
+      <div class="resource-item">
+        <span class="icon">🎥</span>
+        <div class="body">
+          <div class="title">TypeScript for Python Developers — Fireship (YouTube)</div>
+          <div class="desc">
+            <span class="tag tag-free">Free</span>
+            <span class="tag tag-video">Video</span>
+            Search "Fireship TypeScript in 100 seconds" on YouTube. Fireship makes extremely dense, accurate 100-second explainers. Then watch "TypeScript for JavaScript Developers" for the full version (~10 min). Fireship's style is perfect — no fluff, technically sharp.
+          </div>
+        </div>
+      </div>
+      <div class="resource-item">
+        <span class="icon">📄</span>
+        <div class="body">
+          <div class="title">TypeScript official handbook — "TypeScript for Java/OOP programmers"</div>
+          <div class="desc">
+            <span class="tag tag-free">Free</span>
+            <span class="tag tag-docs">Docs</span>
+            The TypeScript docs have a specific page called "TypeScript for Java/OOP Programmers" — this applies equally well to Python devs. Search "typescriptlang.org for java programmers". It directly addresses the conceptual differences that trip up people from statically-typed or scripting backgrounds.
+          </div>
+        </div>
+      </div>
+      <div class="resource-item">
+        <span class="icon">🎮</span>
+        <div class="body">
+          <div class="title">JavaScript30 by Wes Bos</div>
+          <div class="desc">
+            <span class="tag tag-free">Free</span>
+            <span class="tag tag-interactive">Interactive</span>
+            30 small projects in 30 days, in plain JavaScript (no frameworks). Visit javascript30.com. This is the fastest way to get fluent with JavaScript by doing real things rather than reading theory. You'll learn DOM manipulation, events, fetch, async/await — all the concepts this project uses.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="phase-2">Phase 2 — The JavaScript toolchain (Vite, npm, React)</h2>
+    <span class="phase-label phase-2">Learn the tools</span>
+
+    <div class="resource-list">
+      <div class="resource-item">
+        <span class="icon">📄</span>
+        <div class="body">
+          <div class="title">Vite official documentation — "Why Vite"</div>
+          <div class="desc">
+            <span class="tag tag-free">Free</span>
+            <span class="tag tag-docs">Docs</span>
+            Go to vitejs.dev and read the "Why Vite" page and "Getting Started". The docs are excellent and short. Pay special attention to the "Features" section which explains ES modules, HMR (Hot Module Replacement), and why Vite is much faster than older tools like Webpack. This is exactly what powers this project.
+          </div>
+        </div>
+      </div>
+      <div class="resource-item">
+        <span class="icon">🎥</span>
+        <div class="body">
+          <div class="title">React in 100 seconds — Fireship (YouTube)</div>
+          <div class="desc">
+            <span class="tag tag-free">Free</span>
+            <span class="tag tag-video">Video</span>
+            Search "Fireship React in 100 seconds" on YouTube. Then watch "React Hook Tutorial" (~10 min) to understand <code>useState</code> and <code>useEffect</code> — the two hooks used throughout this project. Understanding hooks is essential before reading any of the <code>src/</code> code in Studio Yopaw.
+          </div>
+        </div>
+      </div>
+      <div class="resource-item">
+        <span class="icon">📄</span>
+        <div class="body">
+          <div class="title">React official documentation — react.dev</div>
+          <div class="desc">
+            <span class="tag tag-free">Free</span>
+            <span class="tag tag-interactive">Interactive</span>
+            The new React docs (react.dev) are outstanding — they have interactive examples and are written for people who know programming but not React. Work through the "Learn" section: "Describing the UI", "Adding Interactivity", "Managing State". Stop there for now — that covers everything used in this project.
+          </div>
+        </div>
+      </div>
+      <div class="resource-item">
+        <span class="icon">📄</span>
+        <div class="body">
+          <div class="title">Tailwind CSS documentation — tailwindcss.com</div>
+          <div class="desc">
+            <span class="tag tag-free">Free</span>
+            <span class="tag tag-docs">Docs</span>
+            Tailwind is the CSS framework used for styling. You don't need to learn it deeply for the architecture docs, but understanding that <code>className="flex items-center gap-4 text-gray-500"</code> is Tailwind utility classes (not custom CSS) will help you read the component code. The "Core Concepts" section takes 30 minutes.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="phase-3">Phase 3 — Vercel and serverless</h2>
+    <span class="phase-label phase-3">The deployment layer</span>
+
+    <div class="resource-list">
+      <div class="resource-item">
+        <span class="icon">📄</span>
+        <div class="body">
+          <div class="title">Vercel documentation — "Serverless Functions"</div>
+          <div class="desc">
+            <span class="tag tag-free">Free</span>
+            <span class="tag tag-docs">Docs</span>
+            Go to vercel.com/docs and find "Functions" → "Serverless Functions". Read the overview, the Node.js runtime section, and the "API Routes" section. This will show you exactly how <code>api/booking.ts</code> in this project gets turned into a real HTTP endpoint. Also read "Environment Variables" — critical for understanding secrets management.
+          </div>
+        </div>
+      </div>
+      <div class="resource-item">
+        <span class="icon">🎥</span>
+        <div class="body">
+          <div class="title">Vercel in 100 seconds — Fireship (YouTube)</div>
+          <div class="desc">
+            <span class="tag tag-free">Free</span>
+            <span class="tag tag-video">Video</span>
+            Search "Fireship Vercel in 100 seconds" on YouTube. Perfect 100-second overview of what Vercel does and why people use it. Great starting point before reading the docs.
+          </div>
+        </div>
+      </div>
+      <div class="resource-item">
+        <span class="icon">📄</span>
+        <div class="body">
+          <div class="title">Vercel documentation — "Deploy a static site"</div>
+          <div class="desc">
+            <span class="tag tag-free">Free</span>
+            <span class="tag tag-docs">Docs</span>
+            Directly relevant for your portfolio. Search "Vercel deploy static site" or go to vercel.com/docs/frameworks/vite for the Vite-specific guide. You'll see how simple deployment actually is — push to GitHub, connect the repo, done. The CDN, HTTPS, and custom domain all come for free.
+          </div>
+        </div>
+      </div>
+      <div class="resource-item">
+        <span class="icon">📄</span>
+        <div class="body">
+          <div class="title">Serverless Functions vs Traditional Servers (blog post)</div>
+          <div class="desc">
+            <span class="tag tag-free">Free</span>
+            <span class="tag tag-article">Article</span>
+            Search "serverless vs traditional server comparison" on the Vercel blog (vercel.com/blog) or Cloudflare's blog. The Cloudflare blog (blog.cloudflare.com) in particular has excellent deep-dives on serverless architecture written for a technical audience. Search "what is serverless computing cloudflare".
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="phase-4">Phase 4 — Advanced (understanding this specific project)</h2>
+    <span class="phase-label phase-4">Deep dive</span>
+
+    <div class="resource-list">
+      <div class="resource-item">
+        <span class="icon">📄</span>
+        <div class="body">
+          <div class="title">Vite — "Plugin API" documentation</div>
+          <div class="desc">
+            <span class="tag tag-free">Free</span>
+            <span class="tag tag-docs">Docs</span>
+            Go to vitejs.dev/guide/api-plugin.html. This explains how <code>devApiPlugin()</code> works at a deep level — the <code>configureServer</code> hook, the Connect middleware interface, and how Vite's plugin system is designed. You'll need the basics of JavaScript first (Phase 1) before this will make sense.
+          </div>
+        </div>
+      </div>
+      <div class="resource-item">
+        <span class="icon">📄</span>
+        <div class="body">
+          <div class="title">Node.js — "HTTP module" documentation</div>
+          <div class="desc">
+            <span class="tag tag-free">Free</span>
+            <span class="tag tag-docs">Docs</span>
+            Node.js is the JavaScript runtime that runs your <code>api/*.ts</code> functions. Search "Node.js HTTP docs" at nodejs.org/docs. The <code>req</code> and <code>res</code> objects in Vite's middleware and in the Vercel functions are Node.js <code>IncomingMessage</code> and <code>ServerResponse</code> objects — understanding these unlocks the server code completely.
+          </div>
+        </div>
+      </div>
+      <div class="resource-item">
+        <span class="icon">📄</span>
+        <div class="body">
+          <div class="title">Connect — middleware library (Node.js)</div>
+          <div class="desc">
+            <span class="tag tag-free">Free</span>
+            <span class="tag tag-docs">Docs</span>
+            Search "connect npm middleware" on GitHub (github.com/senchalabs/connect). Connect is the minimal middleware framework Vite's dev server is built on. Reading its README (10 minutes) will make <code>server.middlewares.use()</code> completely clear. Express.js is built on top of Connect too — learning one teaches both.
+          </div>
+        </div>
+      </div>
+      <div class="resource-item">
+        <span class="icon">📄</span>
+        <div class="body">
+          <div class="title">React Custom Hooks — "Building Your Own Hooks" (react.dev)</div>
+          <div class="desc">
+            <span class="tag tag-free">Free</span>
+            <span class="tag tag-docs">Docs</span>
+            This project uses three custom hooks: <code>useSquareAvailability</code>, <code>useBreedSchedule</code>, <code>useSquareCard</code>. Understanding how custom hooks work will let you read these files clearly. Search "react.dev building your own hooks" — it's a page in the official docs with interactive examples.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="portfolio-path">Your portfolio site — recommended learning path</h2>
+    <p>If your goal is to build and deploy a portfolio site on Vercel, here is the most direct path — skipping what you don't need for now:</p>
+
+    <div class="path-grid">
+      <div class="path-card">
+        <div class="path-title">Week 1 — Foundations</div>
+        <ol>
+          <li>JavaScript30 Day 1–5 (javascript30.com)</li>
+          <li>Fireship: "HTML & CSS in 100 seconds"</li>
+          <li>MDN: CSS Flexbox guide</li>
+          <li>MDN: CSS Grid guide</li>
+        </ol>
+      </div>
+      <div class="path-card">
+        <div class="path-title">Week 2 — Build the site</div>
+        <ol>
+          <li>Write your portfolio in plain HTML/CSS</li>
+          <li>Fireship: "Vercel in 100 seconds"</li>
+          <li>Vercel: deploy static site docs</li>
+          <li>Deploy it — get a live URL</li>
+        </ol>
+      </div>
+      <div class="path-card">
+        <div class="path-title">Week 3 — Add React (optional)</div>
+        <ol>
+          <li>Fireship: "React in 100 seconds"</li>
+          <li>react.dev: "Describing the UI"</li>
+          <li>Vite: "Getting Started" guide</li>
+          <li>Convert one section to React</li>
+        </ol>
+      </div>
+      <div class="path-card">
+        <div class="path-title">Week 4 — Add a contact form</div>
+        <ol>
+          <li>Vercel: "Serverless Functions" docs</li>
+          <li>Resend.com: "Getting Started" (email API)</li>
+          <li>Write <code>api/contact.ts</code></li>
+          <li>Add the contact form to your site</li>
+        </ol>
+      </div>
+    </div>
+
+    <h2 id="glossary">Quick glossary — every term used in these docs</h2>
+    <p>All technical terms used across these 5 pages, in one place:</p>
+
+    <div class="glossary-grid">
+      <div class="glossary-item">
+        <div class="term">SPA (Single-Page Application)</div>
+        <div class="def">A website where all navigation happens in the browser via JavaScript — no new HTML file is fetched for each "page". React apps are typically SPAs.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="term">Vite</div>
+        <div class="def">A build tool and dev server for JavaScript projects. Compiles TypeScript and React on the fly. Much faster than older tools like Webpack.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="term">TypeScript</div>
+        <div class="def">JavaScript with optional static types. Like Python with type hints, but the types are checked at compile time and prevent the code from running if there are errors.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="term">JSX / TSX</div>
+        <div class="def">A syntax extension for JavaScript/TypeScript that lets you write HTML-like code inside JavaScript functions. <code>.tsx</code> is TypeScript + JSX. Compiled to plain JavaScript by Vite.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="term">Serverless function</div>
+        <div class="def">A function that runs on a server only when called, then shuts down. You pay only for execution time. No persistent process — opposite of a traditional always-running server.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="term">Lambda</div>
+        <div class="def">Amazon's name for serverless functions (AWS Lambda). Vercel Functions are built on top of AWS Lambda under the hood. The terms are often used interchangeably in the industry.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="term">CDN (Content Delivery Network)</div>
+        <div class="def">A network of servers distributed worldwide that cache and serve your static files. Vercel deploys your <code>dist/</code> folder to a CDN so users get files from a nearby server.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="term">HMR (Hot Module Replacement)</div>
+        <div class="def">Vite's feature that updates your browser instantly when you save a file — without a full page reload and without losing the current UI state.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="term">Middleware</div>
+        <div class="def">A function that runs between an incoming HTTP request and the final handler. Can modify the request, respond directly, or pass it along. Used extensively in Node.js web frameworks.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="term">Node.js</div>
+        <div class="def">A JavaScript runtime that runs JavaScript on the server (not in a browser). Like CPython for Python — it's the engine that executes your <code>api/*.ts</code> functions on Vercel.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="term">npm</div>
+        <div class="def">Node Package Manager. The Python equivalent of pip. <code>npm install</code> installs packages from a registry. <code>package.json</code> is the equivalent of <code>requirements.txt</code>.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="term">Cold start</div>
+        <div class="def">The extra latency (200ms–1s) when a serverless function is called for the first time after being idle. The platform needs to create a new container. Subsequent calls are faster ("warm").</div>
+      </div>
+      <div class="glossary-item">
+        <div class="term">Env var (environment variable)</div>
+        <div class="def">A key-value pair set outside your code (in the OS or deployment platform) to store secrets like API keys. In Python: <code>os.environ.get('KEY')</code>. In Node.js: <code>process.env.KEY</code>.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="term">Cache busting</div>
+        <div class="def">Adding a hash (fingerprint) to a filename — e.g., <code>index-a3f2b1.js</code>. If the file changes, the hash changes, so browsers download the new version instead of using their cached copy.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="term">Vite plugin</div>
+        <div class="def">An object with specific properties that Vite calls at different points in its lifecycle. The <code>devApiPlugin()</code> in this project is a Vite plugin that adds custom middleware to the dev server.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="term">Webhook</div>
+        <div class="def">A reverse API call. Instead of your code calling Square's API to ask "did anything happen?", Square calls YOUR endpoint (<code>/api/square-webhook</code>) to tell you when an event occurs.</div>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <strong>Final advice</strong>
+      The best way to learn all of this is to build something. Take the concepts from these docs and deploy a simple portfolio site on Vercel this week. You'll hit real problems, Google the errors, and that's how it sticks. The resources above will fill in the gaps as you encounter them — not all at once before you start.
+    </div>
+
+    <div class="nav-footer">
+      <a href="04-this-project.html" class="nav-btn">← This Project</a>
+      <a href="index.html" class="nav-btn next">← Back to Home</a>
+    </div>
+
+  </main>
+</div>
+
+</body>
+</html>
