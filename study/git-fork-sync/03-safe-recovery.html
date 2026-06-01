@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Safe Recovery — Sync a Fork Safely (Git)</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="header">
+        <h1>Safe Recovery</h1>
+        <div class="sub">How we safely got back to a clean state</div>
+      </div>
+
+      <nav class="nav" aria-label="Site">
+        <ul>
+          <li><a href="./index.html">Home</a></li>
+          <li><a href="./01-forks-remotes.html">Forks &amp; Remotes</a></li>
+          <li><a href="./02-spotting-problems.html">Spotting Problems</a></li>
+          <li><a href="./03-safe-recovery.html" aria-current="page">Safe Recovery</a></li>
+          <li><a href="./04-sync-workflow.html">Sync Workflow</a></li>
+          <li><a href="./05-checklist.html">Checklist</a></li>
+          <li><a href="./glossary.html">Glossary</a></li>
+        </ul>
+      </nav>
+
+      <section class="card">
+        <h2>Step A — Backup before destructive commands</h2>
+        <p>
+          Commands like <code>git reset --hard</code> can permanently discard uncommitted changes.
+          Even if you want to discard changes, a quick backup is often worth it (in case you change your mind).
+        </p>
+        <div class="callout">
+          <strong>Two common backup options</strong>
+          <ul>
+            <li><strong>Backup branch</strong>: keeps your commits reachable (good for committed work)</li>
+            <li><strong>File copy backup</strong>: saves working files to a folder (good for uncommitted work)</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Step B — Abort an in-progress merge</h2>
+        <p>
+          If you’re mid-merge with conflicts and you want to “start over”, use:
+        </p>
+        <pre><code>git merge --abort</code></pre>
+        <p>
+          This returns your working tree to the state it had before the merge started.
+        </p>
+        <div class="callout warn">
+          <strong>When <code>git merge --abort</code> is the right move</strong>
+          <ul>
+            <li>You started a merge accidentally</li>
+            <li>You want to discard the merge attempt and re-sync cleanly</li>
+            <li>You prefer to redo the merge later with a clearer plan</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Step C — Align local branch to the fork branch</h2>
+        <p>
+          To “discard what I did locally” and match your fork exactly, you can hard-reset:
+        </p>
+        <pre><code>git fetch origin
+git reset --hard origin/main</code></pre>
+        <div class="callout bad">
+          <strong>Danger (but sometimes intended)</strong>
+          <p>
+            <code>git reset --hard</code> changes where your branch points and overwrites the working directory and index.
+            Translation: your local uncommitted changes are gone.
+          </p>
+        </div>
+        <p>
+          In our session, we briefly created a backup branch first (so your local-only commit wasn’t lost),
+          and later deleted it because you asked to discard changes.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>A quick PowerShell note</h2>
+        <p>
+          In PowerShell, <code>||</code> isn’t a statement separator in many versions. Prefer:
+        </p>
+        <pre><code>some-command
+if ($LASTEXITCODE -ne 0) { "handle failure" }</code></pre>
+        <p class="muted">
+          That’s why we avoided Unix-style <code>cmd || fallback</code>.
+        </p>
+      </section>
+
+      <div class="footer">
+        Next: <a href="./04-sync-workflow.html">Sync Workflow</a>
+      </div>
+    </div>
+  </body>
+</html>
+
