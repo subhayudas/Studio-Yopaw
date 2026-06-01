@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Clever Trick in This Project — Dev Docs</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.7; }
+
+    .topbar { background: #1e2130; border-bottom: 1px solid #2d3148; padding: 0 2rem; display: flex; align-items: center; gap: 1rem; height: 56px; position: sticky; top: 0; z-index: 100; }
+    .topbar .logo { font-weight: 700; color: #818cf8; font-size: 1rem; }
+    .topbar nav { margin-left: auto; display: flex; gap: 0.25rem; }
+    .topbar nav a { color: #94a3b8; text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.75rem; border-radius: 6px; transition: all 0.15s; }
+    .topbar nav a:hover, .topbar nav a.active { background: #2d3148; color: #e2e8f0; }
+
+    .page-hero { background: linear-gradient(135deg, #1a1d2e 0%, #0f1117 60%); border-bottom: 1px solid #2d3148; padding: 3.5rem 2rem 3rem; }
+    .page-hero .breadcrumb { color: #475569; font-size: 0.82rem; margin-bottom: 1rem; }
+    .page-hero .breadcrumb a { color: #818cf8; text-decoration: none; }
+    .page-hero h1 { font-size: 2.2rem; font-weight: 800; color: #f1f5f9; line-height: 1.2; max-width: 700px; }
+    .page-hero p { color: #94a3b8; max-width: 680px; margin-top: 0.75rem; font-size: 1rem; }
+
+    .layout { display: flex; max-width: 1100px; margin: 0 auto; gap: 2.5rem; padding: 3rem 2rem; }
+    .toc { width: 220px; flex-shrink: 0; position: sticky; top: 76px; height: fit-content; }
+    .toc .toc-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; color: #475569; text-transform: uppercase; margin-bottom: 0.75rem; }
+    .toc a { display: block; color: #94a3b8; text-decoration: none; font-size: 0.85rem; padding: 0.3rem 0; border-left: 2px solid transparent; padding-left: 0.75rem; transition: all 0.15s; }
+    .toc a:hover { color: #e2e8f0; border-left-color: #818cf8; }
+    .content { flex: 1; min-width: 0; }
+
+    h2 { font-size: 1.5rem; font-weight: 800; color: #f1f5f9; margin: 2.5rem 0 1rem; padding-top: 0.5rem; border-top: 1px solid #1e2130; }
+    h2:first-child { border-top: none; margin-top: 0; }
+    h3 { font-size: 1.1rem; font-weight: 700; color: #e2e8f0; margin: 1.75rem 0 0.75rem; }
+    p { color: #94a3b8; margin-bottom: 1rem; font-size: 0.95rem; }
+    strong { color: #e2e8f0; }
+    a { color: #818cf8; text-decoration: none; border-bottom: 1px solid #312e81; }
+    a:hover { border-bottom-color: #818cf8; }
+    ul { color: #94a3b8; padding-left: 1.5rem; margin-bottom: 1rem; }
+    ul li { margin-bottom: 0.4rem; font-size: 0.95rem; }
+
+    code { background: #1e2130; border: 1px solid #2d3148; border-radius: 4px; padding: 0.15em 0.45em; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.85em; color: #a5b4fc; }
+    pre { background: #161923; border: 1px solid #2d3148; border-radius: 8px; padding: 1.25rem 1.5rem; overflow-x: auto; margin: 1rem 0 1.5rem; }
+    pre code { background: none; border: none; padding: 0; font-size: 0.88rem; color: #e2e8f0; line-height: 1.7; }
+    .comment { color: #475569; }
+    .keyword { color: #818cf8; }
+    .string { color: #86efac; }
+    .fn { color: #fbbf24; }
+    .type { color: #67e8f9; }
+    .num { color: #fb923c; }
+
+    .callout { border-radius: 8px; padding: 1.1rem 1.4rem; margin: 1.25rem 0; font-size: 0.9rem; }
+    .callout.info { background: #1a1f35; border: 1px solid #312e81; border-left: 4px solid #818cf8; }
+    .callout.tip { background: #14211a; border: 1px solid #166534; border-left: 4px solid #22c55e; }
+    .callout.warn { background: #231a10; border: 1px solid #92400e; border-left: 4px solid #f59e0b; }
+    .callout strong { display: block; margin-bottom: 0.4rem; }
+    .callout.info strong { color: #a5b4fc; }
+    .callout.tip strong { color: #86efac; }
+    .callout.warn strong { color: #fcd34d; }
+
+    .annotated {
+      position: relative;
+      background: #161923;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      margin: 1.25rem 0;
+      overflow: hidden;
+    }
+    .annotated-header {
+      background: #1e2130;
+      border-bottom: 1px solid #2d3148;
+      padding: 0.6rem 1.25rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #818cf8;
+      text-transform: uppercase;
+    }
+    .annotated pre {
+      border: none;
+      border-radius: 0;
+      margin: 0;
+      padding: 1.25rem 1.5rem;
+      background: transparent;
+    }
+    .ann {
+      display: block;
+      background: #1a1f35;
+      border-left: 3px solid #818cf8;
+      padding: 0.3rem 0.75rem;
+      margin: 0.25rem 0;
+      color: #a5b4fc;
+      font-style: italic;
+      font-size: 0.82rem;
+    }
+
+    .step-list { display: flex; flex-direction: column; gap: 1.25rem; margin: 1.25rem 0; }
+    .step-item { display: flex; gap: 1.25rem; }
+    .step-circle {
+      width: 36px; height: 36px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: #2d3148;
+      border: 2px solid #818cf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #818cf8;
+      font-size: 0.9rem;
+      margin-top: 0.15rem;
+    }
+    .step-text h4 { font-size: 0.95rem; font-weight: 700; color: #f1f5f9; margin-bottom: 0.3rem; }
+    .step-text p { font-size: 0.88rem; color: #94a3b8; margin: 0; }
+
+    .file-box {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1.25rem 0;
+    }
+    .file-box .file-name { font-family: monospace; color: #fbbf24; font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem; border-bottom: 1px solid #2d3148; padding-bottom: 0.75rem; }
+    .file-box p { font-size: 0.9rem; margin: 0; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 1.25rem 0; }
+    .two-col .box { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 1.25rem; }
+    .two-col .box h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.5rem; color: #f1f5f9; }
+    .two-col .box p { font-size: 0.85rem; color: #94a3b8; margin: 0; }
+
+    .nav-footer { display: flex; justify-content: space-between; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #2d3148; }
+    .nav-btn { background: #1e2130; border: 1px solid #2d3148; border-radius: 8px; padding: 0.75rem 1.25rem; color: #94a3b8; text-decoration: none; border-bottom: none; font-size: 0.9rem; transition: all 0.15s; }
+    .nav-btn:hover { border-color: #818cf8; color: #e2e8f0; }
+    .nav-btn.next { color: #818cf8; border-color: #312e81; }
+    .nav-btn.next:hover { background: #1a1f35; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">Studio Yopaw — Dev Docs</span>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="01-frontend.html">Frontend</a>
+    <a href="02-backend.html">Backend</a>
+    <a href="03-dev-modes.html">Dev Modes</a>
+    <a href="04-this-project.html" class="active">This Project</a>
+    <a href="05-resources.html">Resources</a>
+  </nav>
+</div>
+
+<div class="page-hero">
+  <div class="breadcrumb"><a href="index.html">Home</a> / Page 4</div>
+  <h1>The Clever Trick in This Project</h1>
+  <p>How <code>devApiPlugin()</code> in <code>vite.config.ts</code> fakes two backend endpoints so you can develop 90% of the UI without ever needing <code>vercel dev</code>.</p>
+</div>
+
+<div class="layout">
+  <aside class="toc">
+    <div class="toc-title">On this page</div>
+    <a href="#the-problem">The problem it solves</a>
+    <a href="#middleware">What is middleware?</a>
+    <a href="#the-plugin">The devApiPlugin()</a>
+    <a href="#walkthrough">Code walkthrough</a>
+    <a href="#why-only-two">Why only mock two endpoints?</a>
+    <a href="#full-picture">Full project picture</a>
+    <a href="#for-your-portfolio">For your portfolio site</a>
+  </aside>
+
+  <main class="content">
+
+    <h2 id="the-problem">The problem this solves</h2>
+    <p>When you run <code>npm run dev</code>, Vite's dev server does not know anything about your <code>api/</code> folder. If the React app makes a request to <code>/api/availability</code>, the Vite server would return a 404 error.</p>
+    <p>You have two options:</p>
+    <div class="two-col">
+      <div class="box">
+        <h4>Option A: Always use vercel dev</h4>
+        <p>Slow to start (3–10 seconds). Real API calls hit Square/Resend on every test. Risk of accidentally creating real bookings or sending real emails during UI development.</p>
+      </div>
+      <div class="box">
+        <h4>Option B: Teach Vite to fake the API</h4>
+        <p>Fast dev server stays fast. No external API calls during UI work. Safe to run repeatedly. This is what this project does — the <code>devApiPlugin()</code> in <code>vite.config.ts</code>.</p>
+      </div>
+    </div>
+
+    <h2 id="middleware">What is "middleware"?</h2>
+    <p>A web server receives HTTP requests. <strong>Middleware</strong> is a function that sits <em>between</em> the incoming request and the final handler — it can inspect the request, modify it, respond to it directly, or pass it along.</p>
+    <p>Think of it like a security guard at a building entrance. Every visitor goes through the guard before reaching their destination. The guard can let them through, turn them away, or handle them directly.</p>
+
+    <div class="callout info">
+      <strong>Python analogy (WSGI middleware)</strong>
+      In Python's Flask/FastAPI, middleware is the <code>@app.before_request</code> hook or a WSGI middleware wrapper. It intercepts every request before your route handlers run. In Express.js (Node.js), you write <code>app.use('/path', handler)</code>. Vite's dev server uses the same concept — it is built on Connect (a minimal Node.js middleware framework), so you can plug in your own handlers.
+    </div>
+
+    <h2 id="the-plugin">The devApiPlugin() — what it does</h2>
+    <p>In <code>vite.config.ts</code>, there is a function called <code>devApiPlugin()</code> that returns a Vite plugin object. A <strong>Vite plugin</strong> is just an object with specific properties that Vite recognises and hooks into its lifecycle.</p>
+    <p>This particular plugin uses the <code>configureServer</code> hook, which lets you add custom middleware to the Vite dev server. The plugin registers two middleware handlers:</p>
+    <ul>
+      <li>One that intercepts <code>GET /api/breeds</code></li>
+      <li>One that intercepts <code>GET /api/availability</code></li>
+    </ul>
+    <p>When the React app makes either of those requests, Vite intercepts them before any 404 happens, reads <code>class-schedule.json</code> from disk, computes the response, and returns it directly — no network call to any external server, no Node.js serverless function, just local JSON processing.</p>
+
+    <h2 id="walkthrough">Code walkthrough — annotated</h2>
+
+    <div class="annotated">
+      <div class="annotated-header">vite.config.ts — the plugin function</div>
+      <pre><code><span class="keyword">function</span> <span class="fn">devApiPlugin</span>(): Plugin {
+  <span class="keyword">return</span> {
+    name: <span class="string">'dev-api'</span>,
+    <span class="comment">// "configureServer" is a Vite lifecycle hook that runs when the</span>
+    <span class="comment">// dev server starts. "server" is the Vite dev server instance.</span>
+    <span class="fn">configureServer</span>(server) {
+
+      <span class="comment">// ── BREEDS ENDPOINT ────────────────────────────────────────────</span>
+      server.middlewares.use(<span class="string">'/api/breeds'</span>, (req, res) => {
+        <span class="comment">// This function runs EVERY TIME someone requests /api/breeds</span>
+        <span class="comment">// during development. It reads the JSON file from disk,</span>
+        <span class="comment">// filters by date range, and returns the result.</span>
+
+        <span class="keyword">const</span> schedule = loadSchedule()
+        <span class="keyword">const</span> url = <span class="keyword">new</span> URL(req.url, <span class="string">'http://localhost'</span>)
+        <span class="keyword">const</span> startDate = url.searchParams.get(<span class="string">'startDate'</span>)
+        <span class="keyword">const</span> endDate = url.searchParams.get(<span class="string">'endDate'</span>)
+
+        <span class="comment">// Build the response object (same shape as the real API)</span>
+        <span class="keyword">const</span> result = {}
+        <span class="keyword">for</span> (<span class="keyword">const</span> [date, breed] <span class="keyword">of</span> Object.entries(schedule.breeds)) {
+          <span class="keyword">if</span> (date &lt; startDate || date &gt; endDate) <span class="keyword">continue</span>
+          result[date] = [{ breed, serviceIds: [] }]
+        }
+
+        res.setHeader(<span class="string">'Content-Type'</span>, <span class="string">'application/json'</span>)
+        res.end(JSON.stringify({ schedule: result }))
+      })
+
+      <span class="comment">// ── AVAILABILITY ENDPOINT ──────────────────────────────────────</span>
+      server.middlewares.use(<span class="string">'/api/availability'</span>, (req, res) => {
+        <span class="comment">// Generates time slots from the schedule file.</span>
+        <span class="comment">// In production, this ALSO checks Square for existing bookings.</span>
+        <span class="comment">// Here in dev, we just return all seats as available (maxSeats).</span>
+
+        <span class="keyword">const</span> schedule = loadSchedule()
+        <span class="keyword">const</span> availabilities = []
+
+        <span class="keyword">for</span> (<span class="keyword">const</span> date <span class="keyword">of</span> schedule.dates) {
+          <span class="keyword">for</span> (<span class="keyword">const</span> time <span class="keyword">of</span> schedule.times) {
+            availabilities.push({
+              startAt: montrealLocalToUtc(date, time),
+              seatsRemaining: schedule.maxSeats   <span class="comment">// always full in dev</span>
+            })
+          }
+        }
+
+        res.setHeader(<span class="string">'Content-Type'</span>, <span class="string">'application/json'</span>)
+        res.end(JSON.stringify({ availabilities }))
+      })
+    }
+  }
+}</code></pre>
+    </div>
+
+    <div class="callout warn">
+      <strong>The dev mock is slightly different from production</strong>
+      In production, <code>/api/availability</code> checks Square's API for existing bookings and subtracts them from <code>maxSeats</code>. The dev mock always returns all seats as available because there is no Square API call. This is intentional — during UI development you want to always be able to see and click on available dates.
+    </div>
+
+    <h3>What is a "Connect middleware"?</h3>
+    <p>Vite's dev server uses a Node.js library called <strong>Connect</strong> under the hood. Connect is a very minimal HTTP server framework. <code>server.middlewares.use(path, handler)</code> is Connect's way of saying "when a request comes in for this path, run this handler function."</p>
+    <p>The handler function receives two arguments: <code>req</code> (the incoming request — URL, headers, body) and <code>res</code> (the response object — you write your reply into this). This is the same pattern used by Express.js and many other Node.js frameworks.</p>
+
+    <h2 id="why-only-two">Why only mock two endpoints?</h2>
+    <p>Look at the full list of API endpoints — only <code>/api/breeds</code> and <code>/api/availability</code> are mocked in the Vite plugin. Why not the others?</p>
+
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-circle">✓</div>
+        <div class="step-text">
+          <h4>/api/availability — mocked because it's read-only UI data</h4>
+          <p>Shows which dates have open seats. Needed to render the calendar. Has no side effects. Safe and useful to mock.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-circle">✓</div>
+        <div class="step-text">
+          <h4>/api/breeds — mocked because it's read-only UI data</h4>
+          <p>Shows which dog breed appears on each session date. Needed for the date picker badges. Has no side effects. Safe and useful to mock.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-circle">✗</div>
+        <div class="step-text">
+          <h4>/api/booking — NOT mocked (has real side effects)</h4>
+          <p>Charges a real credit card. Creates a real Square booking. Sends a real email. You only want to test this with <code>vercel dev</code> against Square's sandbox environment.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-circle">✗</div>
+        <div class="step-text">
+          <h4>/api/inquiry — NOT mocked (sends real emails)</h4>
+          <p>Sends a real email via Resend. Fires a Zapier webhook. You only test this with <code>vercel dev</code>.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-circle">✗</div>
+        <div class="step-text">
+          <h4>/api/square-webhook — NOT mocked (receives external calls)</h4>
+          <p>This endpoint receives calls FROM Square's servers. There's nothing to mock locally — Square has to be able to reach your server, which requires a public URL (or a tunnel tool like ngrok).</p>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="full-picture">The full project picture</h2>
+    <p>Now that you understand every piece, here is how it all fits together:</p>
+
+    <div class="annotated">
+      <div class="annotated-header">Complete project map</div>
+      <pre><code>Studio-Yopaw/
+├── src/                        <span class="comment">← React frontend (TypeScript + JSX)</span>
+│   └── App.tsx                 <span class="comment">← Root component, all UI, booking flow</span>
+│
+├── api/                        <span class="comment">← Backend functions (TypeScript)</span>
+│   ├── availability.ts         <span class="comment">← GET /api/availability  (MOCKED in dev)</span>
+│   ├── breeds.ts               <span class="comment">← GET /api/breeds        (MOCKED in dev)</span>
+│   ├── booking.ts              <span class="comment">← POST /api/booking      (needs vercel dev)</span>
+│   ├── inquiry.ts              <span class="comment">← POST /api/inquiry      (needs vercel dev)</span>
+│   └── square-webhook.ts       <span class="comment">← POST /api/square-webhook (needs tunnel)</span>
+│
+├── class-schedule.json         <span class="comment">← Session dates/times/breeds (used by BOTH</span>
+│                               <span class="comment">   the mock in vite.config.ts AND the real api/)</span>
+│
+├── vite.config.ts              <span class="comment">← Where devApiPlugin() lives</span>
+├── vercel.json                 <span class="comment">← Production deployment config</span>
+├── package.json                <span class="comment">← Dependencies + scripts (like requirements.txt)</span>
+│
+└── dist/                       <span class="comment">← Built output (created by npm run build)</span>
+    ├── index.html
+    └── assets/
+        ├── index-[hash].js     <span class="comment">← All React code, compiled</span>
+        └── index-[hash].css    <span class="comment">← All Tailwind CSS, compiled</span></code></pre>
+    </div>
+
+    <h3>The data flow from file to screen</h3>
+    <p>When you open the booking section on <code>localhost:5173</code> and the calendar of available dates appears, here is the exact chain of events:</p>
+
+    <div class="step-list">
+      <div class="step-item">
+        <div class="step-circle">1</div>
+        <div class="step-text">
+          <h4>React renders the booking UI</h4>
+          <p>The <code>PricingSection</code> component mounts. It calls <code>useSquareAvailability()</code>, a custom React hook.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-circle">2</div>
+        <div class="step-text">
+          <h4>The hook fetches the API</h4>
+          <p><code>useSquareAvailability</code> calls <code>fetch('/api/availability?startDate=...&endDate=...')</code> — this is a normal browser HTTP request.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-circle">3</div>
+        <div class="step-text">
+          <h4>Vite's middleware intercepts it</h4>
+          <p>The request hits the Vite dev server. The <code>devApiPlugin</code> middleware matches <code>/api/availability</code> and runs the handler function — no external network call needed.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-circle">4</div>
+        <div class="step-text">
+          <h4>JSON is read from disk and returned</h4>
+          <p><code>class-schedule.json</code> is read, slots are computed, and a JSON response is sent back to the browser — all in milliseconds.</p>
+        </div>
+      </div>
+      <div class="step-item">
+        <div class="step-circle">5</div>
+        <div class="step-text">
+          <h4>React updates the UI</h4>
+          <p>The hook receives the slot data, updates state, and React re-renders the calendar showing the available dates.</p>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="for-your-portfolio">For your portfolio site — do you need any of this?</h2>
+    <p>Probably not much of it. Here is what applies and what doesn't:</p>
+
+    <div class="two-col">
+      <div class="box">
+        <h4>What you'll likely use</h4>
+        <p>Vite as your build tool. <code>npm run dev</code> for development. <code>npm run build</code> to generate your static site. Deploying the <code>dist/</code> folder to Vercel. Maybe one simple serverless function for a contact form.</p>
+      </div>
+      <div class="box">
+        <h4>What you probably won't need</h4>
+        <p><code>vercel dev</code> (unless you add real API functionality). The <code>devApiPlugin()</code> trick (that's for when you have complex API mocking needs). The entire <code>api/</code> folder structure (unless adding backend features later).</p>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <strong>The simplest Vercel portfolio deployment</strong>
+      1. Build your site with <code>npm run build</code> (or just write plain HTML/CSS/JS — no build needed)<br>
+      2. Push to GitHub<br>
+      3. Connect the repo on vercel.com — click Deploy<br>
+      4. Done. Free HTTPS, global CDN, auto-redeploys on every push.<br><br>
+      You do NOT need <code>vercel.json</code>, <code>api/</code> folders, serverless functions, or any of the complexity in this project to deploy a portfolio site on Vercel.
+    </div>
+
+    <div class="nav-footer">
+      <a href="03-dev-modes.html" class="nav-btn">← Dev Modes</a>
+      <a href="05-resources.html" class="nav-btn next">Next: Resources to go deeper →</a>
+    </div>
+
+  </main>
+</div>
+
+</body>
+</html>

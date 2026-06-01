@@ -432,6 +432,11 @@ function PricingSection() {
   const [needsMatRental, setNeedsMatRental] = useState(false)
   const [waiverAccepted, setWaiverAccepted] = useState(false)
   const [waiverModalOpen, setWaiverModalOpen] = useState(false)
+  type ExtraAttendee = { name: string; waiverAccepted: boolean }
+  const [extraAttendees, setExtraAttendees] = useState<ExtraAttendee[]>([])
+  const [privateMessage, setPrivateMessage] = useState('')
+  const [corpCompanyName, setCorpCompanyName] = useState('')
+  const [corpMessage, setCorpMessage] = useState('')
   const [bookingLoading, setBookingLoading] = useState(false)
   const [bookingError, setBookingError] = useState<string | null>(null)
   const [inquiryLoading, setInquiryLoading] = useState(false)
@@ -629,6 +634,10 @@ function PricingSection() {
 
   const chooseClass = (id: (typeof bookingClassChoices)[number]['id']) => {
     requestScrollPricingCardAfterAdvance()
+    setExtraAttendees([])
+    setPrivateMessage('')
+    setCorpCompanyName('')
+    setCorpMessage('')
     if (id === 'corporate') {
       setPendingSessionIso(null)
       setSelectedSessionIso(null)
@@ -703,6 +712,7 @@ function PricingSection() {
             preferredDate: selectedSessionIso ?? '',
             preferredTime: selectedTimeSlotId ?? '',
             groupSize: privateGroupCount,
+            message: privateMessage,
           }),
         })
         if (!res.ok) throw new Error('inquiry failed')
@@ -727,7 +737,7 @@ function PricingSection() {
         classType: 'Regular Class',
         preferredDate: selectedSessionIso ?? '',
         preferredTime: selectedTimeSlotId ?? '',
-        groupSize: '',
+        groupSize: String(1 + extraAttendees.length),
       }),
     }).catch(() => {})
 
@@ -757,6 +767,8 @@ function PricingSection() {
           preferredDate: selectedSessionIso ?? '',
           preferredTime: selectedTimeSlotId ?? '',
           groupSize: privateGroupCount,
+          companyName: corpCompanyName,
+          message: corpMessage,
         }),
       })
       if (!res.ok) throw new Error('inquiry failed')
@@ -798,6 +810,7 @@ function PricingSection() {
           baseAmountCents: serviceInfo.baseAmountCents,
           serviceName: serviceInfo.serviceName,
           needsMatRental,
+          extraAttendees: extraAttendees.map(a => ({ name: a.name })),
         }),
       })
 
@@ -828,6 +841,10 @@ function PricingSection() {
     setNeedsMatRental(false)
     setWaiverAccepted(false)
     setWaiverModalOpen(false)
+    setExtraAttendees([])
+    setPrivateMessage('')
+    setCorpCompanyName('')
+    setCorpMessage('')
     setBookingError(null)
     setInquiryError(null)
   }
@@ -1129,6 +1146,19 @@ function PricingSection() {
                 </div>
                 {flow.yoga === 'gentle' ? (
                   <>
+                    <div className="pricing-form-field">
+                      <label className="pricing-form-label" htmlFor="pub-message">
+                        {s.pricingLblMessage}
+                      </label>
+                      <textarea
+                        id="pub-message"
+                        name="message"
+                        className="pricing-input pricing-input-textarea"
+                        rows={3}
+                        value={privateMessage}
+                        onChange={e => setPrivateMessage(e.target.value)}
+                      />
+                    </div>
                     {inquiryError && (
                       <p className="pricing-error" role="alert">{inquiryError}</p>
                     )}
@@ -1138,6 +1168,64 @@ function PricingSection() {
                   </>
                 ) : (
                   <>
+                    {/* Extra attendees */}
+                    <div className="pricing-extra-attendees">
+                      <p className="pricing-helper-text" style={{ marginBottom: '0.75rem' }}>
+                        {s.pricingExtraAttendeesHelper}
+                      </p>
+                      {extraAttendees.map((a, i) => (
+                        <div key={i} className="pricing-extra-attendee-card">
+                          <div className="pricing-extra-attendee-header">
+                            <span className="pricing-extra-attendee-label">
+                              {lang === 'fr' ? `Participant ${i + 2}` : `Attendee ${i + 2}`}
+                            </span>
+                            <button
+                              type="button"
+                              className="pricing-extra-attendee-remove"
+                              onClick={() => setExtraAttendees(extraAttendees.filter((_, j) => j !== i))}
+                            >
+                              {s.pricingRemoveAttendee}
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            className="pricing-input"
+                            placeholder={s.pricingExtraAttendeeName}
+                            value={a.name}
+                            onChange={e => {
+                              const next = [...extraAttendees]
+                              next[i] = { ...next[i], name: e.target.value }
+                              setExtraAttendees(next)
+                            }}
+                            required
+                          />
+                          <label className="pricing-checkbox-row pricing-extra-attendee-waiver">
+                            <input
+                              type="checkbox"
+                              className="pricing-checkbox"
+                              checked={a.waiverAccepted}
+                              onChange={e => {
+                                const next = [...extraAttendees]
+                                next[i] = { ...next[i], waiverAccepted: e.target.checked }
+                                setExtraAttendees(next)
+                              }}
+                            />
+                            <span className="pricing-checkbox-text">{s.pricingExtraAttendeeWaiver}</span>
+                          </label>
+                        </div>
+                      ))}
+                      {extraAttendees.length < 4 && (
+                        <button
+                          type="button"
+                          className="pricing-add-attendee-btn"
+                          onClick={() => setExtraAttendees([...extraAttendees, { name: '', waiverAccepted: false }])}
+                        >
+                          {s.pricingAddAttendee}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Primary waiver */}
                     <div className="pricing-form-field pricing-form-field--checkbox">
                       <label htmlFor="pub-waiver" className="pricing-checkbox-row">
                         <input
@@ -1178,7 +1266,7 @@ function PricingSection() {
                     <button
                       type="submit"
                       className="btn-primary btn-lg pricing-submit"
-                      disabled={!waiverAccepted}
+                      disabled={!waiverAccepted || extraAttendees.some(a => !a.waiverAccepted) || extraAttendees.some(a => !a.name.trim())}
                     >
                       {s.pricingSubmitBookSpot}
                     </button>
@@ -1202,7 +1290,7 @@ function PricingSection() {
                   {lang === 'fr' ? 'Paiement sécurisé' : 'Secure Payment'}
                 </h3>
                 {(() => {
-                  const groupSize = flow.yoga === 'gentle' ? Math.max(2, parseInt(privateGroupCount || '2', 10)) : 1
+                  const groupSize = flow.yoga === 'gentle' ? Math.max(2, parseInt(privateGroupCount || '2', 10)) : 1 + extraAttendees.length
                   const svc = SQUARE_SERVICE_VARIATIONS[flow.yoga]
                   const matRentalCents = flow.yoga === 'yin' && needsMatRental ? 500 : 0
                   const baseCents = svc.baseAmountCents * groupSize + matRentalCents
@@ -1215,7 +1303,9 @@ function PricingSection() {
                             ? (lang === 'fr'
                                 ? `${groupSize} × Événement privé`
                                 : `${groupSize} × Private Event`)
-                            : (lang === 'fr' ? '1 × Cours de yoga avec chiots' : '1 × Puppy Yoga Class')}
+                            : (lang === 'fr'
+                                ? `${groupSize} × Cours de yoga avec chiots`
+                                : `${groupSize} × Puppy Yoga Class`)}
                         </span>
                         <span className="pricing-payment-summary-amount">{fmtCAD(baseCents - matRentalCents, lang)}</span>
                       </div>
@@ -1303,6 +1393,22 @@ function PricingSection() {
                   />
                 </div>
                 <div className="pricing-form-field">
+                  <label className="pricing-form-label" htmlFor="corp-company">
+                    {s.pricingLblCompanyName}{' '}
+                    <abbr className="pricing-req-mark" title={s.abbrevRequiredTitle}>*</abbr>
+                  </label>
+                  <input
+                    id="corp-company"
+                    type="text"
+                    name="corpCompanyName"
+                    className="pricing-input"
+                    autoComplete="organization"
+                    value={corpCompanyName}
+                    onChange={e => setCorpCompanyName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="pricing-form-field">
                   <label className="pricing-form-label" htmlFor="corp-email">
                     {s.pricingLblEmail}{' '}
                     <abbr className="pricing-req-mark" title={s.abbrevRequiredTitle}>*</abbr>
@@ -1332,6 +1438,19 @@ function PricingSection() {
                     value={corpPhone}
                     onChange={e => setCorpPhone(e.target.value)}
                     required
+                  />
+                </div>
+                <div className="pricing-form-field">
+                  <label className="pricing-form-label" htmlFor="corp-message">
+                    {s.pricingLblMessage}
+                  </label>
+                  <textarea
+                    id="corp-message"
+                    name="corpMessage"
+                    className="pricing-input pricing-input-textarea"
+                    rows={3}
+                    value={corpMessage}
+                    onChange={e => setCorpMessage(e.target.value)}
                   />
                 </div>
                 {inquiryError && (

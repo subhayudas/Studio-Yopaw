@@ -1,0 +1,256 @@
+USER: i have booking and payment flow in image form, can you make into into md file so that anyone can understand it,booking flow:[Image #1],pyament flow [Image #2]
+---
+USER: [Image: source: C:\Users\BIT\Downloads\booking flow.jpeg]
+---
+USER: [Image: source: C:\Users\BIT\Downloads\payment flow.jpeg]
+---
+ASST: I'll create a markdown file from both diagrams now.
+---
+ASST: Created `dev-docs/booking-payment-flow.md`. It covers both diagrams — the three-path booking flow (Regular / Private / Corporate) as an ASCII flowchart plus a summary table, and the Square API payment steps with the success/fallback branch. Key rules are listed at the bottom for quick reference.
+---
+USER: check if we are flowing this booking and payment flow, if not then make an md file with the plan to implement it, be thorough
+---
+ASST: I'll read the key implementation files in parallel to compare against the flow diagram.
+---
+ASST: Now I have everything I need. Let me create the gap analysis and implementation plan.
+---
+ASST: Here's what I found. The current code matches the diagram in several areas (mat step, date/time picker, inquiry flows, Square order/payment pipeline) but is **missing 10 things**:
+
+---
+
+### What's implemented ✅
+- Mat rental step (Regular Class)
+- Date + time slot selection
+- Contact form (name/email/phone)
+- Single waiver checkbox (Regular Class)
+- Square order creation with taxes
+- Seat count guard
+- Booking cancel on payment failure
+- Inquiry-only flow for Private/Corporate
+- Zapier + Resend notifications
+
+---
+
+### What's missing ❌
+
+**High severity (revenue/UX impact):**
+1. **Extra attendees (up to 4)** — diagram shows this in the Regular Class contact step; the code books only 1 person
+2. **Waiver per attendee** — only one checkbox exists; diagram requires one per person
+3. **Price × at
+---
+USER: ## Context Usage
+
+**Model:** claude-sonnet-4-6  
+**Tokens:** 68.5k / 200k (34%)
+
+### Estimated usage by category
+
+| Category | Tokens | Percentage |
+|----------|--------|------------|
+| System prompt | 6.7k | 3.3% |
+| System tools | 12.3k | 6.2% |
+| MCP tools (deferred) | 1.5k | 0.7% |
+| System tools (deferred) | 11.7k | 5.9% |
+| Memory files | 9.2k | 4.6% |
+| Skills | 1.2k | 0.6% |
+| Messages | 39.5k | 19.7% |
+| Compact buffer | 3k | 1.5% |
+| Free space | 128.2k | 64.1% |
+
+### MCP Tools
+
+| Tool | Server | Tokens |
+|------|--------|--------|
+| mcp__claude_ai_Gmail__authenticate | claude_ai_Gma
+---
+USER: implement dev-docs\booking-flow-implementation-plan.md, once done write an md file witha a plan to test the implementation via scripts and automation as much as possible
+---
+ASST: I'll read the remaining files I need before starting implementation.
+---
+ASST: Let me check the actual CSS file location.
+---
+ASST: Good — `pricing-input-textarea` already exists. Now I have everything I need. Let me implement all 6 tasks in order.
+---
+ASST: Now add the EN values:
+---
+ASST: Now add the FR values:
+---
+ASST: Now implement all the App.tsx changes. I'll do them sequentially. First, add the new state variables:
+---
+ASST: Reset new state in `chooseClass()`:
+---
+ASST: Reset new state in `restartPublicBooking()`:
+---
+ASST: Update `submitPublic` (gentle path) to include message, and yin path to pass extra attendees:
+---
+ASST: Update `submitCorporate` to include company name and message:
+---
+ASST: Update `submitBookingWithPayment` to pass extra attendees:
+---
+ASST: Now update the payment summary calculation to use total people count:
+---
+ASST: Now add the extra attendees UI and message field to the yin contact form, and add message field to the gentle contact form. First, the yin path — update the contact form section:
+---
+ASST: Now update the corporate contact form to add company name and message fields:
+---
+ASST: Now update `api/booking.ts` — add extra attendees support, per-attendee customer creation with fallback, quantity scaling, and booking note:
+---
+ASST: Now replace the single customer create with per-attendee creation + fallback:
+---
+ASST: Now update the booking creation to add the note, and the order line item quantity:
+---
+ASST: Now update the order line item to use `totalPeople` as quantity:
+---
+ASST: Update the Zapier payload and notification email to include attendee count and names:
+---
+ASST: Now update `api/inquiry.ts` to accept `companyName` and `message`:
+---
+ASST: Now add the CSS for the new extra attendee UI elements:
+---
+ASST: Now let's run TypeScript to check for errors:
+---
+ASST: The FR string has a curly apostrophe that breaks the TS string literal. Let me fix it:
+---
+ASST: Zero errors. Now write the test plan markdown:
+---
+ASST: Let's do a final type check to confirm everything compiles clean:
+---
+ASST: All clean. Here's a summary of everything that was implemented and what the test plan covers:
+
+---
+
+### What was implemented
+
+**`src/i18n/siteStrings.ts`** — 7 new keys added to the interface + both EN and FR objects: message/company name labels, extra attendee helper text, add/remove button labels, per-attendee waiver string.
+
+**`src/App.tsx`** — 5 changes:
+- New state: `extraAttendees[]`, `privateMessage`, `corpCompanyName`, `corpMessage`
+- State reset in both `chooseClass()` and `restartPublicBooking()`
+- Yin contact form: extra attendee cards (up to 4) each with name input + individual waiver checkbox; submit button disabled until every attendee has name + waiver checked
+- Payment summary: `groupSize = 1 + extraAttendees.length` for yin (was hardcoded `1`)
+- Private and Corporate forms
+---
+USER: ## Context Usage
+
+**Model:** claude-sonnet-4-6  
+**Tokens:** 113k / 200k (56%)
+
+### Estimated usage by category
+
+| Category | Tokens | Percentage |
+|----------|--------|------------|
+| System prompt | 6.7k | 3.3% |
+| System tools | 12.3k | 6.2% |
+| MCP tools (deferred) | 1.5k | 0.7% |
+| System tools (deferred) | 11.7k | 5.9% |
+| Memory files | 9.2k | 4.6% |
+| Skills | 1.2k | 0.6% |
+| Messages | 84.1k | 42.0% |
+| Compact buffer | 3k | 1.5% |
+| Free space | 83.6k | 41.8% |
+
+### MCP Tools
+
+| Tool | Server | Tokens |
+|------|--------|--------|
+| mcp__claude_ai_Gmail__authenticate | claude_ai_Gmail
+---
+USER: run test dev-docs\testing-plan.md
+---
+ASST: Let me check what's already installed and what test infrastructure exists.
+---
+ASST: I can see the existing test suite clearly. Let me run what we have first, then fix breakages and add the new tests.
+---
+ASST: One failure — expected. The `attendeeCount: 1` hardcode was replaced by `totalPeople`. Let me fix that test and add all the new coverage, then run the full E2E suite.
+---
+ASST: Now append all new tests to `verify-fixes.mjs`:
+---
+ASST: The test is too strict — `quantity: '1'` still appears in the mat rental line item. Let me check:
+---
+ASST: Mat rental correctly stays at `'1'`. The test assertion was wrong — need to only check the service line item, not the whole file. Fix the test to be specific:
+---
+ASST: **47/47 passing.** Now update the E2E spec to cover the new fields and fix the stale `'Your details'` heading text, then run Playwright:
+---
+ASST: Now fix the Regular Class contact step assertion and update the submit button text:
+---
+ASST: Now add the new E2E tests for extra attendees at the end of the spec file:
+---
+ASST: Now append the new test blocks at the end:
+---
+ASST: Now run the Playwright E2E suite (it auto-starts `vite`):
+---
+ASST: Playwright isn't installed. Let me install it:
+---
+ASST: All failures are the same cause — `getByText('Regular Class')` matches both the class card heading AND the booking button. I need to target the booking buttons specifically. Let me fix the whole spec file:
+---
+ASST: Now replace all the ambiguous `getByText` class-choice clicks with the new helper:
+---
+ASST: Also fix the FR tests:
+---
+ASST: The issue is the breed mock returns `{}` — the `effectiveDates` filter requires breed entries to exist for a date, so no session rows render. Fix the mock to include breed data:
+---
+ASST: All green. Let's do the final combined run:
+---
+ASST: **47/47 code-level + 20/20 Playwright E2E — all passing.**
+
+Here's the full picture:
+
+---
+
+### Test results
+
+| Suite | Tests | Result |
+|---|---|---|
+| `node --test tests/verify-fixes.mjs` | 47 | ✅ 47 passed |
+| `playwright test tests/e2e/booking-flow.spec.ts` | 20 | ✅ 20 passed |
+| **Total** | **67** | **✅ 0 failures** |
+
+### What was fixed during the run
+
+1. **`verify-fixes.mjs`** — Updated 1 stale assertion (`attendeeCount: 1` → `attendeeCount: totalPeople`) and added 27 new assertions covering every feature from the implementation plan.
+
+2. **`tests/e2e/booking-flow.spec.ts`** — Four issues fixed:
+   - `getByText('Regular Class')` matched both the class card heading and the booking button — replaced all class-choice clicks with `.pricing-choice-card` locator
+   - `'Your details'` headi
+---
+USER: ## Context Usage
+
+**Model:** claude-sonnet-4-6  
+**Tokens:** 154.4k / 200k (77%)
+
+### Estimated usage by category
+
+| Category | Tokens | Percentage |
+|----------|--------|------------|
+| System prompt | 6.7k | 3.3% |
+| System tools | 12.3k | 6.2% |
+| MCP tools (deferred) | 1.5k | 0.7% |
+| System tools (deferred) | 11.7k | 5.9% |
+| Memory files | 9.2k | 4.6% |
+| Skills | 1.2k | 0.6% |
+| Messages | 125.3k | 62.7% |
+| Compact buffer | 3k | 1.5% |
+| Free space | 42.4k | 21.2% |
+
+### MCP Tools
+
+| Tool | Server | Tokens |
+|------|--------|--------|
+| mcp__claude_ai_Gmail__authenticate | claude_ai_Gm
+---
+USER: We just finished a build session. Create a new file in the learning/ folder
+as a SELF-CONTAINED HTML FILE. The file should be named
+session-0X-<phase-or-topic-slug>.html where X is the next session number.
+**if the file is too big then make it into multiple files of html, just connect them and don't cheap out quality and depth of material**
+The HTML file IS the lesson — all explanation, code, visuals, and exercises
+are inside it. The learner opens it in a browser and reads it like a
+textbook chapter.
+
+Cover EVERYTHING we did in this session — every concept, every file, every
+command, every bug
+---
+ASST: Let me check the learning folder first to get the right session number.
+---
+ASST: First session — no prior files. This is a dense session (flow docs + gap analysis + full implementation + testing), so I'll split it into two connected HTML files.
+---
+ASST: Prompt is too long

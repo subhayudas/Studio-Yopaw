@@ -1257,6 +1257,70 @@ h2 em { font-style: italic; color: var(--sage); }
   color: var(--text-muted);
 }
 
+/* Extra attendee cards */
+.pricing-extra-attendees {
+  margin-bottom: 24px;
+}
+
+.pricing-extra-attendee-card {
+  border: 1px solid rgba(244, 114, 182, 0.25);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  background: rgba(244, 114, 182, 0.04);
+}
+
+.pricing-extra-attendee-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.pricing-extra-attendee-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pricing-extra-attendee-remove {
+  font-size: 0.8rem;
+  color: var(--rose, #e11d48);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: none;
+  border: none;
+}
+
+.pricing-extra-attendee-remove:hover {
+  background: rgba(225, 29, 72, 0.08);
+}
+
+.pricing-extra-attendee-waiver {
+  margin-top: 10px;
+}
+
+.pricing-add-attendee-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--sage-dark);
+  cursor: pointer;
+  padding: 6px 0;
+  background: none;
+  border: none;
+  margin-bottom: 16px;
+}
+
+.pricing-add-attendee-btn:hover {
+  text-decoration: underline;
+}
+
 .pricing-req-mark {
   text-decoration: none;
   font-weight: 700;

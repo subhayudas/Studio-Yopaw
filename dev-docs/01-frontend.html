@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Frontend — Dev Docs</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f1117; color: #e2e8f0; line-height: 1.7; }
+
+    .topbar {
+      background: #1e2130;
+      border-bottom: 1px solid #2d3148;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .topbar .logo { font-weight: 700; color: #818cf8; font-size: 1rem; }
+    .topbar nav { margin-left: auto; display: flex; gap: 0.25rem; }
+    .topbar nav a { color: #94a3b8; text-decoration: none; font-size: 0.85rem; padding: 0.4rem 0.75rem; border-radius: 6px; transition: all 0.15s; }
+    .topbar nav a:hover, .topbar nav a.active { background: #2d3148; color: #e2e8f0; }
+
+    .page-hero {
+      background: linear-gradient(135deg, #1a1d2e 0%, #0f1117 60%);
+      border-bottom: 1px solid #2d3148;
+      padding: 3.5rem 2rem 3rem;
+    }
+    .page-hero .breadcrumb { color: #475569; font-size: 0.82rem; margin-bottom: 1rem; }
+    .page-hero .breadcrumb a { color: #818cf8; text-decoration: none; }
+    .page-hero h1 { font-size: 2.2rem; font-weight: 800; color: #f1f5f9; line-height: 1.2; max-width: 700px; }
+    .page-hero p { color: #94a3b8; max-width: 680px; margin-top: 0.75rem; font-size: 1rem; }
+
+    .layout { display: flex; max-width: 1100px; margin: 0 auto; gap: 2.5rem; padding: 3rem 2rem; }
+    .toc {
+      width: 220px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 76px;
+      height: fit-content;
+    }
+    .toc .toc-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; color: #475569; text-transform: uppercase; margin-bottom: 0.75rem; }
+    .toc a { display: block; color: #94a3b8; text-decoration: none; font-size: 0.85rem; padding: 0.3rem 0; border-left: 2px solid transparent; padding-left: 0.75rem; transition: all 0.15s; }
+    .toc a:hover { color: #e2e8f0; border-left-color: #818cf8; }
+    .content { flex: 1; min-width: 0; }
+
+    h2 { font-size: 1.5rem; font-weight: 800; color: #f1f5f9; margin: 2.5rem 0 1rem; padding-top: 0.5rem; border-top: 1px solid #1e2130; }
+    h2:first-child { border-top: none; margin-top: 0; }
+    h3 { font-size: 1.1rem; font-weight: 700; color: #e2e8f0; margin: 1.75rem 0 0.75rem; }
+    p { color: #94a3b8; margin-bottom: 1rem; font-size: 0.95rem; }
+    strong { color: #e2e8f0; }
+    a { color: #818cf8; text-decoration: none; border-bottom: 1px solid #312e81; }
+    a:hover { border-bottom-color: #818cf8; }
+
+    code {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 4px;
+      padding: 0.15em 0.45em;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 0.85em;
+      color: #a5b4fc;
+    }
+    pre {
+      background: #161923;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: 0.88rem;
+      color: #e2e8f0;
+    }
+    .comment { color: #475569; }
+    .keyword { color: #818cf8; }
+    .string { color: #86efac; }
+    .fn { color: #fbbf24; }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 1.25rem 0;
+    }
+    .compare-box {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+    .compare-box.python { border-top: 3px solid #3b82f6; }
+    .compare-box.js { border-top: 3px solid #f59e0b; }
+    .compare-box .lang { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.75rem; }
+    .compare-box.python .lang { color: #3b82f6; }
+    .compare-box.js .lang { color: #f59e0b; }
+    .compare-box pre { background: #161923; border-radius: 6px; margin: 0; }
+
+    .callout {
+      border-radius: 8px;
+      padding: 1.1rem 1.4rem;
+      margin: 1.25rem 0;
+      font-size: 0.9rem;
+    }
+    .callout.info { background: #1a1f35; border: 1px solid #312e81; border-left: 4px solid #818cf8; }
+    .callout.tip { background: #14211a; border: 1px solid #166534; border-left: 4px solid #22c55e; }
+    .callout.warn { background: #231a10; border: 1px solid #92400e; border-left: 4px solid #f59e0b; }
+    .callout strong { display: block; margin-bottom: 0.4rem; }
+    .callout.info strong { color: #a5b4fc; }
+    .callout.tip strong { color: #86efac; }
+    .callout.warn strong { color: #fcd34d; }
+
+    .file-tree {
+      background: #161923;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      font-family: monospace;
+      font-size: 0.88rem;
+      margin: 1rem 0;
+    }
+    .file-tree .dir { color: #818cf8; }
+    .file-tree .file { color: #94a3b8; }
+    .file-tree .highlight { color: #fbbf24; font-weight: 600; }
+    .file-tree .note { color: #475569; margin-left: 1rem; }
+
+    .nav-footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid #2d3148;
+    }
+    .nav-btn {
+      background: #1e2130;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 0.75rem 1.25rem;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: all 0.15s;
+    }
+    .nav-btn:hover { border-color: #818cf8; color: #e2e8f0; }
+    .nav-btn.next { color: #818cf8; border-color: #312e81; }
+    .nav-btn.next:hover { background: #1a1f35; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">Studio Yopaw — Dev Docs</span>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="01-frontend.html" class="active">Frontend</a>
+    <a href="02-backend.html">Backend</a>
+    <a href="03-dev-modes.html">Dev Modes</a>
+    <a href="04-this-project.html">This Project</a>
+    <a href="05-resources.html">Resources</a>
+  </nav>
+</div>
+
+<div class="page-hero">
+  <div class="breadcrumb"><a href="index.html">Home</a> / Page 1</div>
+  <h1>The Frontend — What runs in the browser</h1>
+  <p>React, TypeScript, Vite, and the "build" process — explained for a Python developer who has never touched a JavaScript framework.</p>
+</div>
+
+<div class="layout">
+  <aside class="toc">
+    <div class="toc-title">On this page</div>
+    <a href="#what-is-frontend">What is "the frontend"?</a>
+    <a href="#typescript">TypeScript = JS with types</a>
+    <a href="#react">React — what it actually does</a>
+    <a href="#vite">Vite — the build tool</a>
+    <a href="#the-build">What "the build" means</a>
+    <a href="#hot-reload">Hot reload / HMR</a>
+    <a href="#summary">Summary comparison</a>
+  </aside>
+
+  <main class="content">
+
+    <h2 id="what-is-frontend">What is "the frontend"?</h2>
+    <p>The <strong>frontend</strong> is everything that runs inside the user's web browser. It is HTML (structure), CSS (styling), and JavaScript (behaviour). The browser downloads these files from a server and runs them locally on the user's machine — your server sends the files once, and the browser does the rest.</p>
+    <p>The <strong>backend</strong> is code that runs on a server. The user never sees it. It handles things like saving data to a database, charging a credit card, or sending an email.</p>
+    <p>Studio Yopaw is a <strong>Single-Page Application (SPA)</strong>. That means the entire website is one HTML file (<code>index.html</code>). When you navigate to a "new page" (like going from the home section to the pricing section), JavaScript is swapping out the content on the screen — no new file is fetched from the server. This is why it feels so fast.</p>
+
+    <div class="callout info">
+      <strong>Python analogy</strong>
+      A SPA is like a Python program that keeps running and redraws its terminal UI — vs a CGI script that starts fresh on every request. The browser downloads the program once and runs it continuously.
+    </div>
+
+    <h2 id="typescript">TypeScript — JavaScript with type hints</h2>
+    <p>JavaScript has no type system. You can write <code>let x = 5</code> and then later do <code>x = "hello"</code> and JavaScript won't complain until it crashes at runtime. <strong>TypeScript</strong> is a superset of JavaScript (meaning all valid JavaScript is also valid TypeScript) that adds a type system.</p>
+
+    <div class="compare-grid">
+      <div class="compare-box python">
+        <div class="lang">Python (type hints)</div>
+        <pre><code><span class="keyword">def</span> <span class="fn">greet</span>(name: str) -> str:
+    <span class="keyword">return</span> <span class="string">f"Hello, {name}"</span>
+
+<span class="comment"># mypy catches this at check time:</span>
+greet(42)  <span class="comment"># error: int, not str</span></code></pre>
+      </div>
+      <div class="compare-box js">
+        <div class="lang">TypeScript (enforced types)</div>
+        <pre><code><span class="keyword">function</span> <span class="fn">greet</span>(name: string): string {
+    <span class="keyword">return</span> <span class="string">`Hello, ${name}`</span>
+}
+
+<span class="comment">// TypeScript catches this at compile time:</span>
+greet(42)  <span class="comment">// error: number, not string</span></code></pre>
+      </div>
+    </div>
+
+    <p>The key difference: TypeScript code <strong>cannot run directly</strong> in a browser. It must be <em>compiled</em> (converted) to plain JavaScript first. Vite does this compilation step for you automatically.</p>
+
+    <div class="callout tip">
+      <strong>For your portfolio site</strong>
+      You don't have to use TypeScript. Plain JavaScript works fine. TypeScript is a quality-of-life tool for larger projects where you want your editor to catch mistakes as you type.
+    </div>
+
+    <h2 id="react">React — what it actually does</h2>
+    <p>React is a JavaScript library that lets you write your UI as a tree of components. A component is just a JavaScript function that returns some HTML-like syntax. Here is the actual relationship:</p>
+
+    <div class="compare-grid">
+      <div class="compare-box python">
+        <div class="lang">Python (Jinja2 template)</div>
+        <pre><code><span class="comment"># A reusable "component"</span>
+<span class="keyword">def</span> <span class="fn">render_button</span>(label, color):
+    <span class="keyword">return</span> <span class="string">f"""
+    &lt;button style="color:{color}"&gt;
+        {label}
+    &lt;/button&gt;
+    """</span></code></pre>
+      </div>
+      <div class="compare-box js">
+        <div class="lang">React (JSX component)</div>
+        <pre><code><span class="comment">// A reusable component</span>
+<span class="keyword">function</span> <span class="fn">Button</span>({ label, color }) {
+    <span class="keyword">return</span> (
+        &lt;button style={{ color }}&gt;
+            {label}
+        &lt;/button&gt;
+    )
+}</code></pre>
+      </div>
+    </div>
+
+    <p>The HTML-looking syntax inside JavaScript is called <strong>JSX</strong> (JavaScript XML). It is not real HTML — it compiles to JavaScript function calls. Vite's React plugin handles this transformation.</p>
+
+    <p>React's big idea: instead of manually manipulating the HTML on screen (like jQuery used to do), you describe what the screen <em>should look like</em> based on your data, and React figures out the minimal changes needed to make the real HTML match. This is called the <strong>Virtual DOM</strong>.</p>
+
+    <h2 id="vite">Vite — the build tool and dev server</h2>
+    <p><strong>Vite</strong> (pronounced "veet", French for "fast") is two things in one:</p>
+    <ol style="color:#94a3b8; padding-left:1.5rem; margin-bottom:1rem;">
+      <li style="margin-bottom:0.5rem;"><strong style="color:#e2e8f0;">A development server</strong> — when you run <code>npm run dev</code>, Vite starts a local web server. You open <code>http://localhost:5173</code> in your browser and see the site. This is only for development; it is not the same as how the site runs in production.</li>
+      <li><strong style="color:#e2e8f0;">A bundler / build tool</strong> — when you run <code>npm run build</code>, Vite compiles all your TypeScript, transforms JSX, processes Tailwind CSS, and combines everything into a tiny set of plain HTML/CSS/JS files. These go into the <code>dist/</code> folder and are what Vercel actually deploys.</li>
+    </ol>
+
+    <div class="callout info">
+      <strong>Python analogy for Vite's dev server</strong>
+      Running <code>npm run dev</code> is similar to running <code>uvicorn main:app --reload</code> or <code>flask run</code> — a local server that serves your app and restarts when you change files. But Vite is <em>much</em> faster because it doesn't re-bundle everything on every change — it only updates the parts that changed.
+    </div>
+
+    <div class="file-tree">
+      <div><span class="dir">Studio-Yopaw/</span></div>
+      <div>&nbsp;&nbsp;├── <span class="highlight">vite.config.ts</span>  <span class="note">&lt;-- Vite's configuration file (like setup.py or pyproject.toml)</span></div>
+      <div>&nbsp;&nbsp;├── <span class="dir">src/</span>  <span class="note">&lt;-- Your source TypeScript/React files</span></div>
+      <div>&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── <span class="file">App.tsx</span>  <span class="note">&lt;-- Root React component</span></div>
+      <div>&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── <span class="file">main.tsx</span>  <span class="note">&lt;-- Entry point (like if __name__ == "__main__")</span></div>
+      <div>&nbsp;&nbsp;├── <span class="file">index.html</span>  <span class="note">&lt;-- The single HTML file (the shell)</span></div>
+      <div>&nbsp;&nbsp;└── <span class="dir">dist/</span>  <span class="note">&lt;-- Output after "npm run build" (what gets deployed)</span></div>
+    </div>
+
+    <h2 id="the-build">What "the build" actually means</h2>
+    <p>When you type <code>npm run build</code>, this is what happens step by step:</p>
+
+    <pre><code><span class="comment"># This is what npm run build does under the hood:</span>
+tsc -b        <span class="comment"># TypeScript compiler checks for type errors</span>
+vite build    <span class="comment"># Vite bundles everything into dist/</span></code></pre>
+
+    <p>The <code>dist/</code> folder that comes out looks something like:</p>
+    <div class="file-tree">
+      <div><span class="dir">dist/</span></div>
+      <div>&nbsp;&nbsp;├── <span class="file">index.html</span>  <span class="note">&lt;-- The entry HTML, now with script/link tags injected</span></div>
+      <div>&nbsp;&nbsp;└── <span class="dir">assets/</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="file">index-[hash].js</span>  <span class="note">&lt;-- All your React code, compiled + minified</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── <span class="file">index-[hash].css</span>  <span class="note">&lt;-- All your Tailwind CSS, compiled + purged</span></div>
+    </div>
+
+    <p>The <code>[hash]</code> in filenames is a fingerprint of the file's contents. If the file changes, the hash changes, which forces browsers to download the new version instead of using their old cached copy. This is called <strong>cache busting</strong>.</p>
+
+    <div class="callout warn">
+      <strong>Important: the browser never sees your .tsx files</strong>
+      TypeScript (.tsx) files only exist during development. The browser only ever downloads the compiled JavaScript from <code>dist/assets/</code>. If you open DevTools in the browser and look at Sources, you'll see <code>index-[hash].js</code>, not <code>App.tsx</code>.
+    </div>
+
+    <h2 id="hot-reload">Hot reload / HMR (Hot Module Replacement)</h2>
+    <p>When you save a file during <code>npm run dev</code>, your browser updates <em>instantly</em> without a full page refresh. This is called <strong>HMR (Hot Module Replacement)</strong>. Vite sends only the changed module to the browser over a WebSocket (a persistent connection), and React swaps it in without losing the current UI state.</p>
+    <p>This is one of Vite's killer features — it makes the development loop extremely fast compared to older tools that had to re-bundle the entire app on every save.</p>
+
+    <h2 id="summary">Summary — Python vs JavaScript frontend</h2>
+
+    <div class="compare-grid">
+      <div class="compare-box python">
+        <div class="lang">Python web stack</div>
+        <pre><code><span class="comment"># Development:</span>
+flask run
+<span class="comment"># or</span>
+uvicorn main:app --reload
+
+<span class="comment"># Template rendering on server:</span>
+<span class="keyword">return</span> render_template(<span class="string">'page.html'</span>)
+
+<span class="comment"># No "build step" — Python runs</span>
+<span class="comment"># your source directly</span></code></pre>
+      </div>
+      <div class="compare-box js">
+        <div class="lang">JavaScript frontend stack</div>
+        <pre><code><span class="comment"># Development:</span>
+npm run dev  <span class="comment"># starts vite dev server</span>
+
+<span class="comment"># Rendering happens in browser:</span>
+<span class="comment"># React runs JS → updates DOM</span>
+
+<span class="comment"># Build step required for production:</span>
+npm run build  <span class="comment"># compiles .tsx → .js</span></code></pre>
+      </div>
+    </div>
+
+    <p>The fundamental difference: Python renders HTML <em>on the server</em> and sends finished HTML to the browser. React renders HTML <em>in the browser</em> using JavaScript. Both approaches are valid — they just have different trade-offs.</p>
+
+    <div class="nav-footer">
+      <a href="index.html" class="nav-btn">← Home</a>
+      <a href="02-backend.html" class="nav-btn next">Next: The Backend (Serverless Functions) →</a>
+    </div>
+
+  </main>
+</div>
+
+</body>
+</html>
