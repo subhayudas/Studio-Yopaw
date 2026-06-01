@@ -1075,7 +1075,7 @@ function PricingSection() {
                 )}
                 <div className="pricing-session-list">
                   {[...effectiveDates, ...soldOutDates].sort().map(dateIso => {
-                    const isSoldOut = !slotsByDate[dateIso] || slotsByDate[dateIso].length === 0
+                    const isSoldOut = !slotsByDate[dateIso] || slotsByDate[dateIso].every(s => s.seatsRemaining === 0)
                     const sel = !isSoldOut && (
                       pendingSessionIso === dateIso ||
                       (selectedSessionIso === dateIso &&

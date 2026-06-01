@@ -410,7 +410,7 @@ test.describe('Seat count display — multi-attendee', () => {
     await expect(row).toBeVisible({ timeout: 8_000 })
   })
 
-  test('slot with 0 seats remaining is hidden from the date picker', async ({ page }) => {
+  test('slot with 0 seats remaining shows as a disabled (sold-out) row', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('studio-yopaw-lang', 'en'))
 
     const d = new Date()
@@ -433,8 +433,11 @@ test.describe('Seat count display — multi-attendee', () => {
     await page.locator('.pricing-choice-card', { hasText: 'Regular Class' }).click()
     await page.getByText("Yes, I'll bring my own").click()
 
-    await page.waitForTimeout(2_000)
-    await expect(page.locator('.pricing-session-row')).toHaveCount(0)
+    // Sold-out date shows as a disabled row (not hidden) so users know the session exists
+    const row = page.locator('.pricing-session-row.is-disabled')
+    await expect(row).toHaveCount(1, { timeout: 5_000 })
+    // Must not be clickable
+    await expect(row).not.toHaveAttribute('type', 'button')
   })
 })
 
