@@ -69,11 +69,11 @@ function useInView(threshold = 0.2) {
 // ── Static Data ────────────────────────────────────────────
 
 const GALLERY_IMAGES = [
-  { src: '/class-regular.jpg', tall: true as const },
-  { src: '/class-private.jpg', tall: false as const },
-  { src: '/class-corporate.jpg', tall: false as const },
-  { src: '/class-regular.jpg', tall: false as const },
-  { src: '/class-private.jpg', tall: false as const },
+  { src: '/class-regular.jpg', tall: true as const, objectPosition: 'center' },
+  { src: '/class-private.jpg', tall: false as const, objectPosition: 'center' },
+  { src: '/class-corporate.jpg', tall: false as const, objectPosition: 'center' },
+  { src: '/unnamed.jpg', tall: true as const, objectPosition: 'center top' },
+  { src: '/unnamed%20(1).jpg', tall: true as const, objectPosition: 'center top' },
 ]
 
 const CLASS_IMAGES = [
@@ -205,7 +205,7 @@ function AboutSection() {
           <a href="#classes" className="link-arrow">{s.aboutLink}</a>
         </div>
         <div className="about-image">
-          <img src="/class-private.jpg" alt={s.aboutImgAlt} />
+          <img src="/unnamed%20(2).jpg" alt={s.aboutImgAlt} />
           <div className="paw-float paw-float-1"><PawIcon size={46} /></div>
           <div className="paw-float paw-float-2"><PawIcon size={32} /></div>
           <div className="paw-float paw-float-3"><PawIcon size={22} /></div>
@@ -1593,11 +1593,11 @@ function GallerySection() {
       <div className={`gallery-grid${inView ? ' visible' : ''}`} ref={ref}>
         {GALLERY_IMAGES.map((img, i) => (
           <div
-            key={img.src}
+            key={i}
             className={`gallery-item${img.tall ? ' tall' : ''}`}
             style={{ transitionDelay: `${i * 0.1}s` }}
           >
-            <img src={img.src} alt={galleryAlts[i] ?? s.galleryAlts.highlight} loading="lazy" />
+            <img src={img.src} alt={galleryAlts[i] ?? s.galleryAlts.highlight} loading="lazy" style={{ objectPosition: img.objectPosition }} />
             <div className="gallery-overlay">
               <PawIcon size={42} className="overlay-paw" />
             </div>
