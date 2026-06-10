@@ -10,6 +10,7 @@ interface ClassSchedule {
   dates?: string[]
   times?: string[]
   maxSeats?: number
+  blockedSlots?: string[]
   breeds?: Record<string, { en: string; fr: string }>
 }
 
@@ -79,15 +80,17 @@ function devApiPlugin(): Plugin {
           const dates = schedule.dates ?? []
           const times = schedule.times ?? ['10:30', '12:00', '13:30', '15:00']
           const maxSeats = schedule.maxSeats ?? 20
+          const blockedSlots = new Set(schedule.blockedSlots ?? [])
 
           const availabilities: { startAt: string; seatsRemaining: number }[] = []
 
           for (const date of dates) {
             if (date < startDate || date > endDate) continue
             for (const time of times) {
+              const blocked = blockedSlots.has(`${date} ${time}`)
               availabilities.push({
                 startAt: montrealLocalToUtc(date, time),
-                seatsRemaining: maxSeats,
+                seatsRemaining: blocked ? 0 : maxSeats,
               })
             }
           }

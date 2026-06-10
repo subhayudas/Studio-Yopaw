@@ -8,6 +8,7 @@ interface ClassSchedule {
   dates: string[]
   times: string[]
   maxSeats: number
+  blockedSlots?: string[]
 }
 
 function loadSchedule(): ClassSchedule {
@@ -55,6 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const allowedDates = new Set(schedule.dates.filter(d => d >= startDate && d <= endDate))
     const allowedTimes = new Set(schedule.times)
     const maxSeats = schedule.maxSeats
+    const blockedSlots = new Set(schedule.blockedSlots ?? [])
 
     // Count confirmed bookings to subtract from available seats
     const bookingCounts = new Map<string, number>()
@@ -104,7 +106,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const startAt = corrected.toISOString().replace(/\.\d{3}Z$/, 'Z')
 
         const booked = bookingCounts.get(normalizeStartAt(startAt)) ?? 0
-        const seatsRemaining = Math.max(0, maxSeats - booked)
+        const blocked = blockedSlots.has(`${dateIso} ${timeStr}`)
+        const seatsRemaining = blocked ? 0 : Math.max(0, maxSeats - booked)
         availabilities.push({ startAt, seatsRemaining })
       }
     }
