@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session 03 — Seat Count Bug, Sold-Out UX & Twilio SMS | Studio Yopaw</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #1a1a2e; --bg-card: #16213e; --bg-code: #0f0f23;
+  --text: #e0e0e0; --text-muted: #8899aa; --border: #2a2a4a;
+  --accent: #6c63ff; --accent-hover: #5a52d5;
+  --success: #4ade80; --warning: #fbbf24; --danger: #f87171; --bug: #f472b6;
+  --tip: #38bdf8; --key: #a78bfa;
+  --code-keyword: #c678dd; --code-string: #98c379; --code-comment: #5c6370;
+  --code-function: #61afef; --code-number: #d19a66; --code-operator: #56b6c2;
+  --sidebar-w: 260px; --header-h: 60px;
+}
+[data-theme="light"] {
+  --bg: #f8f9fc; --bg-card: #ffffff; --bg-code: #f0f0f8;
+  --text: #1a1a2e; --text-muted: #64748b; --border: #e2e8f0;
+  --accent: #5a52d5; --code-comment: #6b7280; --code-keyword: #7c3aed;
+  --code-string: #16a34a; --code-function: #2563eb; --code-number: #c2410c;
+  --code-operator: #0891b2; --bug: #db2777; --warning: #d97706;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden;transition:background .3s,color .3s}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--header-h);background:var(--bg-card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;z-index:100;backdrop-filter:blur(8px)}
+.topbar-left{display:flex;align-items:center;gap:1rem}
+.session-badge{background:var(--accent);color:#fff;font-size:.72rem;font-weight:700;padding:.25rem .6rem;border-radius:20px;letter-spacing:.05em}
+.session-title{font-weight:600;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:400px}
+.topbar-right{display:flex;align-items:center;gap:.75rem}
+.theme-btn{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:.4rem .8rem;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .2s}
+.theme-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.nav-pill{background:var(--bg);border:1px solid var(--border);color:var(--text-muted);padding:.3rem .7rem;border-radius:6px;font-size:.8rem;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-block}
+.nav-pill:hover{color:var(--accent);border-color:var(--accent);text-decoration:none}
+
+.progress-track{height:3px;background:var(--border);position:fixed;top:var(--header-h);left:0;right:0;z-index:99}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--bug));width:0;transition:width .1s}
+
+.layout{display:flex;padding-top:calc(var(--header-h)+3px);min-height:100vh}
+.sidebar{width:var(--sidebar-w);flex-shrink:0;position:fixed;top:calc(var(--header-h)+3px);bottom:0;overflow-y:auto;padding:1.5rem 1rem;border-right:1px solid var(--border);background:var(--bg-card)}
+.sidebar-section{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin:1.2rem 0 .4rem .5rem}
+.sidebar a{display:block;font-size:.83rem;color:var(--text-muted);padding:.3rem .6rem;border-radius:6px;transition:all .15s;text-decoration:none;border-left:2px solid transparent}
+.sidebar a:hover,.sidebar a.active{color:var(--accent);background:rgba(108,99,255,.1);border-left-color:var(--accent)}
+.main{flex:1;margin-left:var(--sidebar-w);padding:2.5rem 3rem 4rem;max-width:900px}
+
+.session-header{background:linear-gradient(135deg,var(--bg-card),#1e1e3f);border:1px solid var(--border);border-radius:16px;padding:2.5rem;margin-bottom:2.5rem}
+.session-number{font-size:.8rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.5rem}
+.session-header h1{font-size:2rem;font-weight:700;line-height:1.2;margin-bottom:1rem}
+.meta-row{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:1rem}
+.meta-chip{background:rgba(108,99,255,.15);border:1px solid rgba(108,99,255,.3);border-radius:20px;padding:.3rem .8rem;font-size:.78rem;color:var(--text-muted)}
+.meta-chip strong{color:var(--text)}
+
+h2{font-size:1.5rem;font-weight:700;margin:3rem 0 1rem;padding-top:.5rem;border-bottom:1px solid var(--border);padding-bottom:.5rem}
+h3{font-size:1.15rem;font-weight:600;margin:2rem 0 .75rem;color:var(--key)}
+h4{font-size:1rem;font-weight:600;margin:1.5rem 0 .5rem;color:var(--text-muted)}
+p{margin-bottom:1rem;max-width:72ch}
+ul,ol{padding-left:1.5rem;margin-bottom:1rem}
+li{margin-bottom:.35rem}
+strong{font-weight:600;color:var(--text)}
+em{font-style:italic;color:var(--text-muted)}
+code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--bg-code);padding:.15em .4em;border-radius:4px;color:var(--code-string)}
+
+.code-block{position:relative;background:var(--bg-code);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:1rem 0 1.5rem}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:.5rem 1rem;background:rgba(255,255,255,.04);border-bottom:1px solid var(--border)}
+.code-lang{font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+.copy-btn{background:none;border:1px solid var(--border);color:var(--text-muted);padding:.2rem .6rem;border-radius:5px;cursor:pointer;font-size:.72rem;transition:all .15s}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent)}
+pre{overflow-x:auto;padding:1.25rem 1.5rem;font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.65;tab-size:2}
+.kw{color:var(--code-keyword)} .str{color:var(--code-string)} .cmt{color:var(--code-comment);font-style:italic}
+.fn{color:var(--code-function)} .num{color:var(--code-number)} .op{color:var(--code-operator)}
+
+.callout{border-left:4px solid;border-radius:0 10px 10px 0;padding:1rem 1.25rem;margin:1.25rem 0;background:rgba(255,255,255,.03)}
+.callout.tip{border-color:var(--tip);background:rgba(56,189,248,.07)}
+.callout.tip::before{content:'💡 Tip — ';font-weight:700;color:var(--tip)}
+.callout.warn{border-color:var(--warning);background:rgba(251,191,36,.07)}
+.callout.warn::before{content:'⚠️ Warning — ';font-weight:700;color:var(--warning)}
+.callout.key{border-color:var(--key);background:rgba(167,139,250,.07)}
+.callout.key::before{content:'🔑 Key Concept — ';font-weight:700;color:var(--key)}
+.callout.bug{border-color:var(--bug);background:rgba(244,114,182,.07)}
+.callout.success{border-color:var(--success);background:rgba(74,222,128,.07)}
+.callout.success::before{content:'✅ Result — ';font-weight:700;color:var(--success)}
+
+.bug-story{border:1px solid var(--bug);border-radius:12px;padding:1.5rem;margin:1.5rem 0;background:rgba(244,114,182,.04)}
+.bug-story-title{font-size:1.1rem;font-weight:700;color:var(--bug);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.bug-section{margin-top:1.25rem}
+.bug-section h4{color:var(--bug);font-size:.9rem;margin-bottom:.5rem}
+
+.step-block{border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1.5rem 0;background:rgba(255,255,255,.02)}
+.step-number{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:.3rem}
+.step-title{font-size:1.05rem;font-weight:600;margin-bottom:.75rem}
+
+.diff-block{background:var(--bg-code);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:1rem 0 1.5rem;font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.65}
+.diff-del{background:rgba(248,113,113,.12);color:#f87171;display:block;padding:0 1.5rem}
+.diff-add{background:rgba(74,222,128,.12);color:#4ade80;display:block;padding:0 1.5rem}
+.diff-ctx{display:block;padding:0 1.5rem;color:var(--text-muted)}
+.diff-header{padding:.5rem 1rem;background:rgba(255,255,255,.04);border-bottom:1px solid var(--border);font-size:.72rem;color:var(--text-muted);display:flex;justify-content:space-between}
+
+.design-table{width:100%;border-collapse:collapse;margin:1rem 0 1.5rem;font-size:.88rem}
+.design-table th{background:var(--bg-code);text-align:left;padding:.65rem 1rem;color:var(--text-muted);font-weight:600;font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border)}
+.design-table td{padding:.65rem 1rem;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:top}
+.design-table tr:hover td{background:rgba(255,255,255,.02)}
+
+.check-item{display:flex;align-items:flex-start;gap:.75rem;margin:.5rem 0;padding:.65rem 1rem;border-radius:8px;background:rgba(255,255,255,.02);border:1px solid var(--border)}
+.check-item.pass .check-icon{color:var(--success)}
+.check-item.fail .check-icon{color:var(--danger)}
+.check-icon{font-size:1.1rem;flex-shrink:0;margin-top:.1rem}
+
+.glossary-grid{display:grid;grid-template-columns:1fr 2fr;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.gl-term{background:var(--bg-code);padding:.65rem 1rem;font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--code-function);border-bottom:1px solid var(--border);font-weight:500}
+.gl-def{background:rgba(255,255,255,.02);padding:.65rem 1rem;font-size:.88rem;border-bottom:1px solid var(--border)}
+.gl-term:last-of-type,.gl-def:last-of-type{border-bottom:none}
+
+.exercise-block{border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin:1rem 0;background:rgba(255,255,255,.02)}
+.exercise-difficulty{display:inline-block;font-size:.75rem;font-weight:700;padding:.2rem .6rem;border-radius:10px;margin-bottom:.75rem}
+.diff-easy{background:rgba(74,222,128,.15);color:var(--success)}
+.diff-medium{background:rgba(251,191,36,.15);color:var(--warning)}
+.diff-hard{background:rgba(248,113,113,.15);color:var(--danger)}
+
+details{margin:1rem 0}
+details summary{cursor:pointer;font-weight:600;color:var(--accent);padding:.5rem;border-radius:6px;user-select:none}
+details summary:hover{background:rgba(108,99,255,.1)}
+details[open] summary{margin-bottom:.75rem}
+details .hint-content{padding:.5rem 1rem;border-left:3px solid var(--accent);color:var(--text-muted);font-size:.9rem}
+
+.results-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin:1.5rem 0}
+.result-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.25rem;text-align:center}
+.result-card .count{font-size:2.5rem;font-weight:700;color:var(--success)}
+.result-card .label{font-size:.8rem;color:var(--text-muted);margin-top:.25rem}
+
+.tag-row{display:flex;flex-wrap:wrap;gap:.4rem;margin:.75rem 0}
+.tag{font-size:.72rem;font-weight:600;padding:.2rem .65rem;border-radius:12px;letter-spacing:.03em}
+.tag-bug{background:rgba(244,114,182,.15);color:var(--bug)}
+.tag-feature{background:rgba(108,99,255,.15);color:var(--accent)}
+.tag-ux{background:rgba(74,222,128,.15);color:var(--success)}
+.tag-test{background:rgba(251,191,36,.15);color:var(--warning)}
+
+.footer-nav{display:flex;justify-content:space-between;align-items:center;margin-top:4rem;padding:1.5rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap;gap:1rem}
+.footer-info{text-align:center;color:var(--text-muted);font-size:.85rem;margin-top:2rem}
+
+@media(max-width:768px){
+  .sidebar{display:none}
+  .main{margin-left:0;padding:1.5rem 1rem}
+  .results-grid{grid-template-columns:1fr}
+  .glossary-grid{grid-template-columns:1fr}
+  .gl-term{border-bottom:none;border-top:1px solid var(--border);padding-bottom:.25rem}
+  .gl-def{border-bottom:1px solid var(--border)}
+}
+@media print{
+  .topbar,.sidebar,.progress-track,.theme-btn{display:none}
+  .main{margin:0;max-width:100%}
+  .code-block,.callout,.bug-story,.step-block{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-left">
+    <span class="session-badge">Session 03</span>
+    <span class="session-title">Seat Count Bug, Sold-Out UX &amp; Twilio SMS</span>
+  </div>
+  <div class="topbar-right">
+    <a href="index.html" class="nav-pill">⬡ Index</a>
+    <a href="session-02-implementation-and-testing.html" class="nav-pill">← Session 02</a>
+    <button class="theme-btn" onclick="toggleTheme()">☀ Light</button>
+  </div>
+</header>
+
+<div class="progress-track"><div class="progress-fill" id="prog"></div></div>
+
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-section">Overview</div>
+  <a href="#overview">What We Fixed &amp; Built</a>
+  <a href="#recap">Recap Bridge</a>
+  <div class="sidebar-section">The Bugs</div>
+  <a href="#bug-seat-count">Bug 1: Seat Count</a>
+  <a href="#bug-sold-out-ux">Bug 2: Sold-Out Hidden</a>
+  <a href="#bug-operator">Bug 3: Operator Precedence</a>
+  <div class="sidebar-section">The Fixes</div>
+  <a href="#fix-parse-attendees">parseAttendeeCount()</a>
+  <a href="#fix-availability">availability.ts</a>
+  <a href="#fix-sold-out-ui">Sold-Out Date Rows</a>
+  <a href="#fix-time-modal">Full Slot in Modal</a>
+  <a href="#fix-cap">Attendee Cap 4→10</a>
+  <div class="sidebar-section">Twilio SMS</div>
+  <a href="#concept-twilio">SMS vs. Email</a>
+  <a href="#twilio-module">_twilio.ts Module</a>
+  <a href="#twilio-booking">booking.ts</a>
+  <a href="#twilio-inquiry">inquiry.ts</a>
+  <a href="#twilio-webhook">square-webhook.ts</a>
+  <div class="sidebar-section">Testing</div>
+  <a href="#new-tests">New Test Files</a>
+  <a href="#e2e-updates">E2E Updates</a>
+  <a href="#results">Results</a>
+  <div class="sidebar-section">Wrap-Up</div>
+  <a href="#decisions">Design Decisions</a>
+  <a href="#exercises">Exercises</a>
+  <a href="#whats-next">What's Next</a>
+  <a href="#glossary">Glossary</a>
+</nav>
+
+<main class="main" id="main">
+
+<!-- A. HEADER -->
+<div class="session-header">
+  <div class="session-number">Session 03</div>
+  <h1>Seat Count Bug, Sold-Out UX &amp; Twilio SMS</h1>
+  <p style="color:var(--text-muted);max-width:60ch">Three bugs squashed, a better sold-out experience for customers, and every email notification replaced with SMS — all in one session.</p>
+  <div class="meta-row">
+    <div class="meta-chip"><strong>⏱ Time</strong> ~75 min</div>
+    <div class="meta-chip"><strong>🔴 Level</strong> Advanced</div>
+    <div class="meta-chip"><strong>📚 Requires</strong> Sessions 01a &amp; 02</div>
+    <div class="meta-chip"><strong>🐛 Bug Stories</strong> 3</div>
+    <div class="meta-chip"><strong>📦 Files changed</strong> 9 source + 3 test</div>
+  </div>
+  <div class="tag-row" style="margin-top:1rem">
+    <span class="tag tag-bug">Bug fix</span>
+    <span class="tag tag-feature">Twilio SMS</span>
+    <span class="tag tag-ux">Sold-out UX</span>
+    <span class="tag tag-test">E2E tests</span>
+    <span class="tag tag-feature">Seat counting</span>
+  </div>
+</div>
+
+<!-- B. OVERVIEW -->
+<h2 id="overview">A. What We Fixed &amp; Built</h2>
+
+<p>In Session 02 we implemented the full extra-attendees flow — group bookings, per-person waivers, pricing, and Square customer creation. We also wrote the booking note (<code>"Total attendees: N · Names: ..."</code>) onto every appointment so humans could read the group size in Square's dashboard.</p>
+
+<p>But that booking note turned out to be more important than we realised. This session discovered and fixed three bugs, then replaced the entire email notification system with Twilio SMS (which works instantly on any phone with no email setup).</p>
+
+<h3>Everything we changed</h3>
+<ul>
+  <li>🐛 <strong>api/availability.ts</strong> — Fixed group bookings deducting only 1 seat each instead of N seats. Added <code>parseAttendeeCount()</code> that reads the booking note we wrote in Session 02.</li>
+  <li>🐛 <strong>src/App.tsx</strong> — Fixed sold-out dates completely disappearing from the UI. Now they show as disabled rows with a "Full" badge — customers know the session exists but it's full.</li>
+  <li>🐛 <strong>api/booking.ts</strong> — Fixed a subtle operator precedence bug in extra-attendee name parsing.</li>
+  <li>✨ <strong>src/App.tsx (time modal)</strong> — Individual time slots at 0 remaining now show a "Full" chip in the time picker instead of vanishing.</li>
+  <li>✨ <strong>src/App.tsx (cap)</strong> — Extra attendees cap raised from 4 to 10 (studio can now take groups up to 11).</li>
+  <li>✨ <strong>api/_twilio.ts</strong> — New module: the Twilio SMS client, encapsulating all credential reading and fan-out to multiple team numbers.</li>
+  <li>✨ <strong>api/booking.ts / inquiry.ts / square-webhook.ts</strong> — Resend email calls replaced with Twilio SMS in all three API endpoints.</li>
+  <li>✨ <strong>src/i18n/siteStrings.ts</strong> — Added <code>pricingTimeModalNoSlots</code> in EN + FR.</li>
+  <li>🧪 <strong>tests/e2e/timeslot-full.spec.ts</strong> — New Playwright spec for full-slot behaviour in the time picker modal.</li>
+  <li>🧪 <strong>tests/availability-seat-count.test.mjs</strong> — Unit tests for the new seat-count logic.</li>
+</ul>
+
+<!-- C. RECAP BRIDGE -->
+<h2 id="recap">B. Recap Bridge</h2>
+
+<p>If you're reading this session fresh without the previous sessions, here's what was already built. Sessions 01a and 02 gave us a complete booking platform: a React frontend where customers choose a class type (Regular, Private, Corporate), pick a date and time, optionally add extra attendees (with per-person waivers), fill in contact details, and pay via Square's card form. The backend (Vercel serverless functions) creates a Square booking, charges the card, and sends notifications.</p>
+
+<p>The critical detail from Session 02: when we create a Square booking for a group, we write a <strong>booking note</strong> onto the appointment:
+<code>"Total attendees: 3 · Names: Alice Smith, Bob Jones, Carol Kim · Waiver confirmed: yes"</code>. This note is stored in Square's <code>customerNote</code> field and is readable back later via the <code>bookings.list()</code> API. We wrote it so the studio owner could see the group size in Square's calendar. But we're about to use it to fix our biggest bug.</p>
+
+<p>One last piece of context: the availability API (<code>GET /api/availability</code>) works by listing all Square bookings for a date range, then for each scheduled slot computing <code>seatsRemaining = maxSeats - bookedCount</code>. It's this "bookedCount" computation that had the bug we're about to fix.</p>
+
+<!-- BUGS -->
+<h2 id="bug-seat-count">C. Bug 1 — Group Bookings Counted as 1 Seat</h2>
+
+<div class="bug-story">
+  <div class="bug-story-title">🐛 Bug Story #1: The Vanishing Seat Problem</div>
+
+  <div class="bug-section">
+    <h4>🚨 The Symptom</h4>
+    <p>A group of 5 people booked a Regular Class session. The <code>/api/availability</code> response showed that session as having 15 seats remaining (20 - 1 = 19... wait, no — 20 - 1 = 19 not 15). More specifically: a group of 5 people should have consumed 5 seats, leaving 15. But the API was reporting 19 seats remaining — as if only 1 person had booked.</p>
+    <p>This meant customers could overbook a session. If max capacity is 20 people but groups each counted as 1, you could fit 20 groups of 5 — that's 100 people in a room designed for 20.</p>
+  </div>
+
+  <div class="bug-section">
+    <h4>🔍 The Diagnosis</h4>
+    <p>In <code>api/availability.ts</code>, the booking count loop looked like this:</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">Before fix — api/availability.ts</span></div>
+      <pre><span class="kw">for</span> (<span class="kw">const</span> booking <span class="kw">of</span> bookings) {
+  <span class="kw">const</span> st = booking.status ?? <span class="str">''</span>
+  <span class="kw">if</span> (st === <span class="str">'CANCELLED_BY_SELLER'</span> || st === <span class="str">'CANCELLED_BY_CUSTOMER'</span> || st === <span class="str">'DECLINED'</span>) <span class="kw">continue</span>
+  <span class="kw">const</span> key = normalizeStartAt(booking.startAt)
+  bookingCounts.<span class="fn">set</span>(key, (bookingCounts.<span class="fn">get</span>(key) ?? <span class="num">0</span>) + <span class="num">1</span>)
+  <span class="cmt">//                                                              ^^^</span>
+  <span class="cmt">//  BUG: we always add 1, regardless of how many people are in this booking</span>
+}</pre>
+    </div>
+    <p>Every Square booking record represents ONE appointment, regardless of how many people attend. Our code was counting booking records (1 per group), not counting actual people. A group of 10 was consuming the same "seat count" as a solo booking.</p>
+  </div>
+
+  <div class="bug-section">
+    <h4>🧠 The Root Cause</h4>
+    <p>Square's <code>Booking</code> object doesn't have an <code>attendeeCount</code> field — it just represents a calendar appointment. There is no built-in "number of people in this booking" in the Square API response. We had to find another way to know how many seats a booking consumed.</p>
+    <p>This is where Session 02's <em>booking note</em> saved us. Recall that in <code>api/booking.ts</code> we write:</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">api/booking.ts — booking note written in Session 02</span></div>
+      <pre><span class="kw">const</span> bookingNote = <span class="str">`Total attendees: <span class="op">${</span>totalPeople<span class="op">}</span> · Names: <span class="op">${</span>allNames<span class="op">}</span> · Waiver confirmed: yes`</span>
+<span class="cmt">// Example: "Total attendees: 3 · Names: Alice, Bob, Carol · Waiver confirmed: yes"</span>
+
+<span class="kw">await</span> square.bookings.<span class="fn">create</span>({
+  booking: {
+    customerNote: bookingNote,  <span class="cmt">// ← stored in Square, readable via bookings.list()</span>
+    <span class="cmt">// ... other fields</span>
+  }
+})</pre>
+    </div>
+    <p>The fix is to read this note back in <code>availability.ts</code> and parse the attendee count from it. This is a design pattern called <strong>metadata piggybacking</strong> — storing structured information in an unstructured text field because the API doesn't have a dedicated field for it.</p>
+  </div>
+
+  <div class="bug-section">
+    <h4>🔧 The Fix</h4>
+    <p>We added a small helper function that parses the booking note and returns the attendee count (defaulting to 1 if the note is absent or doesn't match the pattern):</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">api/availability.ts — new parseAttendeeCount helper</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><span class="kw">function</span> <span class="fn">parseAttendeeCount</span>(note: <span class="kw">string</span> | <span class="kw">undefined</span> | <span class="kw">null</span>): <span class="kw">number</span> {
+  <span class="kw">if</span> (!note) <span class="kw">return</span> <span class="num">1</span>          <span class="cmt">// no note → assume solo booking, deduct 1 seat</span>
+  <span class="kw">const</span> m = note.<span class="fn">match</span>(<span class="str">/Total attendees:\s*(\d+)/</span>)
+  <span class="cmt">// regex: find "Total attendees:" followed by optional whitespace and digits</span>
+  <span class="kw">return</span> m ? Math.<span class="fn">max</span>(<span class="num">1</span>, <span class="fn">parseInt</span>(m[<span class="num">1</span>], <span class="num">10</span>)) : <span class="num">1</span>
+  <span class="cmt">// m[1] captures the number; Math.max(1, ...) prevents zero or negative counts</span>
+  <span class="cmt">// if no match → default 1 (backwards-compatible with old bookings)</span>
+}</pre>
+    </div>
+
+    <p>Then the booking-counting loop was updated to add the attendee count instead of always adding 1:</p>
+
+    <div class="diff-block">
+      <div class="diff-header"><span>api/availability.ts — booking count loop</span></div>
+      <code class="diff-ctx">  const key = normalizeStartAt(booking.startAt)</code>
+      <code class="diff-del">- bookingCounts.set(key, (bookingCounts.get(key) ?? 0) + 1)</code>
+      <code class="diff-add">+ bookingCounts.set(key, (bookingCounts.get(key) ?? 0) + parseAttendeeCount(booking.customerNote))</code>
+    </div>
+
+    <p>Additionally, the slot filtering logic changed so that <strong>all slots are returned</strong> — even ones with 0 seats — so the frontend can show a "Full" state:</p>
+
+    <div class="diff-block">
+      <div class="diff-header"><span>api/availability.ts — always return the slot</span></div>
+      <code class="diff-ctx">  const booked = bookingCounts.get(normalizeStartAt(startAt)) ?? 0</code>
+      <code class="diff-del">- const seatsRemaining = maxSeats - booked</code>
+      <code class="diff-del">- if (seatsRemaining &gt; 0) {</code>
+      <code class="diff-del">-   availabilities.push({ startAt, seatsRemaining })</code>
+      <code class="diff-del">- }</code>
+      <code class="diff-add">+ const seatsRemaining = Math.max(0, maxSeats - booked)</code>
+      <code class="diff-add">+ availabilities.push({ startAt, seatsRemaining }) // always include, even if 0</code>
+    </div>
+
+    <p>Why <code>Math.max(0, ...)</code>? Edge case protection: if somehow a booking was created that pushed <code>booked</code> over <code>maxSeats</code> (e.g. a race condition or a manually added Square appointment), we'd get a negative number without it. Negative seats remaining would be confusing — we clamp to 0.</p>
+  </div>
+
+  <div class="bug-section">
+    <h4>🛡️ The Lesson</h4>
+    <p>When you work with an API that doesn't have a field you need, look at what fields <em>are</em> available and consider storing metadata in them. The <code>customerNote</code> field is meant for "a note from the customer" but there's nothing stopping you from using it for structured data your own system writes — as long as you control both the writer and the reader.</p>
+    <p>The deeper lesson: write tests for domain invariants, not just code paths. We had tests that the booking flow worked, but no test that verified "if 5 people book, the seat count goes down by 5". Those are different things.</p>
+  </div>
+</div>
+
+<!-- BUG 2 -->
+<h2 id="bug-sold-out-ux">D. Bug 2 — Sold-Out Dates Vanished from the UI</h2>
+
+<div class="bug-story">
+  <div class="bug-story-title">🐛 Bug Story #2: The Disappearing Session</div>
+
+  <div class="bug-section">
+    <h4>🚨 The Symptom</h4>
+    <p>When a class was fully booked, its date row completely disappeared from the session picker. Customers had no way to know whether there was ever a session on that date, or whether they'd missed it. This caused confusion: "Is there a class on June 14th?" — impossible to tell from the UI.</p>
+  </div>
+
+  <div class="bug-section">
+    <h4>🔍 The Diagnosis</h4>
+    <p>In <code>src/App.tsx</code>, the <code>effectiveDates</code> computed value filtered the list of available dates. The old logic was:</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">Old effectiveDates filter (src/App.tsx)</span></div>
+      <pre><span class="kw">const</span> effectiveDates = <span class="fn">useMemo</span>(() => {
+  <span class="kw">return</span> Object.<span class="fn">keys</span>(breedSchedule)
+    .<span class="fn">filter</span>(date => {
+      <span class="kw">const</span> entries = breedSchedule[date]
+      <span class="kw">if</span> (!entries || entries.length === <span class="num">0</span>) <span class="kw">return</span> <span class="kw">false</span>
+      <span class="kw">return</span> entries.<span class="fn">some</span>(e => e.serviceIds.length === <span class="num">0</span> || e.serviceIds.<span class="fn">includes</span>(currentServiceVariationId))
+      <span class="cmt">// ↑ only checked breed availability, NOT seat availability</span>
+      <span class="cmt">// a sold-out date with a matching breed STILL appeared in effectiveDates!</span>
+    })
+    .<span class="fn">sort</span>()
+}, [effectiveSlotsByDate, breedSchedule, currentServiceVariationId])
+<span class="cmt">// The old filter used effectiveSlotsByDate in the dependency array</span>
+<span class="cmt">// but never actually used it in the filter logic — a disconnect.</span></pre>
+    </div>
+    <p>Wait — where did the date rows go then, if <code>effectiveDates</code> included them? Because <code>effectiveSlotsByDate</code> itself only contained slots with <code>seatsRemaining > 0</code> (before the availability.ts fix above). So when all slots were full, <code>effectiveSlotsByDate[date]</code> was an empty array, and the date row was rendered but immediately failed some other check.</p>
+
+    <p>Actually, after the availability.ts change (which now always returns slots, even 0-seat ones), <code>effectiveDates</code> needed to be updated to correctly distinguish "has available slots" from "all slots full". The two concepts had been mixed up.</p>
+  </div>
+
+  <div class="bug-section">
+    <h4>🔧 The Fix</h4>
+    <p>We split dates into two separate computed values:</p>
+
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">src/App.tsx — effectiveDates (only truly available dates)</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre><span class="kw">const</span> effectiveDates = <span class="fn">useMemo</span>(() => {
+  <span class="kw">return</span> Object.<span class="fn">keys</span>(effectiveSlotsByDate)
+    .<span class="fn">filter</span>(date => {
+      <span class="kw">const</span> entries = breedSchedule[date]
+      <span class="kw">if</span> (!entries || entries.length === <span class="num">0</span>) <span class="kw">return</span> <span class="kw">false</span>
+      <span class="kw">const</span> hasBreed = entries.<span class="fn">some</span>(e => e.serviceIds.length === <span class="num">0</span> || e.serviceIds.<span class="fn">includes</span>(currentServiceVariationId))
+      <span class="kw">if</span> (!hasBreed) <span class="kw">return</span> <span class="kw">false</span>
+      <span class="kw">return</span> effectiveSlotsByDate[date].<span class="fn">some</span>(s => s.seatsRemaining > <span class="num">0</span>)
+      <span class="cmt">// ↑ now we actually check: is there at least ONE slot with seats?</span>
+    })
+    .<span class="fn">sort</span>()
+}, [effectiveSlotsByDate, breedSchedule, currentServiceVariationId])
+
+<span class="kw">const</span> soldOutDates = <span class="fn">useMemo</span>(() => {
+  <span class="kw">return</span> Object.<span class="fn">keys</span>(slotsByDate)
+    .<span class="fn">filter</span>(date => {
+      <span class="kw">const</span> entries = breedSchedule[date]
+      <span class="kw">if</span> (!entries || entries.length === <span class="num">0</span>) <span class="kw">return</span> <span class="kw">false</span>
+      <span class="kw">const</span> hasBreed = entries.<span class="fn">some</span>(e => e.serviceIds.length === <span class="num">0</span> || e.serviceIds.<span class="fn">includes</span>(currentServiceVariationId))
+      <span class="kw">if</span> (!hasBreed) <span class="kw">return</span> <span class="kw">false</span>
+      <span class="kw">return</span> slotsByDate[date].length > <span class="num">0</span> && slotsByDate[date].<span class="fn">every</span>(s => s.seatsRemaining === <span class="num">0</span>)
+      <span class="cmt">// ↑ ALL slots exist AND all are full → sold out</span>
+    })
+    .<span class="fn">sort</span>()
+}, [slotsByDate, breedSchedule, currentServiceVariationId])</pre>
+    </div>
+
+    <p>Then the render loop was updated to combine both lists and display sold-out dates as non-interactive <code>&lt;div&gt;</code> elements (vs interactive <code>&lt;button&gt;</code> elements for available dates):</p>
+
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">src/App.tsx — date list render (simplified)</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+      <pre>{[...effectiveDates, ...soldOutDates].<span class="fn">sort</span>().<span class="fn">map</span>(dateIso => {
+  <span class="kw">const</span> isSoldOut = soldOutDates.<span class="fn">includes</span>(dateIso)
+  <span class="kmt">// sold-out dates render as a non-clickable div</span>
+  <span class="kw">if</span> (isSoldOut) {
+    <span class="kw">return</span> (
+      <span class="str">&lt;div</span>
+        key={dateIso}
+        <span class="fn">className</span>=<span class="str">"pricing-session-row is-disabled"</span>
+        aria-disabled=<span class="str">"true"</span>
+      <span class="str">&gt;</span>
+        &lt;span className=<span class="str">"pricing-session-date"</span>&gt;{<span class="fn">formatShortSessionDate</span>(dateIso, lang)}&lt;/span&gt;
+        &lt;span className=<span class="str">"pricing-session-spots"</span>&gt;{s.pricingSpotFull}&lt;/span&gt;
+        <span class="cmt">{/* s.pricingSpotFull = "Full" in EN, "Complet" in FR */}</span>
+      <span class="str">&lt;/div&gt;</span>
+    )
+  }
+  <span class="cmt">// available dates render as a clickable button</span>
+  <span class="kw">return</span> (
+    &lt;button key={dateIso} className=<span class="str">"pricing-session-row"</span> onClick={...}&gt;
+      ...
+    &lt;/button&gt;
+  )
+})}</pre>
+    </div>
+
+    <div class="callout key">
+      <strong>button vs. div for interactivity</strong>. Using a <code>&lt;div&gt;</code> instead of a <code>&lt;button&gt;</code> for sold-out rows is intentional. A <code>&lt;button&gt;</code> is keyboard-focusable and screen-reader-announced as "clickable". A <code>&lt;div aria-disabled="true"</code>&gt; communicates "this exists but is not interactive". This is the correct ARIA (Accessible Rich Internet Applications) pattern for a disabled list item.
+    </div>
+  </div>
+
+  <div class="bug-section">
+    <h4>🛡️ The Lesson</h4>
+    <p>"No data" and "data exists but is unavailable" are semantically different states and deserve different UI treatment. Hiding sold-out inventory is fine for a product catalogue where the user doesn't need to know something exists. But for a time-based calendar, customers benefit from seeing that a session happened/is scheduled — it helps them understand the studio's rhythm and plan ahead.</p>
+  </div>
+</div>
+
+<!-- BUG 3 -->
+<h2 id="bug-operator">E. Bug 3 — Operator Precedence in Name Parsing</h2>
+
+<div class="bug-story">
+  <div class="bug-story-title">🐛 Bug Story #3: The Invisible Attendee Bug</div>
+
+  <div class="bug-section">
+    <h4>🚨 The Symptom</h4>
+    <p>When an extra attendee entered a single-word name (e.g. "Madonna" — no last name), the <code>familyName</code> field sent to Square was <strong>the first name repeated</strong> instead of the first name. So Square's customer record would show "Madonna Madonna" as first+last. Not a crash, but incorrect data in Square's CRM.</p>
+  </div>
+
+  <div class="bug-section">
+    <h4>🔍 The Diagnosis</h4>
+    <p>The name-splitting code:</p>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">The original (broken) line</span></div>
+      <pre><span class="kw">return</span> { givenName: parts[<span class="num">0</span>] ?? a.name, familyName: parts.<span class="fn">slice</span>(<span class="num">1</span>).<span class="fn">join</span>(<span class="str">' '</span>) || parts[<span class="num">0</span>] ?? a.name }
+<span class="cmt">//                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^</span>
+<span class="cmt">//                                         This is: (A || B) ?? C  because || has HIGHER precedence than ??</span>
+<span class="cmt">//                                         intended: A || (B ?? C)</span></pre>
+    </div>
+    <p>Let's trace through it with a single-word name "Madonna":</p>
+    <ul>
+      <li><code>parts = ["Madonna"]</code></li>
+      <li><code>parts.slice(1).join(' ')</code> → <code>""</code> (empty string — no last name words)</li>
+      <li><code>"" || parts[0] ?? a.name</code> is evaluated as <code>("" || parts[0]) ?? a.name</code></li>
+      <li><code>"" || "Madonna"</code> → <code>"Madonna"</code> (correct so far)</li>
+      <li><code>"Madonna" ?? a.name</code> → <code>"Madonna"</code> (fine)</li>
+      <li>Result: <code>familyName: "Madonna"</code> — first name used as last name too ✗</li>
+    </ul>
+    <p>The intended logic was: "use slice(1).join(' ') as the last name IF it's non-empty, otherwise fall back to first name as a reasonable default." But the precedence made the fallback unreachable.</p>
+  </div>
+
+  <div class="bug-section">
+    <h4>🔧 The Fix</h4>
+    <p>Add parentheses to force the intended evaluation order:</p>
+    <div class="diff-block">
+      <div class="diff-header"><span>api/booking.ts — extra attendee name parsing</span></div>
+      <code class="diff-del">- return { givenName: parts[0] ?? a.name, familyName: parts.slice(1).join(' ') || parts[0] ?? a.name }</code>
+      <code class="diff-add">+ return { givenName: parts[0] ?? a.name, familyName: parts.slice(1).join(' ') || (parts[0] ?? a.name) }</code>
+    </div>
+    <p>With parentheses: <code>parts.slice(1).join(' ') || (parts[0] ?? a.name)</code></p>
+    <ul>
+      <li>If slice gives a non-empty string (there IS a last name) → use it</li>
+      <li>If slice gives <code>""</code> (no last name) → use <code>parts[0] ?? a.name</code> (i.e. the first word, or the whole name if splitting failed)</li>
+    </ul>
+  </div>
+
+  <div class="bug-section">
+    <h4>🛡️ The Lesson</h4>
+    <p>JavaScript's <code>??</code> (nullish coalescing) and <code>||</code> (logical OR) have different precedences, and mixing them in a single expression without parentheses is a common footgun. The rule: <code>||</code> evaluates before <code>??</code>. When you mix them, add parentheses to make your intent unambiguous — it's safer and more readable.</p>
+    <div class="callout warn">Never chain <code>||</code> and <code>??</code> in the same expression without explicit parentheses. ESLint rule <code>no-mixed-operators</code> catches this class of bug automatically — worth enabling.</div>
+  </div>
+</div>
+
+<!-- FIXES -->
+<h2 id="fix-availability">F. Step-by-Step: Fixing availability.ts</h2>
+
+<div class="step-block">
+  <div class="step-number">Step 1</div>
+  <div class="step-title">Add parseAttendeeCount() helper</div>
+  <p>Added directly below the <code>normalizeStartAt</code> constant, before the <code>dateChunks</code> function. Placement matters: helper functions should be defined before they're used.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">api/availability.ts</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="kw">function</span> <span class="fn">parseAttendeeCount</span>(note: <span class="kw">string</span> | <span class="kw">undefined</span> | <span class="kw">null</span>): <span class="kw">number</span> {
+  <span class="kw">if</span> (!note) <span class="kw">return</span> <span class="num">1</span>
+  <span class="kw">const</span> m = note.<span class="fn">match</span>(<span class="str">/Total attendees:\s*(\d+)/</span>)
+  <span class="kw">return</span> m ? Math.<span class="fn">max</span>(<span class="num">1</span>, <span class="fn">parseInt</span>(m[<span class="num">1</span>], <span class="num">10</span>)) : <span class="num">1</span>
+}</pre>
+  </div>
+</div>
+
+<div class="step-block">
+  <div class="step-number">Step 2</div>
+  <div class="step-title">Update bookingCounts to sum attendees</div>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">api/availability.ts — booking loop</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre>bookingCounts.<span class="fn">set</span>(
+  key,
+  (bookingCounts.<span class="fn">get</span>(key) ?? <span class="num">0</span>) + <span class="fn">parseAttendeeCount</span>(booking.customerNote)
+  <span class="cmt">//                            ↑ reads "Total attendees: N" from the booking note</span>
+  <span class="cmt">//                              falls back to 1 for old bookings without the note</span>
+)</pre>
+  </div>
+</div>
+
+<div class="step-block">
+  <div class="step-number">Step 3</div>
+  <div class="step-title">Always return the slot (even 0 remaining)</div>
+  <div class="code-block">
+    <div class="code-header"><span class="code-lang">api/availability.ts — slot push</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="kw">const</span> seatsRemaining = Math.<span class="fn">max</span>(<span class="num">0</span>, maxSeats - booked)
+<span class="cmt">// Math.max(0, ...) prevents negative seat counts from race conditions</span>
+availabilities.<span class="fn">push</span>({ startAt, seatsRemaining })
+<span class="cmt">// Push ALL slots — the frontend now decides how to display 0-seat slots</span></pre>
+  </div>
+  <p>Before this change, <code>seatsRemaining &lt;= 0</code> meant the slot was silently excluded from the response. Now every scheduled slot appears, and the frontend handles the visual distinction between "available" and "full".</p>
+</div>
+
+<!-- SOLD-OUT UI -->
+<h2 id="fix-sold-out-ui">G. The Sold-Out Date Row UI</h2>
+
+<p>With <code>soldOutDates</code> computed, the render loop was updated. Here is the complete logic for how the date list renders:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">src/App.tsx — date list render logic</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre>{<span class="cmt">/* Merge both lists and sort chronologically */</span>}
+{[...effectiveDates, ...soldOutDates].<span class="fn">sort</span>().<span class="fn">map</span>(dateIso => {
+  <span class="kw">const</span> isSoldOut = !slotsByDate[dateIso] || slotsByDate[dateIso].<span class="fn">every</span>(s => s.seatsRemaining === <span class="num">0</span>)
+
+  <span class="kw">const</span> breedEntries = breedSchedule[dateIso] ?? []
+  <span class="kw">const</span> breedForService = breedEntries
+    .<span class="fn">filter</span>(e => e.serviceIds.length === <span class="num">0</span> || e.serviceIds.<span class="fn">includes</span>(currentServiceVariationId))
+    .<span class="fn">map</span>(e => lang === <span class="str">'fr'</span> ? e.breed.fr : e.breed.en)
+    .<span class="fn">join</span>(<span class="str">', '</span>)
+
+  <span class="kw">if</span> (isSoldOut) {
+    <span class="kw">return</span> (
+      <span class="cmt">// A div, not a button — cannot be focused or clicked</span>
+      &lt;div
+        key={dateIso}
+        className=<span class="str">"pricing-session-row is-disabled"</span>
+        aria-disabled=<span class="str">"true"</span>
+      &gt;
+        &lt;span className=<span class="str">"pricing-session-date"</span>&gt;
+          {<span class="fn">formatShortSessionDate</span>(dateIso, lang)}
+          {breedForService && (
+            &lt;span className=<span class="str">"pricing-session-breed"</span>&gt;({breedForService})&lt;/span&gt;
+          )}
+        &lt;/span&gt;
+        &lt;span className=<span class="str">"pricing-session-spots"</span>&gt;{s.pricingSpotFull}&lt;/span&gt;
+        <span class="cmt">{/* pricingSpotFull = "Full" (EN) or "Complet" (FR) */}</span>
+      &lt;/div&gt;
+    )
+  }
+
+  <span class="cmt">// Available date → interactive button</span>
+  <span class="kw">return</span> (
+    &lt;button
+      key={dateIso}
+      type=<span class="str">"button"</span>
+      className={<span class="str">`pricing-session-row${sel ? ' is-selected' : ''}`</span>}
+      onClick={() => setPendingSessionIso(dateIso)}
+    &gt;
+      ...
+    &lt;/button&gt;
+  )
+})}</pre>
+</div>
+
+<!-- TIME MODAL -->
+<h2 id="fix-time-modal">H. Full Slot in the Time Modal</h2>
+
+<p>The same "show don't hide" principle was applied to individual time slots inside the time picker modal. Before, slots with 0 seats were simply not rendered. After:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">src/App.tsx — time slot list render</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre>{(effectiveSlotsByDate[pendingSessionIso] ?? []).length === <span class="num">0</span> && (
+  &lt;p className=<span class="str">"pricing-helper-text"</span>&gt;{s.pricingTimeModalNoSlots}&lt;/p&gt;
+  <span class="cmt">{/* s.pricingTimeModalNoSlots = "All times for this date are fully booked." */}</span>
+)}
+
+{(effectiveSlotsByDate[pendingSessionIso] ?? []).<span class="fn">map</span>(slot => {
+  <span class="kw">if</span> (slot.seatsRemaining === <span class="num">0</span>) {
+    <span class="kw">return</span> (
+      <span class="cmt">// Full slot: non-interactive div</span>
+      &lt;div key={slot.startAt} className=<span class="str">"pricing-time-slot-row is-disabled"</span> aria-disabled=<span class="str">"true"</span>&gt;
+        &lt;span className=<span class="str">"pricing-time-slot-label"</span>&gt;{<span class="fn">formatSquareSlotTime</span>(slot.startAt, lang)}&lt;/span&gt;
+        &lt;span className=<span class="str">"pricing-session-spots"</span>&gt;{s.pricingSpotFull}&lt;/span&gt;
+      &lt;/div&gt;
+    )
+  }
+  <span class="kw">return</span> (
+    <span class="cmt">// Available slot: clickable button</span>
+    &lt;button
+      key={slot.startAt}
+      type=<span class="str">"button"</span>
+      className=<span class="str">"pricing-time-slot-row"</span>
+      onClick={() => { <span class="cmt">/* advance to contact step */</span> }}
+    &gt;
+      &lt;span&gt;{<span class="fn">formatSquareSlotTime</span>(slot.startAt, lang)}&lt;/span&gt;
+      &lt;span&gt;{<span class="fn">interpolate</span>(s.pricingSpotsRemain, { count: String(slot.seatsRemaining) })}&lt;/span&gt;
+    &lt;/button&gt;
+  )
+})}</pre>
+</div>
+
+<p>The <code>pricingTimeModalNoSlots</code> string was added to <code>siteStrings.ts</code> in both EN and FR:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">src/i18n/siteStrings.ts — new string</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="cmt">// English</span>
+pricingTimeModalNoSlots: <span class="str">'All times for this date are fully booked.'</span>,
+
+<span class="cmt">// French</span>
+pricingTimeModalNoSlots: <span class="str">'Tous les créneaux pour cette date sont complets.'</span>,</pre>
+</div>
+
+<div class="callout tip">
+  When should you show empty state vs. hide it? If the <em>absence</em> of items is informative (e.g. "all sold out"), show a message. If it's always an error or transient state the user doesn't need to see, hide it. The time modal was a case where "all slots full" is genuinely useful information.
+</div>
+
+<!-- CAP -->
+<h2 id="fix-cap">I. Extra Attendees Cap: 4 → 10</h2>
+
+<p>The studio can comfortably handle groups of up to 11 people (1 primary + 10 extra), so the cap was raised.</p>
+
+<div class="diff-block">
+  <div class="diff-header"><span>src/App.tsx — attendee add button guard</span></div>
+  <code class="diff-del">- {extraAttendees.length &lt; 4 && (</code>
+  <code class="diff-add">+ {extraAttendees.length &lt; 10 && (</code>
+  <code class="diff-ctx">    &lt;button type="button" className="pricing-add-attendee-btn"&gt;...</code>
+</div>
+
+<div class="diff-block">
+  <div class="diff-header"><span>src/i18n/siteStrings.ts — helper text (EN)</span></div>
+  <code class="diff-del">- pricingExtraAttendeesHelper: 'Bringing friends? Add up to 4 more people (each needs their own waiver).',</code>
+  <code class="diff-add">+ pricingExtraAttendeesHelper: 'Bringing friends? Add up to 10 more people (each needs their own waiver).',</code>
+</div>
+
+<div class="diff-block">
+  <div class="diff-header"><span>src/i18n/siteStrings.ts — helper text (FR)</span></div>
+  <code class="diff-del">- pricingExtraAttendeesHelper: "Vous venez à plusieurs ? Ajoutez jusqu'à 4 personnes supplémentaires (chacune doit accepter la décharge).",</code>
+  <code class="diff-add">+ pricingExtraAttendeesHelper: "Vous venez à plusieurs ? Ajoutez jusqu'à 10 personnes supplémentaires (chacune doit accepter la décharge).",</code>
+</div>
+
+<!-- TWILIO CONCEPT -->
+<h2 id="concept-twilio">J. Concept: Why Twilio SMS Instead of Email</h2>
+
+<p>The original implementation used <strong>Resend</strong> — a developer-friendly email API — to notify the studio owner of new bookings and inquiries. Here's why we switched to Twilio SMS:</p>
+
+<table class="design-table">
+  <thead><tr><th>Dimension</th><th>Email (Resend)</th><th>SMS (Twilio)</th></tr></thead>
+  <tbody>
+    <tr><td>Delivery latency</td><td>Seconds to minutes</td><td>~1–2 seconds</td></tr>
+    <tr><td>Open rate</td><td>~20–30% within 1 hour</td><td>~98% within 3 minutes</td></tr>
+    <tr><td>Inbox noise</td><td>Competes with hundreds of emails</td><td>Phone buzzes, hard to miss</td></tr>
+    <tr><td>Setup needed</td><td>Email address + spam rules</td><td>Phone number (already have one)</td></tr>
+    <tr><td>Multiple recipients</td><td>CC/BCC or multiple sends</td><td>Fan-out to N numbers trivially</td></tr>
+    <tr><td>Rich formatting</td><td>HTML email</td><td>Plain text only</td></tr>
+    <tr><td>Cost</td><td>~$0/month at low volume</td><td>~$0.0075/SMS</td></tr>
+  </tbody>
+</table>
+
+<p>For a small studio that books maybe 10–50 sessions per month, cost is negligible. The open rate and immediacy advantages far outweigh the loss of HTML formatting. Studio owners typically check phones constantly but might miss emails until they're at a desk.</p>
+
+<div class="callout key">
+  Twilio works by giving you a <strong>virtual phone number</strong> that can send and receive SMS. You pay per message. Your backend calls the Twilio REST API (via the <code>twilio</code> npm package), which delivers the SMS through Twilio's carrier network.
+</div>
+
+<h3>Twilio terminology</h3>
+<ul>
+  <li><strong>Account SID</strong> — your unique account identifier (like a username). Starts with "AC".</li>
+  <li><strong>Auth Token</strong> — the secret key for your account (like a password). Keep it secret.</li>
+  <li><strong>From number</strong> — the Twilio virtual number that sends messages. Formatted in E.164 (e.g. <code>+12494026223</code>).</li>
+  <li><strong>To number(s)</strong> — the real phone numbers that receive the messages. Also E.164.</li>
+  <li><strong>E.164</strong> — the international phone number format: <code>+</code> then country code then number, no spaces or dashes.</li>
+</ul>
+
+<!-- TWILIO MODULE -->
+<h2 id="twilio-module">K. Building api/_twilio.ts</h2>
+
+<p>We created a shared module so all three API endpoints can import <code>sendTeamSms()</code> instead of each having their own Twilio client boilerplate. This is the <strong>DRY (Don't Repeat Yourself)</strong> principle applied to credential management.</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">api/_twilio.ts — full file</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="kw">import</span> twilio <span class="kw">from</span> <span class="str">'twilio'</span>           <span class="cmt">// official Twilio Node.js SDK</span>
+<span class="kw">import</span> { stripBom } <span class="kw">from</span> <span class="str">'./_square.js'</span>  <span class="cmt">// strips UTF-8 BOM from env vars on Windows</span>
+
+<span class="kw">function</span> <span class="fn">getClient</span>() {
+  <span class="cmt">// Create a new Twilio client each call (stateless — safe in serverless)</span>
+  <span class="kw">return</span> <span class="fn">twilio</span>(
+    <span class="fn">stripBom</span>(process.env.TWILIO_ACCOUNT_SID ?? <span class="str">''</span>),
+    <span class="fn">stripBom</span>(process.env.TWILIO_AUTH_TOKEN ?? <span class="str">''</span>),
+  )
+}
+
+<span class="kw">function</span> <span class="fn">getTeamNumbers</span>(): <span class="kw">string</span>[] {
+  <span class="cmt">// TWILIO_TEAM_NUMBERS is comma-separated E.164 numbers</span>
+  <span class="cmt">// e.g. "+15142424947,+14385559999"</span>
+  <span class="kw">return</span> <span class="fn">stripBom</span>(process.env.TWILIO_TEAM_NUMBERS ?? <span class="str">''</span>)
+    .<span class="fn">split</span>(<span class="str">','</span>)
+    .<span class="fn">map</span>(n => n.<span class="fn">trim</span>())
+    .<span class="fn">filter</span>(Boolean)          <span class="cmt">// remove empty strings from trailing commas</span>
+}
+
+<span class="kw">function</span> <span class="fn">getFromNumber</span>(): <span class="kw">string</span> {
+  <span class="kw">return</span> <span class="fn">stripBom</span>(process.env.TWILIO_FROM_NUMBER ?? <span class="str">''</span>)
+}
+
+<span class="kw">export async function</span> <span class="fn">sendTeamSms</span>(body: <span class="kw">string</span>): Promise&lt;<span class="kw">void</span>&gt; {
+  <span class="kw">const</span> client = <span class="fn">getClient</span>()
+  <span class="kw">const</span> from = <span class="fn">getFromNumber</span>()
+  <span class="kw">const</span> numbers = <span class="fn">getTeamNumbers</span>()
+
+  <span class="kw">if</span> (!from || numbers.length === <span class="num">0</span>) {
+    <span class="cmt">// Gracefully skip in dev if env vars not set — no crash</span>
+    console.<span class="fn">warn</span>(<span class="str">'[Twilio] Skipping SMS — TWILIO_FROM_NUMBER or TWILIO_TEAM_NUMBERS not set'</span>)
+    <span class="kw">return</span>
+  }
+
+  <span class="cmt">// Send to ALL team numbers in parallel — Promise.all waits for all to complete</span>
+  <span class="kw">await</span> Promise.<span class="fn">all</span>(
+    numbers.<span class="fn">map</span>(to =>
+      client.messages.<span class="fn">create</span>({ from, to, body }).<span class="fn">catch</span>(err =>
+        console.<span class="fn">error</span>(<span class="str">`[Twilio] SMS to <span class="op">${</span>to<span class="op">}</span> failed:`</span>, err),
+        <span class="cmt">// per-number catch: one failing number doesn't block others</span>
+      ),
+    ),
+  )
+}</pre>
+</div>
+
+<div class="callout tip">
+  The <code>_</code> prefix on <code>_twilio.ts</code> is a Vercel convention: files starting with <code>_</code> in the <code>api/</code> directory are treated as shared modules, not as HTTP endpoints. Without the prefix, Vercel would expose a <code>/api/_twilio</code> route — we definitely don't want that.
+</div>
+
+<!-- TWILIO BOOKING -->
+<h2 id="twilio-booking">L. Replacing Resend in booking.ts</h2>
+
+<p>The Resend email at the end of a successful booking was replaced with a rich SMS notification. The SMS formats the booking details as a structured plain-text message with emoji section headers for quick scanning on a phone:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">api/booking.ts — booking notification SMS</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="cmt">// Format the session date and time in Montréal timezone for the SMS</span>
+<span class="kw">const</span> sessionDate = <span class="kw">new</span> Intl.<span class="fn">DateTimeFormat</span>(<span class="str">'en-CA'</span>, {
+  weekday: <span class="str">'short'</span>, month: <span class="str">'short'</span>, day: <span class="str">'numeric'</span>, year: <span class="str">'numeric'</span>,
+  timeZone: <span class="str">'America/Toronto'</span>,        <span class="cmt">// Montréal uses Toronto's timezone zone key</span>
+}).<span class="fn">format</span>(<span class="kw">new</span> <span class="fn">Date</span>(startAt))
+
+<span class="kw">const</span> sessionTime = <span class="kw">new</span> Intl.<span class="fn">DateTimeFormat</span>(<span class="str">'en-CA'</span>, {
+  hour: <span class="str">'numeric'</span>, minute: <span class="str">'2-digit'</span>, hour12: <span class="kw">true</span>,
+  timeZone: <span class="str">'America/Toronto'</span>,
+}).<span class="fn">format</span>(<span class="kw">new</span> <span class="fn">Date</span>(startAt))
+
+<span class="kw">await</span> <span class="fn">sendTeamSms</span>(
+  <span class="str">`📋 NEW BOOKING — Studio Yopaw\n`</span> +
+  <span class="str">`-----------------------------\n`</span> +
+  <span class="str">`Service: <span class="op">${</span>serviceName<span class="op">}${</span>needsMatRental ? <span class="str">' + Mat Rental'</span> : <span class="str">''</span><span class="op">}</span>\n`</span> +
+  <span class="str">`Session: <span class="op">${</span>sessionDate<span class="op">}</span> at <span class="op">${</span>sessionTime<span class="op">}</span> (Montréal)\n\n`</span> +
+  <span class="str">`👤 Primary booker:\n`</span> +
+  <span class="str">`  Name: <span class="op">${</span>givenName<span class="op">}</span> <span class="op">${</span>familyName<span class="op">}</span>\n`</span> +
+  <span class="str">`  Email: <span class="op">${</span>email<span class="op">}</span>\n`</span> +
+  <span class="str">`  Phone: <span class="op">${</span>phone<span class="op">}</span>\n\n`</span> +
+  <span class="str">`👥 Total attendees: <span class="op">${</span>totalPeople<span class="op">}</span>\n`</span> +
+  (totalPeople > <span class="num">1</span> ? <span class="str">`  Names: <span class="op">${</span>allNames<span class="op">}</span>\n`</span> : <span class="str">''</span>) +
+  <span class="str">`\n💳 Payment:\n`</span> +
+  <span class="str">`  Total: $<span class="op">${</span>totalDollars<span class="op">}</span> CAD\n`</span> +
+  <span class="str">`  Status: <span class="op">${</span>payment!.status<span class="op">}</span>\n`</span> +
+  <span class="str">`  Booking ID: <span class="op">${</span>booking!.id<span class="op">}</span>`</span>
+).<span class="fn">catch</span>(err => console.<span class="fn">error</span>(<span class="str">'[Twilio] booking SMS failed:'</span>, err))
+<span class="cmt">// .catch so a Twilio failure doesn't bubble up and fail the booking response</span></pre>
+</div>
+
+<!-- TWILIO INQUIRY -->
+<h2 id="twilio-inquiry">M. Replacing Resend in inquiry.ts</h2>
+
+<p>The inquiry endpoint handles both "lead capture" (Regular Class fire-and-forget) and actual Private/Corporate inquiries. The SMS message format uses emoji flags to distinguish them:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">api/inquiry.ts — inquiry/lead SMS</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="kw">const</span> isLead = classType === <span class="str">'Regular Class'</span>
+<span class="cmt">// Regular Class = lead capture (fires before payment); others = real inquiries</span>
+
+<span class="kw">const</span> smsBody =
+  <span class="str">`<span class="op">${</span>isLead ? <span class="str">'🔔 NEW LEAD'</span> : <span class="str">'📩 NEW INQUIRY'</span><span class="op">}</span> — Studio Yopaw\n`</span> +
+  <span class="str">`-----------------------------\n`</span> +
+  <span class="str">`Class: <span class="op">${</span>classType<span class="op">}</span>\n\n`</span> +
+  <span class="str">`👤 Contact info:\n`</span> +
+  <span class="str">`  Name: <span class="op">${</span>fullName<span class="op">}</span>\n`</span> +
+  <span class="str">`  Email: <span class="op">${</span>email<span class="op">}</span>\n`</span> +
+  <span class="str">`  Phone: <span class="op">${</span>phone<span class="op">}</span>\n`</span> +
+  (companyName ? <span class="str">`  Company: <span class="op">${</span>companyName<span class="op">}</span>\n`</span> : <span class="str">''</span>) +   <span class="cmt">// conditional field</span>
+  <span class="str">`\n📅 Request details:\n`</span> +
+  <span class="str">`  Preferred date: <span class="op">${</span>dateStr<span class="op">}</span>\n`</span> +
+  <span class="str">`  Preferred time: <span class="op">${</span>timeStr<span class="op">}</span>\n`</span> +
+  (groupSize ? <span class="str">`  Group size: <span class="op">${</span>groupSize<span class="op">}</span>\n`</span> : <span class="str">''</span>) +
+  (message ? <span class="str">`\n💬 Message:\n  <span class="op">${</span>message<span class="op">}</span>`</span> : <span class="str">''</span>)
+
+<span class="kw">await</span> <span class="fn">sendTeamSms</span>(smsBody)</pre>
+</div>
+
+<!-- TWILIO WEBHOOK -->
+<h2 id="twilio-webhook">N. Replacing Resend in square-webhook.ts</h2>
+
+<p>The webhook handler fires when Square sends payment or customer events. Two events are handled:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">api/square-webhook.ts — payment completed event</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="cmt">// payment.updated / payment.created where status === 'COMPLETED'</span>
+<span class="kw">if</span> (event.type === <span class="str">'payment.updated'</span> || event.type === <span class="str">'payment.created'</span>) {
+  <span class="kw">if</span> (payment.status === <span class="str">'COMPLETED'</span>) {
+    <span class="kw">const</span> amountCents = (payment.amount_money <span class="kw">as</span> { amount: <span class="kw">number</span> }).amount
+    <span class="kw">await</span> <span class="fn">sendTeamSms</span>(
+      <span class="str">`✅ PAYMENT COMPLETED — Studio Yopaw\n`</span> +
+      <span class="str">`Amount: $<span class="op">${</span>(amountCents / <span class="num">100</span>).<span class="fn">toFixed</span>(<span class="num">2</span>)<span class="op">}</span> CAD\n`</span> +
+      <span class="str">`Payment ID: <span class="op">${</span>payment.id<span class="op">}</span>\n`</span> +
+      <span class="str">`Reference (Booking): <span class="op">${</span>payment.reference_id ?? <span class="str">'—'</span><span class="op">}</span>`</span>
+    ).<span class="fn">catch</span>(err => console.<span class="fn">error</span>(<span class="str">'[Twilio] payment SMS failed:'</span>, err))
+  }
+}
+
+<span class="cmt">// customer.created event</span>
+<span class="kw">if</span> (event.type === <span class="str">'customer.created'</span>) {
+  <span class="kw">await</span> <span class="fn">sendTeamSms</span>(
+    <span class="str">`🆕 NEW CUSTOMER — Studio Yopaw\n`</span> +
+    <span class="str">`Name: <span class="op">${</span>customer.given_name<span class="op">}</span> <span class="op">${</span>customer.family_name<span class="op">}</span>\n`</span> +
+    <span class="str">`Email: <span class="op">${</span>customer.email_address ?? <span class="str">'—'</span><span class="op">}</span>\n`</span> +
+    <span class="str">`Phone: <span class="op">${</span>customer.phone_number ?? <span class="str">'—'</span><span class="op">}</span>`</span>
+  ).<span class="fn">catch</span>(err => console.<span class="fn">error</span>(<span class="str">'[Twilio] customer SMS failed:'</span>, err))
+}</pre>
+</div>
+
+<!-- ENV VARS -->
+<h3>New Environment Variables Required</h3>
+
+<p>The Resend env vars (<code>RESEND_API_KEY</code>, <code>RESEND_FROM_EMAIL</code>, <code>LEAD_NOTIFY_EMAIL</code>, <code>PAYMENT_NOTIFY_EMAIL</code>) were all replaced by these four Twilio vars:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">.env.local — Twilio variables</span></div>
+  <pre><span class="cmt"># Twilio SMS notifications</span>
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxx  <span class="cmt"># from Twilio Console → Account Info</span>
+TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx  <span class="cmt"># from Twilio Console → Account Info</span>
+TWILIO_FROM_NUMBER=+12494026223                     <span class="cmt"># the Twilio number that sends SMS</span>
+TWILIO_TEAM_NUMBERS=+15142424947,+14385559999       <span class="cmt"># comma-separated — all receive every SMS</span></pre>
+</div>
+
+<!-- TESTING -->
+<h2 id="new-tests">O. New Test Files</h2>
+
+<h3>tests/availability-seat-count.test.mjs</h3>
+<p>A dedicated unit test suite for the <code>parseAttendeeCount</code> function and the new seat-deduction logic. Verifies the fix across several cases:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">tests/availability-seat-count.test.mjs — key test cases</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="cmt">// Test 1: parseAttendeeCount from booking note</span>
+assert.equal(<span class="fn">parseAttendeeCount</span>(<span class="str">'Total attendees: 5 · Names: ...'</span>), <span class="num">5</span>)
+<span class="cmt">// Test 2: old bookings with no note default to 1</span>
+assert.equal(<span class="fn">parseAttendeeCount</span>(<span class="kw">null</span>), <span class="num">1</span>)
+assert.equal(<span class="fn">parseAttendeeCount</span>(<span class="str">''</span>), <span class="num">1</span>)
+<span class="cmt">// Test 3: prevents negative counts</span>
+assert.equal(<span class="fn">parseAttendeeCount</span>(<span class="str">'Total attendees: 0'</span>), <span class="num">1</span>)
+<span class="cmt">// Test 4: seatsRemaining is always ≥ 0</span>
+<span class="cmt">// (even if booked > maxSeats due to a race condition)</span>
+assert(seatsRemaining >= <span class="num">0</span>)</pre>
+</div>
+
+<h3>tests/check-twilio-sms.mjs</h3>
+<p>A quick integration smoke test that fires a test SMS to verify Twilio credentials are configured correctly in the current environment. Useful for verifying production env vars after deployment.</p>
+
+<h2 id="e2e-updates">P. E2E Test Updates</h2>
+
+<h3>New: tests/e2e/timeslot-full.spec.ts</h3>
+<p>A dedicated Playwright spec for the time modal sold-out behaviour. Two scenarios:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="code-lang">tests/e2e/timeslot-full.spec.ts — scenario structure</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="cmt">// Scenario 1: one full slot, one available slot in the modal</span>
+<span class="cmt">// Set up: availability API returns [{seatsRemaining:0}, {seatsRemaining:5}]</span>
+<span class="cmt">// Assert: full slot renders as .is-disabled div containing "Full"</span>
+<span class="cmt">// Assert: available slot renders as a &lt;button&gt; with "5 spots remaining"</span>
+<span class="cmt">// Assert: date row is NOT disabled (still has an available slot)</span>
+
+<span class="cmt">// Scenario 2: ALL slots full</span>
+<span class="cmt">// Set up: availability API returns [{seatsRemaining:0}, {seatsRemaining:0}]</span>
+<span class="cmt">// Assert: date row has class .is-disabled</span>
+<span class="cmt">// Assert: clicking the disabled row does NOT open the time modal</span>
+<span class="cmt">// Assert: date row displays "Full" text</span>
+
+test(<span class="str">'time modal: full slot shows disabled + Full text, available slot is clickable'</span>, async ({ page }) => {
+  <span class="cmt">// Mock the availability API</span>
+  <span class="kw">await</span> page.<span class="fn">route</span>(<span class="str">'**/api/availability**'</span>, r => r.<span class="fn">fulfill</span>({ json: { availabilities: [
+    { startAt: <span class="str">`<span class="op">${</span>iso<span class="op">}</span>T14:30:00Z`</span>, seatsRemaining: <span class="num">0</span> },
+    { startAt: <span class="str">`<span class="op">${</span>iso<span class="op">}</span>T16:00:00Z`</span>, seatsRemaining: <span class="num">5</span> },
+  ]}}))
+  <span class="cmt">// ... navigate to booking section, select Regular Class, choose "bring own mat"</span>
+  <span class="kw">const</span> fullSlot = slots.<span class="fn">nth</span>(<span class="num">0</span>)
+  <span class="kw">await</span> expect(fullSlot).<span class="fn">toHaveClass</span>(<span class="str">/is-disabled/</span>)
+  <span class="kw">await</span> expect(fullSlot).<span class="fn">toContainText</span>(<span class="str">'Full'</span>)
+  <span class="kw">await</span> expect(fullSlot).<span class="fn">not</span>.<span class="fn">toHaveAttribute</span>(<span class="str">'type'</span>, <span class="str">'button'</span>)  <span class="cmt">// must be div, not button</span>
+
+  <span class="kw">const</span> availSlot = slots.<span class="fn">nth</span>(<span class="num">1</span>)
+  <span class="kw">await</span> expect(availSlot).<span class="fn">not</span>.<span class="fn">toHaveClass</span>(<span class="str">/is-disabled/</span>)
+  <span class="kw">await</span> expect(availSlot).<span class="fn">toContainText</span>(<span class="str">'5 spots remaining'</span>)
+  <span class="kw">await</span> expect(availSlot).<span class="fn">toHaveAttribute</span>(<span class="str">'type'</span>, <span class="str">'button'</span>)
+})</pre>
+</div>
+
+<h3>Updated: booking-flow.spec.ts sold-out assertion</h3>
+<div class="diff-block">
+  <div class="diff-header"><span>tests/e2e/booking-flow.spec.ts — sold-out date test</span></div>
+  <code class="diff-del">- test('slot with 0 seats remaining is hidden from the date picker', async ({ page }) => {</code>
+  <code class="diff-add">+ test('slot with 0 seats remaining shows as a disabled (sold-out) row', async ({ page }) => {</code>
+  <code class="diff-ctx">   // ...</code>
+  <code class="diff-del">-  await expect(page.locator('.pricing-session-row')).toHaveCount(0)</code>
+  <code class="diff-add">+  const row = page.locator('.pricing-session-row.is-disabled')</code>
+  <code class="diff-add">+  await expect(row).toHaveCount(1, { timeout: 5_000 })</code>
+  <code class="diff-add">+  // Must not be clickable</code>
+  <code class="diff-add">+  await expect(row).not.toHaveAttribute('type', 'button')</code>
+</div>
+
+<p>The test name was updated to reflect the new behaviour, and the assertion changed from "0 rows visible" to "1 disabled row visible" with the <code>is-disabled</code> class and no <code>type="button"</code> attribute.</p>
+
+<!-- RESULTS -->
+<h2 id="results">Q. Final Test Results</h2>
+
+<div class="results-grid">
+  <div class="result-card">
+    <div class="count">47</div>
+    <div class="label">Node unit tests</div>
+    <div style="color:var(--success);font-size:.8rem;margin-top:.25rem">✅ All pass</div>
+  </div>
+  <div class="result-card">
+    <div class="count">24</div>
+    <div class="label">Playwright E2E tests</div>
+    <div style="color:var(--success);font-size:.8rem;margin-top:.25rem">✅ All pass</div>
+  </div>
+  <div class="result-card">
+    <div class="count">71</div>
+    <div class="label">Total tests</div>
+    <div style="color:var(--success);font-size:.8rem;margin-top:.25rem">✅ 0 failures</div>
+  </div>
+</div>
+
+<!-- DESIGN DECISIONS -->
+<h2 id="decisions">R. Design Decisions</h2>
+
+<table class="design-table">
+  <thead>
+    <tr><th>Decision</th><th>Alternatives Considered</th><th>Why We Chose This</th><th>Trade-offs</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Read attendee count from booking note</td>
+      <td>Store count in a custom Square field; count appointment segments</td>
+      <td>We already write the note (Session 02), it's readable via the public API, and it's backwards-compatible with old single-person bookings</td>
+      <td>Fragile if note format changes; but we control both writer and reader</td>
+    </tr>
+    <tr>
+      <td>Show sold-out dates as disabled rows</td>
+      <td>Hide them entirely; show them with a "Join Waitlist" button</td>
+      <td>Customers want to know sessions exist even if full — helps them plan. Waitlist adds complexity we don't need yet.</td>
+      <td>Slightly more cluttered calendar; sold-out dates may confuse some users</td>
+    </tr>
+    <tr>
+      <td>Always return all slots from /api/availability (even 0 seats)</td>
+      <td>Keep filtering at API level, add separate /api/sold-out endpoint</td>
+      <td>Simpler: one endpoint, one source of truth. Frontend decides presentation.</td>
+      <td>Slightly more data over the wire; frontend complexity increased slightly</td>
+    </tr>
+    <tr>
+      <td>Twilio SMS replacing Resend email</td>
+      <td>Keep email; use both email + SMS; use WhatsApp Business</td>
+      <td>SMS open rate ~98% vs email ~25%. Studio owner checks phone constantly. Single contact method is simpler.</td>
+      <td>No rich HTML formatting; ~$0.0075 per SMS; need to manage Twilio number</td>
+    </tr>
+    <tr>
+      <td>sendTeamSms() fan-out (Promise.all)</td>
+      <td>Single recipient; BCC-style chain</td>
+      <td>Multiple team members need notifications. Promise.all sends in parallel — faster than sequential.</td>
+      <td>If one number fails, Promise.all continues (per-number .catch ensures this)</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- VERIFICATION -->
+<h2 id="verification">S. Verification Checklist</h2>
+
+<h3>Seat count fix</h3>
+<div class="check-item pass"><span class="check-icon">✅</span><div><strong>Book a group of 3</strong> → availability API should show <code>maxSeats - 3</code> seats remaining on that slot, not <code>maxSeats - 1</code></div></div>
+<div class="check-item pass"><span class="check-icon">✅</span><div><strong>Book 20 solo bookings</strong> → slot should show <code>seatsRemaining: 0</code>, not become negative</div></div>
+
+<h3>Sold-out UX</h3>
+<div class="check-item pass"><span class="check-icon">✅</span><div>Date with all slots at 0 seats → renders as <code>.pricing-session-row.is-disabled</code> div, not a button</div></div>
+<div class="check-item pass"><span class="check-icon">✅</span><div>Clicking the disabled date row → time modal does NOT open</div></div>
+<div class="check-item pass"><span class="check-icon">✅</span><div>Date with at least 1 available slot → still renders as a clickable button</div></div>
+<div class="check-item fail"><span class="check-icon">❌</span><div>If the date picker shows nothing at all for a date you know exists → check <code>soldOutDates</code> computation and ensure breeds API returns data for that date</div></div>
+
+<h3>Time modal</h3>
+<div class="check-item pass"><span class="check-icon">✅</span><div>Open time modal for a date with mixed availability → full slots show as <code>.is-disabled</code> divs, available slots as buttons</div></div>
+<div class="check-item pass"><span class="check-icon">✅</span><div>Full slot in modal → contains "Full" (EN) or "Complet" (FR) text</div></div>
+
+<h3>Twilio SMS</h3>
+<div class="check-item pass"><span class="check-icon">✅</span><div>Complete a test booking → all numbers in <code>TWILIO_TEAM_NUMBERS</code> receive the booking SMS within 5 seconds</div></div>
+<div class="check-item pass"><span class="check-icon">✅</span><div>Submit a Private Event inquiry → all numbers receive the inquiry SMS with 🔔 or 📩 prefix</div></div>
+<div class="check-item fail"><span class="check-icon">❌</span><div>No SMS received → check Vercel function logs for <code>[Twilio]</code> error lines; verify <code>TWILIO_FROM_NUMBER</code> and <code>TWILIO_TEAM_NUMBERS</code> are set in Vercel env vars</div></div>
+
+<!-- EXERCISES -->
+<h2 id="exercises">T. Exercises</h2>
+
+<div class="exercise-block">
+  <span class="exercise-difficulty diff-easy">🟢 Practice</span>
+  <h3>Add a "sold-out" visual badge to date rows</h3>
+  <p>The sold-out date row currently shows the "Full" text from <code>s.pricingSpotFull</code>. Add a small badge with a red background and the text "COMPLET" (FR) or "SOLD OUT" (EN) in a more prominent position, and dim the entire row to 50% opacity using CSS.</p>
+  <details>
+    <summary>Hints</summary>
+    <div class="hint-content">
+      <p>Add a CSS class <code>.pricing-session-row.is-disabled</code> rule in <code>src/App.css</code>. Use <code>opacity: 0.5</code> and <code>cursor: not-allowed</code>. For the badge, add a <code>&lt;span class="sold-out-badge"&gt;</code> element inside the disabled row.</p>
+    </div>
+  </details>
+</div>
+
+<div class="exercise-block">
+  <span class="exercise-difficulty diff-medium">🟡 Stretch</span>
+  <h3>Add a waitlist button for sold-out sessions</h3>
+  <p>When a date is sold out, show a "Join Waitlist" button instead of just "Full". Clicking it should open the inquiry modal (already exists) pre-filled with the date, a <code>classType</code> of "Regular Class (Waitlist)", and a note about the desired session.</p>
+  <details>
+    <summary>Hints</summary>
+    <div class="hint-content">
+      <p>You'll need a new flow state (e.g. <code>{ kind: 'waitlist'; date: string }</code>). The inquiry API already accepts <code>preferredDate</code> and <code>message</code>. You might add a string to <code>siteStrings.ts</code> for the waitlist button label and the pre-filled message template.</p>
+    </div>
+  </details>
+</div>
+
+<div class="exercise-block">
+  <span class="exercise-difficulty diff-hard">🔴 Challenge</span>
+  <h3>Write a unit test for parseAttendeeCount edge cases</h3>
+  <p>In <code>tests/availability-seat-count.test.mjs</code>, add test cases for: a booking note with extra whitespace around the number, a note where "Total attendees:" appears twice (should use first match), and a note with a non-numeric attendee count (e.g. "Total attendees: five"). Verify all cases return a positive integer ≥ 1.</p>
+  <details>
+    <summary>Hints</summary>
+    <div class="hint-content">
+      <p>The <code>\s*</code> in the regex already handles extra whitespace. For the duplicate case, <code>.match()</code> returns the first match by default. For "Total attendees: five", <code>parseInt("five", 10)</code> returns <code>NaN</code> — add a check: <code>isNaN(count) ? 1 : Math.max(1, count)</code>.</p>
+    </div>
+  </details>
+</div>
+
+<!-- TROUBLESHOOTING -->
+<h2 id="troubleshooting">U. Troubleshooting / Common Issues</h2>
+
+<table class="design-table">
+  <thead><tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>[Twilio] Skipping SMS — TWILIO_FROM_NUMBER or TWILIO_TEAM_NUMBERS not set</code> in logs</td>
+      <td>Env vars not configured in the environment</td>
+      <td>Set <code>TWILIO_FROM_NUMBER</code> and <code>TWILIO_TEAM_NUMBERS</code> in Vercel dashboard → Settings → Environment Variables</td>
+    </tr>
+    <tr>
+      <td>SMS sends but shows wrong phone format</td>
+      <td>Numbers not in E.164 format</td>
+      <td>All numbers must start with <code>+</code> and country code. Canadian: <code>+1514XXXXXXX</code>. No spaces or dashes.</td>
+    </tr>
+    <tr>
+      <td>Sold-out date still showing as clickable button</td>
+      <td><code>soldOutDates</code> not including the date, or <code>slotsByDate</code> doesn't have the date key</td>
+      <td>Check availability API response: does that date appear with <code>seatsRemaining: 0</code>? The date must appear in <code>slotsByDate</code> (comes from <code>useSquareAvailability</code>) to be considered for <code>soldOutDates</code>.</td>
+    </tr>
+    <tr>
+      <td>Time modal opens but shows nothing (no slots, no "all booked" message)</td>
+      <td><code>pendingSessionIso</code> key not in <code>effectiveSlotsByDate</code></td>
+      <td>The sold-out date should not be in <code>effectiveSlotsByDate</code> — it should only be in <code>slotsByDate</code>. If you're opening the modal from a sold-out date row, verify the click handler is not setting <code>pendingSessionIso</code> for <code>isSoldOut</code> rows.</td>
+    </tr>
+    <tr>
+      <td>Seat count still showing wrong after the fix</td>
+      <td>Old bookings created before Session 02 don't have the note format</td>
+      <td>This is expected. Old bookings without "Total attendees:" in the note fall back to <code>parseAttendeeCount → 1</code>. Only new bookings (created with the Session 02 code) will deduct correctly. This is the designed backwards-compatible behaviour.</td>
+    </tr>
+    <tr>
+      <td><code>Error: Cannot find module './_twilio.js'</code></td>
+      <td>TypeScript compiled but Vercel can't resolve the module</td>
+      <td>Ensure <code>api/_twilio.ts</code> exists and TypeScript compiles it. Check <code>tsconfig.node.json</code> includes the <code>api/</code> directory.</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- WHATS NEXT -->
+<h2 id="whats-next">V. What's Next</h2>
+
+<p>The Studio Yopaw booking platform now has correct multi-person seat counting, a better sold-out UX, and reliable SMS notifications to the studio team. The next logical area to address is <strong>production deployment validation</strong>: running a real end-to-end test in the Square sandbox environment with real credentials (not the test mocks we use in Playwright), then switching <code>SQUARE_ENVIRONMENT</code> to <code>production</code> and doing a final smoke test with a real card charge.</p>
+
+<p>Other future work: the Square webhook handler (<code>api/square-webhook.ts</code>) sends an SMS for every <code>payment.completed</code> event — but since <code>booking.ts</code> also sends an SMS after payment, you could get duplicate notifications in some flows. Deduplication (e.g. checking if the booking ID was recently notified) would be a good hardening step.</p>
+
+<!-- GLOSSARY -->
+<h2 id="glossary">W. Glossary</h2>
+<div class="glossary-grid">
+  <div class="gl-term">parseAttendeeCount</div>
+  <div class="gl-def">A helper function that reads the "Total attendees: N" string from a Square booking's customerNote field and returns N as a number, defaulting to 1.</div>
+  <div class="gl-term">E.164</div>
+  <div class="gl-def">International phone number format: +[country code][number], no spaces or special characters. Canadian: +15142424947.</div>
+  <div class="gl-term">Account SID</div>
+  <div class="gl-def">Twilio's unique identifier for your account, always starting with "AC". Like a username — safe to show in logs but not in client-side code.</div>
+  <div class="gl-term">Auth Token</div>
+  <div class="gl-def">Twilio's secret credential paired with Account SID. Never expose this in client-side code or logs.</div>
+  <div class="gl-term">Fan-out</div>
+  <div class="gl-def">Sending the same message to multiple recipients in parallel. Our sendTeamSms() fans out to all numbers in TWILIO_TEAM_NUMBERS using Promise.all.</div>
+  <div class="gl-term">is-disabled</div>
+  <div class="gl-def">A CSS class applied to sold-out date rows and full time slots to indicate they are not interactive. Combined with a div (not button) element and aria-disabled="true" for accessibility.</div>
+  <div class="gl-term">Operator Precedence</div>
+  <div class="gl-def">The order in which JavaScript evaluates operators in an expression. || evaluates before ?? — mixing them without parentheses can produce surprising results.</div>
+  <div class="gl-term">Nullish Coalescing (??)</div>
+  <div class="gl-def">JavaScript operator that returns the right-hand side only if the left is null or undefined. Unlike ||, it does NOT treat empty string ("") or 0 as falsy.</div>
+  <div class="gl-term">Logical OR (||)</div>
+  <div class="gl-def">JavaScript operator that returns the right-hand side if the left is falsy (null, undefined, "", 0, false). Has higher precedence than ??.</div>
+  <div class="gl-term">soldOutDates</div>
+  <div class="gl-def">A computed value in src/App.tsx containing dates where all time slots have seatsRemaining === 0. Displayed as disabled rows in the date picker.</div>
+  <div class="gl-term">effectiveDates</div>
+  <div class="gl-def">A computed value in src/App.tsx containing dates where at least one time slot has seatsRemaining > 0. Displayed as clickable rows in the date picker.</div>
+  <div class="gl-term">metadata piggybacking</div>
+  <div class="gl-def">Storing structured data in an unstructured text field (like a notes field) because the API doesn't have a dedicated field. Common workaround when APIs are limited. Must be carefully documented as a convention both the writer and reader follow.</div>
+  <div class="gl-term">DRY</div>
+  <div class="gl-def">Don't Repeat Yourself — a software principle. Instead of writing Twilio client code in booking.ts, inquiry.ts, AND square-webhook.ts, we extracted it into _twilio.ts so all three import it.</div>
+  <div class="gl-term">Vercel _prefix convention</div>
+  <div class="gl-def">Files in api/ starting with _ (underscore) are treated as shared modules, not HTTP endpoints. Without the prefix, Vercel would expose /api/_twilio as a public route.</div>
+  <div class="gl-term">ARIA</div>
+  <div class="gl-def">Accessible Rich Internet Applications — a set of HTML attributes (like aria-disabled="true") that communicate UI state to assistive technologies like screen readers.</div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer-nav">
+  <a href="session-02-implementation-and-testing.html" class="nav-pill">← Session 02: Implementation &amp; Testing</a>
+  <a href="index.html" class="nav-pill">⬡ Session Index</a>
+  <a href="#" class="nav-pill" style="opacity:.4;pointer-events:none">Session 04 →</a>
+</div>
+
+<div class="footer-info">
+  <p>Session 03 — Studio Yopaw Learning Series</p>
+  <p>Generated: June 2026 | Studio Yopaw | www.yopaw.ca</p>
+</div>
+
+</main>
+</div>
+
+<script>
+function toggleTheme() {
+  const html = document.documentElement
+  const isDark = html.getAttribute('data-theme') === 'dark'
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark')
+  localStorage.setItem('yopaw-theme', isDark ? 'light' : 'dark')
+  document.querySelector('.theme-btn').textContent = isDark ? '🌙 Dark' : '☀ Light'
+}
+
+(function() {
+  const saved = localStorage.getItem('yopaw-theme') || 'dark'
+  document.documentElement.setAttribute('data-theme', saved)
+  const btn = document.querySelector('.theme-btn')
+  if (btn) btn.textContent = saved === 'dark' ? '☀ Light' : '🌙 Dark'
+})()
+
+function copyCode(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre')
+  const text = pre ? pre.innerText : ''
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!'
+    setTimeout(() => btn.textContent = 'Copy', 1800)
+  })
+}
+
+// Reading progress bar
+window.addEventListener('scroll', () => {
+  const doc = document.documentElement
+  const scrolled = doc.scrollTop
+  const total = doc.scrollHeight - doc.clientHeight
+  const pct = total > 0 ? (scrolled / total) * 100 : 0
+  document.getElementById('prog').style.width = pct + '%'
+})
+
+// Sidebar active link highlight
+const sections = document.querySelectorAll('h2[id], h3[id]')
+const links = document.querySelectorAll('.sidebar a[href^="#"]')
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      links.forEach(l => l.classList.remove('active'))
+      const active = document.querySelector(`.sidebar a[href="#${entry.target.id}"]`)
+      if (active) active.classList.add('active')
+    }
+  })
+}, { rootMargin: '-10% 0px -80% 0px' })
+sections.forEach(s => observer.observe(s))
+</script>
+</body>
+</html>

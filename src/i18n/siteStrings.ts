@@ -164,6 +164,14 @@ export interface SiteStrings {
   inquirySubmitLabel: string
   inquirySubmitting: string
   inquirySubmitError: string
+  voucherLabel: string
+  voucherPlaceholder: string
+  voucherApply: string
+  voucherChecking: string
+  voucherApplied: string
+  voucherRemove: string
+  voucherInvalid: string
+  voucherDiscountLabel: string
   abbrevRequiredTitle: string
   galleryBadge: string
   galleryHeading: string
@@ -391,6 +399,14 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     inquirySubmitLabel: 'Send my request',
     inquirySubmitting: 'Sending…',
     inquirySubmitError: 'Failed to send your request. Please try again.',
+    voucherLabel: 'Voucher code',
+    voucherPlaceholder: 'Enter code',
+    voucherApply: 'Apply',
+    voucherChecking: 'Checking…',
+    voucherApplied: 'Voucher applied',
+    voucherRemove: 'Remove',
+    voucherInvalid: 'This code is invalid or expired.',
+    voucherDiscountLabel: 'Discount',
     abbrevRequiredTitle: 'required',
     galleryBadge: 'The Studio',
     galleryHeading: 'Moments of ',
@@ -667,6 +683,14 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     inquirySubmitLabel: 'Envoyer ma demande',
     inquirySubmitting: 'Envoi en cours…',
     inquirySubmitError: "Impossible d'envoyer votre demande. Veuillez réessayer.",
+    voucherLabel: 'Code promo',
+    voucherPlaceholder: 'Entrez le code',
+    voucherApply: 'Appliquer',
+    voucherChecking: 'Vérification…',
+    voucherApplied: 'Code appliqué',
+    voucherRemove: 'Retirer',
+    voucherInvalid: 'Ce code est invalide ou expiré.',
+    voucherDiscountLabel: 'Rabais',
     abbrevRequiredTitle: 'obligatoire',
     galleryBadge: 'Le studio',
     galleryHeading: 'Des moments ',

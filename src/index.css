@@ -1211,6 +1211,92 @@ h2 em { font-style: italic; color: var(--sage); }
   padding-top: 10px;
 }
 
+.pricing-payment-summary-discount .pricing-payment-summary-label,
+.pricing-payment-summary-discount .pricing-payment-summary-amount {
+  color: var(--sage-dark, #4b7a4b);
+  font-weight: 600;
+}
+
+.pricing-voucher {
+  margin-top: 14px;
+}
+.pricing-voucher-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.pricing-voucher-input {
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 450;
+  color: var(--text);
+  padding: 12px 14px;
+  margin: 0;
+  border: 1px solid rgba(244, 114, 182, 0.28);
+  border-radius: 12px;
+  background: #fff;
+  outline: none;
+  text-transform: uppercase;
+  transition: border-color 0.2s ease;
+}
+.pricing-voucher-input:focus {
+  border-color: var(--sage, #7da57d);
+}
+.pricing-voucher-input::placeholder {
+  text-transform: none;
+}
+.pricing-voucher-apply {
+  flex: 0 0 auto;
+  padding: 0 18px;
+  border: none;
+  border-radius: 12px;
+  background: var(--sage, #7da57d);
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+.pricing-voucher-apply:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.pricing-voucher-error {
+  margin: 8px 0 0;
+  font-size: 0.8125rem;
+  color: var(--rose, #e0556e);
+}
+.pricing-voucher-applied {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(125, 165, 125, 0.14);
+  border: 1px solid var(--sage, #7da57d);
+}
+.pricing-voucher-applied-text {
+  font-size: 0.9rem;
+  color: var(--sage-dark, #4b7a4b);
+}
+.pricing-voucher-applied-label { font-weight: 400; }
+.pricing-voucher-remove {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  color: var(--sage-dark, #4b7a4b);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .pricing-payment-security {
   display: flex;
   align-items: center;

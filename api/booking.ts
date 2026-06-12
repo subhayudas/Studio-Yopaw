@@ -4,6 +4,7 @@ import { square, getLocationId } from './_square.js'
 import { getMaxSeats } from './_config.js'
 import { sendTeamSms } from './_twilio.js'
 import { countSlotAttendees } from './_availability.js'
+import { validateVoucher } from './_voucher.js'
 
 const ZAPIER_REGULAR_URL = 'https://hooks.zapier.com/hooks/catch/23258168/4oig0ml/'
 
@@ -24,6 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     serviceName,
     needsMatRental,
     extraAttendees,
+    voucherCode,
   } = req.body as {
     givenName: string
     familyName: string
@@ -38,6 +40,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     serviceName: string
     needsMatRental?: boolean
     extraAttendees?: Array<{ name: string }>
+    voucherCode?: string
   }
 
   const totalPeople = 1 + (extraAttendees?.length ?? 0)
@@ -87,6 +90,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const taken = await countSlotAttendees(startAt)
     if (taken + totalPeople > getMaxSeats()) {
       return res.status(409).json({ error: 'This class is full' })
+    }
+
+    // 2b. Server-side voucher revalidation. The client only sends the raw code;
+    //     all discount values come from Square via the catalog discount object.
+    //     If the code is invalid/expired we reject so the booking can't proceed
+    //     at full price silently.
+    let appliedVoucher: { discountId: string; name: string } | null = null
+    if (typeof voucherCode === 'string' && voucherCode.trim()) {
+      const voucher = await validateVoucher(voucherCode)
+      if (!voucher.valid) {
+        return res.status(400).json({ error: 'Invalid or expired voucher code' })
+      }
+      appliedVoucher = { discountId: voucher.discountId, name: voucher.name }
     }
 
     // 3. Create the booking first so we have an ID to link the order and payment against.
@@ -146,6 +162,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           customerId,
           referenceId: booking!.id,
           lineItems,
+          // ORDER-scoped voucher discount. Square prorates it across line items and
+          // recomputes taxes on the discounted basis automatically (MODIFY_TAX_BASIS),
+          // so the existing LINE_ITEM tax structure stays unchanged.
+          ...(appliedVoucher
+            ? { discounts: [{ uid: 'voucher', catalogObjectId: appliedVoucher.discountId, scope: 'ORDER' as const }] }
+            : {}),
           taxes: [
             { uid: 'gst', name: 'TPS/GST', percentage: '5',     scope: 'LINE_ITEM' },
             { uid: 'qst', name: 'TVQ/QST', percentage: '9.975', scope: 'LINE_ITEM' },
@@ -208,6 +230,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         bookingId: booking!.id,
         totalDollars: (Number(chargeAmount) / 100).toFixed(2),
         paymentStatus: payment!.status,
+        voucherCode: appliedVoucher?.name ?? '',
       }),
     }).catch((err) => console.error('[Zapier] regular-booking webhook failed:', err))
 
@@ -237,6 +260,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       (totalPeople > 1 ? `  Names: ${allNames}\n` : '') +
       `\n` +
       `💳 Payment:\n` +
+      (appliedVoucher ? `  Voucher: ${appliedVoucher.name}\n` : '') +
       `  Total: $${totalDollars} CAD\n` +
       `  Status: ${payment!.status}\n` +
       `  Booking ID: ${booking!.id}`

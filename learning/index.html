@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Yopaw — Learning Series</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #1a1a2e; --bg-card: #16213e; --bg-code: #0f0f23;
+  --text: #e0e0e0; --text-muted: #8899aa; --border: #2a2a4a;
+  --accent: #6c63ff; --accent-hover: #5a52d5;
+  --success: #4ade80; --warning: #fbbf24; --danger: #f87171; --bug: #f472b6;
+  --tip: #38bdf8; --key: #a78bfa;
+}
+[data-theme="light"] {
+  --bg: #f8f9fc; --bg-card: #ffffff; --bg-code: #f0f0f8;
+  --text: #1a1a2e; --text-muted: #64748b; --border: #e2e8f0;
+  --accent: #5a52d5; --bug: #db2777; --warning: #d97706;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* TOPBAR */
+.topbar{position:sticky;top:0;background:var(--bg-card);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:.85rem 2rem;z-index:100;backdrop-filter:blur(8px)}
+.topbar-brand{font-weight:700;font-size:1rem;letter-spacing:-.01em}
+.topbar-right{display:flex;align-items:center;gap:.75rem}
+.theme-btn{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:.35rem .8rem;border-radius:8px;cursor:pointer;font-size:.85rem;transition:all .2s}
+.theme-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* HERO */
+.hero{text-align:center;padding:4rem 2rem 3rem;max-width:700px;margin:0 auto}
+.hero-eyebrow{font-size:.75rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:1rem}
+.hero h1{font-size:3rem;font-weight:800;line-height:1.1;margin-bottom:1.25rem;background:linear-gradient(135deg,var(--text),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:1.1rem;color:var(--text-muted);margin-bottom:2rem;max-width:55ch;margin-left:auto;margin-right:auto}
+.hero-stats{display:flex;justify-content:center;gap:2.5rem;flex-wrap:wrap}
+.stat{text-align:center}
+.stat-num{font-size:2rem;font-weight:700;color:var(--accent)}
+.stat-label{font-size:.8rem;color:var(--text-muted)}
+
+/* PROGRESS BAR */
+.progress-section{max-width:800px;margin:0 auto;padding:0 2rem 2rem}
+.progress-label{display:flex;justify-content:space-between;font-size:.85rem;color:var(--text-muted);margin-bottom:.5rem}
+.progress-track{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--bug));border-radius:4px;transition:width .4s ease}
+
+/* SEARCH */
+.search-section{max-width:800px;margin:0 auto;padding:0 2rem 2rem}
+.search-box{width:100%;padding:.8rem 1.25rem;border:1px solid var(--border);border-radius:10px;background:var(--bg-card);color:var(--text);font-size:.95rem;font-family:inherit;outline:none;transition:border-color .2s}
+.search-box:focus{border-color:var(--accent)}
+.search-box::placeholder{color:var(--text-muted)}
+
+/* SESSIONS GRID */
+.sessions-section{max-width:1200px;margin:0 auto;padding:0 2rem 4rem}
+.section-label{font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:1.5rem}
+.sessions-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.25rem}
+
+/* SESSION CARD */
+.session-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:transform .2s,border-color .2s,box-shadow .2s;display:flex;flex-direction:column}
+.session-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 8px 30px rgba(108,99,255,.12)}
+.session-card.hidden{display:none}
+.card-header{padding:1.5rem 1.5rem 1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem}
+.card-num{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.card-difficulty{font-size:.72rem;font-weight:600;padding:.2rem .6rem;border-radius:10px}
+.diff-beginner{background:rgba(74,222,128,.15);color:var(--success)}
+.diff-intermediate{background:rgba(251,191,36,.15);color:var(--warning)}
+.diff-advanced{background:rgba(248,113,113,.15);color:var(--danger)}
+.card-body{padding:1rem 1.5rem;flex:1}
+.card-title{font-size:1.1rem;font-weight:700;margin-bottom:.5rem;line-height:1.3}
+.card-desc{font-size:.88rem;color:var(--text-muted);margin-bottom:1rem;max-width:90%}
+.card-tags{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:1rem}
+.tag{font-size:.7rem;font-weight:600;padding:.18rem .55rem;border-radius:10px;letter-spacing:.02em}
+.tag-blue{background:rgba(108,99,255,.15);color:var(--accent)}
+.tag-green{background:rgba(74,222,128,.15);color:var(--success)}
+.tag-pink{background:rgba(244,114,182,.15);color:var(--bug)}
+.tag-yellow{background:rgba(251,191,36,.15);color:var(--warning)}
+.tag-cyan{background:rgba(56,189,248,.15);color:var(--tip)}
+.card-meta{display:flex;gap:1rem;font-size:.8rem;color:var(--text-muted)}
+.card-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-checkbox{display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-muted);cursor:pointer}
+.card-checkbox input{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+.card-checkbox input:checked + span{color:var(--success)}
+.bug-badge{font-size:.7rem;font-weight:700;padding:.18rem .55rem;border-radius:10px;background:rgba(244,114,182,.15);color:var(--bug)}
+.card-link{display:inline-flex;align-items:center;gap:.4rem;background:var(--accent);color:#fff;border-radius:8px;padding:.4rem 1rem;font-size:.85rem;font-weight:600;text-decoration:none;transition:background .2s}
+.card-link:hover{background:var(--accent-hover);text-decoration:none}
+
+/* COMING SOON CARD */
+.session-card.coming-soon{opacity:.5;pointer-events:none}
+.coming-soon .card-link{background:var(--border);color:var(--text-muted);cursor:not-allowed}
+
+/* FOOTER */
+.footer{text-align:center;padding:2rem;color:var(--text-muted);font-size:.85rem;border-top:1px solid var(--border)}
+
+/* NO RESULTS */
+.no-results{text-align:center;padding:3rem 1rem;color:var(--text-muted);display:none}
+.no-results.visible{display:block}
+
+@media(max-width:600px){
+  .hero h1{font-size:2rem}
+  .sessions-grid{grid-template-columns:1fr}
+  .hero-stats{gap:1.5rem}
+}
+@media print{
+  .topbar,.theme-btn{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-brand">Studio Yopaw — Learning Series</div>
+  <div class="topbar-right">
+    <button class="theme-btn" onclick="toggleTheme()">☀ Light</button>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">Developer Learning Series</div>
+  <h1>Studio Yopaw<br>Build Log</h1>
+  <p class="hero-sub">Every session documented — from gap analysis to production. Open a session in your browser and learn by reading.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num" id="total-count">3</div><div class="stat-label">Sessions</div></div>
+    <div class="stat"><div class="stat-num" id="bug-count">6</div><div class="stat-label">Bug Stories</div></div>
+    <div class="stat"><div class="stat-num" id="completed-count">0</div><div class="stat-label">Completed</div></div>
+  </div>
+</div>
+
+<!-- OVERALL PROGRESS -->
+<div class="progress-section">
+  <div class="progress-label">
+    <span>Your Progress</span>
+    <span id="progress-pct">0 / 3 sessions</span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="search-section">
+  <input class="search-box" type="text" id="search" placeholder="Search sessions by concept, topic, or keyword… (e.g. Twilio, seat count, Playwright)" oninput="filterSessions()">
+</div>
+
+<!-- SESSIONS GRID -->
+<div class="sessions-section">
+  <div class="section-label">All Sessions</div>
+  <div class="sessions-grid" id="sessions-grid">
+
+    <!-- SESSION 01a -->
+    <div class="session-card" data-keywords="gap analysis booking flow square payment diagram architecture plan implementation" data-session="01a">
+      <div class="card-header">
+        <div>
+          <div class="card-num">Session 01a</div>
+        </div>
+        <span class="card-difficulty diff-intermediate">🟡 Intermediate</span>
+      </div>
+      <div class="card-body">
+        <div class="card-title">Booking Flow Gap Analysis</div>
+        <div class="card-desc">Read the booking + payment flow diagrams, compare them against the existing code, and produce a detailed implementation plan for everything that's missing.</div>
+        <div class="card-tags">
+          <span class="tag tag-blue">Architecture</span>
+          <span class="tag tag-cyan">Gap Analysis</span>
+          <span class="tag tag-blue">Square API</span>
+          <span class="tag tag-yellow">Planning</span>
+        </div>
+        <div class="card-meta">
+          <span>⏱ ~45 min</span>
+          <span>📄 Flow diagrams → MD plan</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <label class="card-checkbox">
+          <input type="checkbox" onchange="updateProgress()" data-session-cb="01a"> <span>Mark complete</span>
+        </label>
+        <a href="session-01a-booking-flow-gap-analysis.html" class="card-link">Open →</a>
+      </div>
+    </div>
+
+    <!-- SESSION 02 -->
+    <div class="session-card" data-keywords="implementation extra attendees waiver group booking square customer promise.all react state array testing playwright node" data-session="02">
+      <div class="card-header">
+        <div>
+          <div class="card-num">Session 02</div>
+        </div>
+        <span class="card-difficulty diff-advanced">🔴 Advanced</span>
+      </div>
+      <div class="card-body">
+        <div class="card-title">Closing the Gaps: Implementation &amp; Testing</div>
+        <div class="card-desc">Implemented all 6 missing features from the plan — extra attendees, per-person waivers, company name/message fields, quantity pricing, per-attendee Square customers. Then ran 67 tests green.</div>
+        <div class="card-tags">
+          <span class="tag tag-blue">React State</span>
+          <span class="tag tag-green">Square API</span>
+          <span class="tag tag-pink">Bug Stories (3)</span>
+          <span class="tag tag-yellow">Playwright E2E</span>
+          <span class="tag tag-cyan">Node Tests</span>
+        </div>
+        <div class="card-meta">
+          <span>⏱ ~90 min</span>
+          <span>🐛 3 bug stories</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <label class="card-checkbox">
+          <input type="checkbox" onchange="updateProgress()" data-session-cb="02"> <span>Mark complete</span>
+        </label>
+        <a href="session-02-implementation-and-testing.html" class="card-link">Open →</a>
+      </div>
+    </div>
+
+    <!-- SESSION 03 -->
+    <div class="session-card" data-keywords="twilio sms resend email seat count bug availability sold out full attendee parseAttendeeCount operator precedence E2E timeslot" data-session="03">
+      <div class="card-header">
+        <div>
+          <div class="card-num">Session 03</div>
+        </div>
+        <span class="card-difficulty diff-advanced">🔴 Advanced</span>
+      </div>
+      <div class="card-body">
+        <div class="card-title">Seat Count Bug, Sold-Out UX &amp; Twilio SMS</div>
+        <div class="card-desc">Fixed group bookings counting as 1 seat (parsed attendee count from booking note), improved sold-out UX (disabled rows), replaced Resend email with Twilio SMS across all 3 API endpoints.</div>
+        <div class="card-tags">
+          <span class="tag tag-pink">Bug Fixes (3)</span>
+          <span class="tag tag-blue">Twilio SMS</span>
+          <span class="tag tag-green">Sold-Out UX</span>
+          <span class="tag tag-yellow">E2E Tests</span>
+        </div>
+        <div class="card-meta">
+          <span>⏱ ~75 min</span>
+          <span>🐛 3 bug stories</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <label class="card-checkbox">
+          <input type="checkbox" onchange="updateProgress()" data-session-cb="03"> <span>Mark complete</span>
+        </label>
+        <a href="session-03-seat-count-sold-out-twilio.html" class="card-link">Open →</a>
+      </div>
+    </div>
+
+    <!-- COMING SOON -->
+    <div class="session-card coming-soon" data-keywords="" data-session="04">
+      <div class="card-header">
+        <div>
+          <div class="card-num">Session 04</div>
+        </div>
+        <span class="card-difficulty diff-advanced">🔴 Advanced</span>
+      </div>
+      <div class="card-body">
+        <div class="card-title">Production Deployment &amp; Square Go-Live</div>
+        <div class="card-desc">Switch from Square sandbox to production, deploy to Vercel with real credentials, and validate end-to-end with a real card charge.</div>
+        <div class="card-tags">
+          <span class="tag tag-blue">Vercel</span>
+          <span class="tag tag-green">Square Production</span>
+          <span class="tag tag-cyan">Deployment</span>
+        </div>
+        <div class="card-meta">
+          <span>⏱ Coming soon</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span style="font-size:.82rem;color:var(--text-muted)">Not yet available</span>
+        <a href="#" class="card-link" style="opacity:.4;pointer-events:none">Coming Soon</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="no-results" id="no-results">
+    <p style="font-size:1.1rem;margin-bottom:.5rem">No sessions match your search.</p>
+    <p>Try a different keyword, or <button onclick="clearSearch()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:inherit;text-decoration:underline">clear the search</button>.</p>
+  </div>
+</div>
+
+<footer class="footer">
+  <p>Studio Yopaw Learning Series · www.yopaw.ca</p>
+  <p style="margin-top:.35rem">All sessions are self-contained HTML files — open offline in any browser.</p>
+</footer>
+
+<script>
+// ── THEME ──
+function toggleTheme() {
+  const html = document.documentElement
+  const isDark = html.getAttribute('data-theme') === 'dark'
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark')
+  localStorage.setItem('yopaw-theme', isDark ? 'light' : 'dark')
+  document.querySelector('.theme-btn').textContent = isDark ? '🌙 Dark' : '☀ Light'
+}
+(function() {
+  const saved = localStorage.getItem('yopaw-theme') || 'dark'
+  document.documentElement.setAttribute('data-theme', saved)
+  const btn = document.querySelector('.theme-btn')
+  if (btn) btn.textContent = saved === 'dark' ? '☀ Light' : '🌙 Dark'
+})()
+
+// ── COMPLETION CHECKBOXES ──
+const STORAGE_KEY = 'yopaw-completed-sessions'
+
+function loadCompleted() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') } catch { return {} }
+}
+
+function saveCompleted(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+}
+
+function updateProgress() {
+  const data = {}
+  document.querySelectorAll('[data-session-cb]').forEach(cb => {
+    data[cb.dataset.sessionCb] = cb.checked
+    const span = cb.nextElementSibling
+    if (span) span.textContent = cb.checked ? 'Completed ✓' : 'Mark complete'
+  })
+  saveCompleted(data)
+
+  const total = document.querySelectorAll('[data-session-cb]').length
+  const done = Object.values(data).filter(Boolean).length
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0
+
+  document.getElementById('progress-fill').style.width = pct + '%'
+  document.getElementById('progress-pct').textContent = `${done} / ${total} sessions`
+  document.getElementById('completed-count').textContent = done
+}
+
+(function restoreCheckboxes() {
+  const data = loadCompleted()
+  document.querySelectorAll('[data-session-cb]').forEach(cb => {
+    if (data[cb.dataset.sessionCb]) {
+      cb.checked = true
+    }
+  })
+  updateProgress()
+})()
+
+// ── SEARCH / FILTER ──
+function filterSessions() {
+  const q = document.getElementById('search').value.toLowerCase().trim()
+  const cards = document.querySelectorAll('.session-card:not(.coming-soon)')
+  let visible = 0
+
+  cards.forEach(card => {
+    const keywords = (card.dataset.keywords || '').toLowerCase()
+    const title = (card.querySelector('.card-title')?.textContent || '').toLowerCase()
+    const desc = (card.querySelector('.card-desc')?.textContent || '').toLowerCase()
+    const tags = [...card.querySelectorAll('.tag')].map(t => t.textContent.toLowerCase()).join(' ')
+    const combined = keywords + ' ' + title + ' ' + desc + ' ' + tags
+
+    if (!q || combined.includes(q)) {
+      card.classList.remove('hidden')
+      visible++
+    } else {
+      card.classList.add('hidden')
+    }
+  })
+
+  document.getElementById('no-results').classList.toggle('visible', visible === 0 && q.length > 0)
+}
+
+function clearSearch() {
+  document.getElementById('search').value = ''
+  filterSessions()
+}
+</script>
+</body>
+</html>

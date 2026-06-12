@@ -81,6 +81,31 @@ function devApiPlugin(): Plugin {
         }
       })
 
+      // Mock /api/voucher — TEST10 is a valid 10% code; everything else is not found.
+      server.middlewares.use('/api/voucher', (req: Connect.IncomingMessage, res) => {
+        res.setHeader('Cache-Control', 'no-store')
+        if ((req.method ?? '').toUpperCase() !== 'POST') {
+          res.statusCode = 405
+          res.end()
+          return
+        }
+        let body = ''
+        req.on('data', chunk => { body += chunk })
+        req.on('end', () => {
+          let code = ''
+          try {
+            code = String((JSON.parse(body || '{}') as { code?: unknown }).code ?? '').trim()
+          } catch {
+            code = ''
+          }
+          if (code.toLowerCase() === 'test10') {
+            jsonResponse(res, { valid: true, code, name: 'TEST10', kind: 'percentage', percentage: 10 })
+          } else {
+            jsonResponse(res, { valid: false, reason: 'not_found' })
+          }
+        })
+      })
+
       // /api/availability — when SQUARE_ACCESS_TOKEN is set, fetch real bookings via
       // the shared buildAvailabilities helper. Otherwise fall back to a synthetic
       // full-capacity mock so offline dev still works.
