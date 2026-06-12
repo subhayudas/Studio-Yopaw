@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto'
 import { square, getLocationId } from './_square.js'
 import { getMaxSeats } from './_config.js'
 import { sendTeamSms } from './_twilio.js'
+import { countSlotAttendees } from './_availability.js'
 
 const ZAPIER_REGULAR_URL = 'https://hooks.zapier.com/hooks/catch/23258168/4oig0ml/'
 
@@ -81,20 +82,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       customerId = await findOrCreateCustomer(givenName, familyName, email, phone)
     }
 
-    // 2. Guard: reject if class is already full (race condition protection)
-    const slotEnd = new Date(new Date(startAt).getTime() + 1000).toISOString()
-    const slotBookings = await square.bookings.list({
-      locationId: getLocationId(),
-      startAtMin: startAt,
-      startAtMax: slotEnd,
-    })
-    const norm = (s: string) => s.replace(/\.\d+Z$/, 'Z')
-    const taken = (slotBookings.data ?? []).filter(
-      b => norm(b.startAt ?? '') === norm(startAt) &&
-           b.status !== 'CANCELLED_BY_SELLER' &&
-           b.status !== 'CANCELLED_BY_CUSTOMER',
-    ).length
-    if (taken >= getMaxSeats()) {
+    // 2. Guard: reject if class is already full (race condition protection).
+    // Counts ATTENDEES, not bookings — a single party-of-N booking takes N seats.
+    const taken = await countSlotAttendees(startAt)
+    if (taken + totalPeople > getMaxSeats()) {
       return res.status(409).json({ error: 'This class is full' })
     }
 
