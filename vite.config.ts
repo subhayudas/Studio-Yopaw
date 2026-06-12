@@ -70,13 +70,26 @@ function devApiPlugin(): Plugin {
         }
       })
 
-      // Mock /api/availability — generates synthetic slots from class-schedule.json
-      server.middlewares.use('/api/availability', (req: Connect.IncomingMessage, res) => {
+      // /api/availability — when SQUARE_ACCESS_TOKEN is set, fetch real bookings via
+      // the shared buildAvailabilities helper. Otherwise fall back to a synthetic
+      // full-capacity mock so offline dev still works.
+      server.middlewares.use('/api/availability', async (req: Connect.IncomingMessage, res) => {
         try {
-          const schedule = loadSchedule()
           const url = new URL(req.url ?? '/', 'http://localhost')
           const startDate = url.searchParams.get('startDate') ?? ''
           const endDate = url.searchParams.get('endDate') ?? ''
+          res.setHeader('Cache-Control', 'no-store')
+
+          if (process.env.SQUARE_ACCESS_TOKEN) {
+            const mod = (await import('./api/_availability.ts')) as {
+              buildAvailabilities: (s: string, e: string) => Promise<Array<{ startAt: string; seatsRemaining: number }>>
+            }
+            const availabilities = await mod.buildAvailabilities(startDate, endDate)
+            jsonResponse(res, { availabilities })
+            return
+          }
+
+          const schedule = loadSchedule()
           const dates = schedule.dates ?? []
           const times = schedule.times ?? ['10:30', '12:00', '13:30', '15:00']
           const maxSeats = schedule.maxSeats ?? 20
@@ -96,7 +109,8 @@ function devApiPlugin(): Plugin {
           }
 
           jsonResponse(res, { availabilities })
-        } catch {
+        } catch (err) {
+          console.error('dev /api/availability error', err)
           res.statusCode = 500
           jsonResponse(res, { error: 'Failed to read schedule' })
         }

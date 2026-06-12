@@ -458,7 +458,7 @@ function PricingSection() {
     return ''
   }, [flow])
 
-  const { slots: squareSlots, loading: availabilityLoading } = useSquareAvailability(
+  const { slots: squareSlots, loading: availabilityLoading, refresh: refreshAvailability } = useSquareAvailability(
     currentServiceVariationId,
     startDate,
     endDate,
@@ -546,6 +546,7 @@ function PricingSection() {
 
   useEffect(() => {
     if (pendingSessionIso === null) return
+    refreshAvailability()
     const prevOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKey = (e: KeyboardEvent) => {
@@ -556,7 +557,7 @@ function PricingSection() {
       document.body.style.overflow = prevOverflow
       window.removeEventListener('keydown', onKey)
     }
-  }, [pendingSessionIso])
+  }, [pendingSessionIso, refreshAvailability])
 
   const progressPercent = (): number => {
     if (flow.kind === 'chooseClass') return 25
@@ -835,6 +836,7 @@ function PricingSection() {
       }
 
       requestScrollPricingCardAfterAdvance()
+      refreshAvailability()
       setFlow({ kind: 'publicSuccess', source: 'regular' })
     } catch {
       setBookingError('Network error. Please try again.')
