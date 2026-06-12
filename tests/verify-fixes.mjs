@@ -13,6 +13,9 @@ const booking      = fs.readFileSync('./api/booking.ts', 'utf8')
 const inquiry      = fs.readFileSync('./api/inquiry.ts', 'utf8')
 const appTsx       = fs.readFileSync('./src/App.tsx', 'utf8')
 const availability = fs.readFileSync('./api/availability.ts', 'utf8')
+// Seat-count engine — the counting logic moved here from availability.ts
+const availabilityEngine = fs.readFileSync('./api/_availability.ts', 'utf8')
+const voucherApi   = fs.readFileSync('./api/voucher.ts', 'utf8')
 
 // ─── Payment bug #1: Taxes always applied ────────────────────────────────────
 
@@ -293,31 +296,31 @@ test('App.tsx: payment groupSize = 1 + extraAttendees.length for yin', () => {
 
 // ─── Multi-attendee seat counting fix ────────────────────────────────────────
 
-test('availability.ts: has parseAttendeeCount helper', () => {
+test('_availability.ts: has parseAttendeeCount helper', () => {
   assert.ok(
-    availability.includes('parseAttendeeCount'),
-    'parseAttendeeCount not found in availability.ts — seat count will always be +1 per booking'
+    availabilityEngine.includes('parseAttendeeCount'),
+    'parseAttendeeCount not found in _availability.ts — seat count will always be +1 per booking'
   )
 })
 
-test('availability.ts: parseAttendeeCount reads booking.customerNote', () => {
+test('_availability.ts: parseAttendeeCount reads booking.customerNote', () => {
   assert.ok(
-    availability.includes('booking.customerNote'),
-    'availability.ts does not read booking.customerNote — attendee count cannot be extracted'
+    availabilityEngine.includes('booking.customerNote'),
+    '_availability.ts does not read booking.customerNote — attendee count cannot be extracted'
   )
 })
 
-test('availability.ts: does not use raw +1 increment for bookingCounts', () => {
-  const hasRawPlusOne = /bookingCounts\.set\([^)]+\)\s*\+\s*1\)/.test(availability)
+test('_availability.ts: does not use raw +1 increment for bookingCounts', () => {
+  const hasRawPlusOne = /bookingCounts\.set\([^)]+\)\s*\+\s*1\)/.test(availabilityEngine)
   assert.ok(
     !hasRawPlusOne,
-    'availability.ts still uses raw +1 per booking — multi-attendee groups will be undercounted'
+    '_availability.ts still uses raw +1 per booking — multi-attendee groups will be undercounted'
   )
 })
 
-test('availability.ts: parseAttendeeCount targets "Total attendees:" note format', () => {
+test('_availability.ts: parseAttendeeCount targets "Total attendees:" note format', () => {
   assert.ok(
-    availability.includes('Total attendees'),
+    availabilityEngine.includes('Total attendees'),
     'parseAttendeeCount does not look for "Total attendees" — will not parse booking.ts notes correctly'
   )
 })
@@ -440,5 +443,44 @@ test('App.tsx: private event form has message textarea (#pub-message)', () => {
   assert.ok(
     appTsx.includes('id="pub-message"'),
     'Private event form missing message textarea (#pub-message)'
+  )
+})
+
+// ─── Voucher / discount code (server-side amounts only) ───────────────────────
+
+test('booking.ts: revalidates voucher server-side (validateVoucher call)', () => {
+  assert.ok(
+    booking.includes('validateVoucher('),
+    'booking.ts does not re-validate the voucher server-side — could book at full price silently'
+  )
+})
+
+test('booking.ts: order uses catalog discount via catalogObjectId + ORDER scope', () => {
+  assert.ok(
+    booking.includes("scope: 'ORDER'") && booking.includes('appliedVoucher.discountId'),
+    'booking.ts does not attach an ORDER-scoped catalog discount to the order'
+  )
+})
+
+test('voucher.ts: handler does not trust client-supplied discount amounts', () => {
+  assert.ok(
+    !voucherApi.includes('req.body.percentage') &&
+    !voucherApi.includes('req.body.amountCents') &&
+    !voucherApi.includes('body.percentage') &&
+    !voucherApi.includes('body.amountCents'),
+    'voucher.ts reads a client-supplied discount amount — amounts must come from Square only'
+  )
+})
+
+test('App.tsx: sends voucherCode (not a discount amount) to /api/booking', () => {
+  assert.ok(
+    appTsx.includes('voucherCode: appliedVoucher?.code'),
+    'App.tsx does not send voucherCode to /api/booking'
+  )
+  // Must not POST a raw discount amount field to the booking endpoint.
+  const bookingBody = appTsx.match(/fetch\('\/api\/booking'[\s\S]{0,800}?\}\),/)
+  assert.ok(
+    bookingBody && !bookingBody[0].includes('discountCents') && !bookingBody[0].includes('amountCents'),
+    'App.tsx sends a discount amount to /api/booking — only the raw voucherCode should be sent'
   )
 })

@@ -10,7 +10,7 @@ import { RefundPolicyPage } from './pages/RefundPolicyPage'
 import { WaiverPage } from './pages/WaiverPage'
 import { useSquareAvailability, type SquareSlot } from './hooks/useSquareAvailability'
 import { useBreedSchedule } from './hooks/useBreedSchedule'
-import { SQUARE_SERVICE_VARIATIONS, computeTaxBreakdown } from './lib/squareServices'
+import { SQUARE_SERVICE_VARIATIONS, computeTaxBreakdown, computeVoucherDiscountCents, type AppliedVoucher } from './lib/squareServices'
 
 declare function gtag(...args: unknown[]): void
 
@@ -441,6 +441,10 @@ function PricingSection() {
   const [bookingError, setBookingError] = useState<string | null>(null)
   const [inquiryLoading, setInquiryLoading] = useState(false)
   const [inquiryError, setInquiryError] = useState<string | null>(null)
+  const [voucherInput, setVoucherInput] = useState('')
+  const [appliedVoucher, setAppliedVoucher] = useState<AppliedVoucher | null>(null)
+  const [voucherLoading, setVoucherLoading] = useState(false)
+  const [voucherError, setVoucherError] = useState<string | null>(null)
 
   // Square availability
   const startDate = useMemo(todayIso, [])
@@ -826,6 +830,7 @@ function PricingSection() {
           serviceName: serviceInfo.serviceName,
           needsMatRental,
           extraAttendees: extraAttendees.map(a => ({ name: a.name })),
+          voucherCode: appliedVoucher?.code,
         }),
       })
 
@@ -863,6 +868,50 @@ function PricingSection() {
     setCorpMessage('')
     setBookingError(null)
     setInquiryError(null)
+    setVoucherInput('')
+    setAppliedVoucher(null)
+    setVoucherLoading(false)
+    setVoucherError(null)
+  }
+
+  const applyVoucher = async () => {
+    const code = voucherInput.trim()
+    if (!code) return
+    setVoucherLoading(true)
+    setVoucherError(null)
+    try {
+      const res = await fetch('/api/voucher', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && (data as { valid?: boolean }).valid) {
+        const d = data as
+          | { code: string; name: string; kind: 'percentage'; percentage: number }
+          | { code: string; name: string; kind: 'amount'; amountCents: number }
+        setAppliedVoucher(
+          d.kind === 'percentage'
+            ? { code: d.code, name: d.name, kind: 'percentage', percentage: d.percentage }
+            : { code: d.code, name: d.name, kind: 'amount', amountCents: d.amountCents },
+        )
+        setVoucherError(null)
+      } else {
+        setAppliedVoucher(null)
+        setVoucherError(s.voucherInvalid)
+      }
+    } catch {
+      setAppliedVoucher(null)
+      setVoucherError(s.voucherInvalid)
+    } finally {
+      setVoucherLoading(false)
+    }
+  }
+
+  const removeVoucher = () => {
+    setAppliedVoucher(null)
+    setVoucherInput('')
+    setVoucherError(null)
   }
 
   const renderRegularClassPublicSuccess = () => (
@@ -1329,7 +1378,9 @@ function PricingSection() {
                   const svc = SQUARE_SERVICE_VARIATIONS[flow.yoga]
                   const matRentalCents = flow.yoga === 'yin' && needsMatRental ? 500 : 0
                   const baseCents = svc.baseAmountCents * groupSize + matRentalCents
-                  const { gstCents, qstCents, totalCents } = computeTaxBreakdown(baseCents)
+                  const discountCents = appliedVoucher ? computeVoucherDiscountCents(baseCents, appliedVoucher) : 0
+                  const taxableCents = baseCents - discountCents
+                  const { gstCents, qstCents, totalCents } = computeTaxBreakdown(taxableCents)
                   return (
                     <div className="pricing-payment-summary">
                       <div className="pricing-payment-summary-row">
@@ -1350,6 +1401,12 @@ function PricingSection() {
                             {lang === 'fr' ? 'Location de tapis' : 'Mat rental'}
                           </span>
                           <span className="pricing-payment-summary-amount">{fmtCAD(matRentalCents, lang)}</span>
+                        </div>
+                      )}
+                      {discountCents > 0 && appliedVoucher && (
+                        <div className="pricing-payment-summary-row pricing-payment-summary-discount">
+                          <span className="pricing-payment-summary-label">{appliedVoucher.name}</span>
+                          <span className="pricing-payment-summary-amount">−{fmtCAD(discountCents, lang)}</span>
                         </div>
                       )}
                       <div className="pricing-payment-summary-row">
@@ -1375,6 +1432,52 @@ function PricingSection() {
                     </div>
                   )
                 })()}
+                <div className="pricing-voucher">
+                  {appliedVoucher ? (
+                    <div className="pricing-voucher-applied">
+                      <span className="pricing-voucher-applied-text">
+                        <span className="pricing-voucher-applied-label">{s.voucherApplied}:</span>{' '}
+                        <strong>{appliedVoucher.name}</strong>
+                      </span>
+                      <button
+                        type="button"
+                        className="pricing-voucher-remove"
+                        onClick={removeVoucher}
+                      >
+                        {s.voucherRemove}
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="pricing-voucher-row">
+                        <input
+                          id="voucher-code"
+                          className="pricing-input pricing-voucher-input"
+                          type="text"
+                          value={voucherInput}
+                          onChange={(e) => setVoucherInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') { e.preventDefault(); void applyVoucher() }
+                          }}
+                          placeholder={s.voucherPlaceholder}
+                          aria-label={s.voucherLabel}
+                          disabled={voucherLoading}
+                        />
+                        <button
+                          type="button"
+                          className="pricing-voucher-apply"
+                          onClick={() => void applyVoucher()}
+                          disabled={voucherLoading || !voucherInput.trim()}
+                        >
+                          {voucherLoading ? s.voucherChecking : s.voucherApply}
+                        </button>
+                      </div>
+                      {voucherError && (
+                        <p className="pricing-voucher-error">{voucherError}</p>
+                      )}
+                    </>
+                  )}
+                </div>
                 <div className="pricing-payment-security">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.5C16.5 22.15 20 17.25 20 12V6l-8-4z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
