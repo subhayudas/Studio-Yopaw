@@ -75,7 +75,10 @@ export async function validateVoucher(code: string): Promise<VoucherResult> {
   const locationId = getLocationId()
   const target = normalized.toLowerCase()
 
-  const discounts = await listAllCatalog('DISCOUNT')
+  const [discounts, rules] = await Promise.all([
+    listAllCatalog('DISCOUNT'),
+    listAllCatalog('PRICING_RULE'),
+  ])
   // A discount matches when its full name IS the code, or when the code follows
   // a trailing em-dash in a coupon-style name (see extractCodeSuffix).
   const matchesCode = (rawName: string | null | undefined): boolean => {
@@ -84,14 +87,25 @@ export async function validateVoucher(code: string): Promise<VoucherResult> {
     if (n.toLowerCase() === target) return true
     return extractCodeSuffix(n)?.toLowerCase() === target
   }
-  const match = discounts.find(
-    obj => obj.type === 'DISCOUNT' && matchesCode(obj.discountData?.name),
-  )
+  // Ignore deleted discounts up front so a stale deleted copy never shadows a live
+  // one with the same name.
+  const live = discounts.filter(obj => obj.type === 'DISCOUNT' && !obj.isDeleted)
+  let match = live.find(obj => obj.type === 'DISCOUNT' && matchesCode(obj.discountData?.name))
+  let matchedViaRuleName = false
+  // Square Marketing coupons sometimes carry the code on the PRICING_RULE name while
+  // the discount itself has a generic name — resolve rule name -> discount.
+  if (!match) {
+    const rule = rules.find(
+      r => r.type === 'PRICING_RULE' && !r.isDeleted && matchesCode(r.pricingRuleData?.name),
+    )
+    const ruleDiscountId = rule?.type === 'PRICING_RULE' ? rule.pricingRuleData?.discountId : null
+    if (ruleDiscountId) {
+      match = live.find(obj => obj.id === ruleDiscountId)
+      matchedViaRuleName = !!match
+    }
+  }
 
   if (!match || match.type !== 'DISCOUNT') {
-    return { valid: false, reason: 'not_found' }
-  }
-  if (match.isDeleted) {
     return { valid: false, reason: 'not_found' }
   }
   if (!isPresentAtLocation(match, locationId)) {
@@ -101,9 +115,11 @@ export async function validateVoucher(code: string): Promise<VoucherResult> {
   const data = match.discountData
   // Display the short code, not the full marketing sentence, when matched by suffix.
   const fullName = (data?.name ?? normalized).trim()
-  const name = extractCodeSuffix(fullName)?.toLowerCase() === target
-    ? extractCodeSuffix(fullName)!
-    : fullName
+  const name = matchedViaRuleName
+    ? normalized
+    : extractCodeSuffix(fullName)?.toLowerCase() === target
+      ? extractCodeSuffix(fullName)!
+      : fullName
   const discountType = data?.discountType
 
   // Resolve the discount value (server-side only).
@@ -127,10 +143,9 @@ export async function validateVoucher(code: string): Promise<VoucherResult> {
 
   // Scheduling: if a pricing rule references this discount and has a valid-from/until
   // window, enforce today (Montreal) is inside it. No referencing rule = always valid.
-  const rules = await listAllCatalog('PRICING_RULE')
   const today = montrealToday()
   for (const rule of rules) {
-    if (rule.type !== 'PRICING_RULE') continue
+    if (rule.type !== 'PRICING_RULE' || rule.isDeleted) continue
     const rd = rule.pricingRuleData
     if (!rd || rd.discountId !== match.id) continue
     const from = rd.validFromDate ?? null

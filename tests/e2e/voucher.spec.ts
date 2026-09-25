@@ -43,6 +43,8 @@ async function mockApis(page: Page) {
     }
     if (code.toLowerCase() === 'valid10') {
       await route.fulfill({ json: { valid: true, code, name: 'VALID10', kind: 'percentage', percentage: 10 } })
+    } else if (code.toLowerCase() === 'free100') {
+      await route.fulfill({ json: { valid: true, code, name: 'FREE100', kind: 'percentage', percentage: 100 } })
     } else {
       await route.fulfill({ json: { valid: false, reason: 'not_found' } })
     }
@@ -147,5 +149,58 @@ test.describe('Voucher / discount code', () => {
     await expect(page.locator('.pricing-payment-summary-discount')).toHaveCount(0)
     await expect(page.locator('#voucher-code')).toBeVisible()
     await expect(totalRow).toHaveText('$52.89')
+  })
+
+  test('100% voucher → $0 total, no card form, books without a card nonce and shows loyalty', async ({ page }) => {
+    let bookingBody: Record<string, unknown> | null = null
+    await page.route('**/api/booking', async (route) => {
+      bookingBody = route.request().postDataJSON() as Record<string, unknown>
+      await route.fulfill({
+        json: {
+          bookingId: 'B1',
+          paymentStatus: 'COMPLETED',
+          loyalty: {
+            pointsEarned: 1,
+            balance: 4,
+            terminology: { one: 'Paw', other: 'Paws' },
+            pointsToNextReward: 6,
+            nextRewardName: 'Free class',
+          },
+        },
+      })
+    })
+    await reachPaymentStep(page)
+
+    await page.locator('#voucher-code').fill('FREE100')
+    await page.getByRole('button', { name: 'Apply' }).click()
+
+    const totalRow = page.locator('.pricing-payment-summary-total .pricing-payment-summary-amount')
+    await expect(totalRow).toHaveText('$0.00')
+    await expect(page.locator('#sq-card-container')).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Confirm booking' }).click()
+    await expect(page.locator('.pricing-success-loyalty')).toContainText('You earned 1 Paw')
+    await expect(page.locator('.pricing-success-loyalty')).toContainText('Your balance: 4 Paws')
+    await expect(page.locator('.pricing-success-loyalty')).toContainText('6 Paws to go')
+    expect(bookingBody).not.toBeNull()
+    expect(bookingBody!.cardNonce).toBeUndefined()
+    expect(bookingBody!.voucherCode).toBe('FREE100')
+  })
+
+  test('mat rental is not taxed (matches the Square order)', async ({ page }) => {
+    await openBooking(page)
+    await clickClassChoice(page, 'Regular Class')
+    await page.getByText('No, I will rent one on-site').click()
+    await pickFirstDateAndTime(page)
+    await page.locator('#pub-fullname').fill('John Doe')
+    await page.locator('#pub-email').fill('john@example.com')
+    await page.locator('#pub-phone').fill('514-555-0300')
+    await page.locator('#pub-waiver').check()
+    await page.getByText('Confirm booking').click()
+    await expect(page.locator('#voucher-code')).toBeVisible({ timeout: 5_000 })
+    // $46 + $5 mat + GST 2.30 + QST 4.59 = $57.89 (tax on the class only)
+    await expect(
+      page.locator('.pricing-payment-summary-total .pricing-payment-summary-amount'),
+    ).toHaveText('$57.89')
   })
 })

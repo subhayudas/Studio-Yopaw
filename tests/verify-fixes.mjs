@@ -484,3 +484,41 @@ test('App.tsx: sends voucherCode (not a discount amount) to /api/booking', () =>
     'App.tsx sends a discount amount to /api/booking — only the raw voucherCode should be sent'
   )
 })
+
+// ─── Gift cards + loyalty ────────────────────────────────────────────────────
+
+const giftApi = fs.readFileSync('./api/giftcard.ts', 'utf8')
+const giftEngine = fs.readFileSync('./api/_giftcard.ts', 'utf8')
+const loyaltyEngine = fs.readFileSync('./api/_loyalty.ts', 'utf8')
+
+test('booking.ts: gift card balance is resolved server-side from the nonce, never client-supplied', () => {
+  assert.ok(
+    booking.includes('lookupGiftCardByNonce(giftCardNonce)') && !booking.includes('giftBalance') && !booking.includes('giftCardCents'),
+    'booking.ts must derive the gift card balance from Square (lookupGiftCardByNonce), not from the request body'
+  )
+})
+
+test('booking.ts: gift card leg failure refunds the card leg', () => {
+  assert.ok(
+    booking.includes('square.refunds.refundPayment') && booking.includes('gift card leg failed AND card refund failed'),
+    'booking.ts does not reverse the card charge when the gift card payment fails'
+  )
+})
+
+test('booking.ts: $0 orders are closed via orders.pay (Square rejects $0 payments)', () => {
+  assert.ok(booking.includes('square.orders.pay'), 'booking.ts has no $0-order path')
+})
+
+test('booking.ts: loyalty accrual runs after payment and can never fail the booking', () => {
+  assert.ok(booking.includes('awardLoyaltyForOrder'), 'booking.ts does not accrue loyalty points')
+  assert.ok(
+    loyaltyEngine.includes('return null') && loyaltyEngine.includes('booking unaffected'),
+    '_loyalty.ts must swallow errors (customer has already paid)'
+  )
+})
+
+test('gift card API: returns balance + last4 only, never the full GAN, and is rate limited', () => {
+  assert.ok(!giftApi.includes('gan:') && giftApi.includes('last4'), 'giftcard.ts may leak the full GAN')
+  assert.ok(giftApi.includes('isRateLimited') && voucherApi.includes('isRateLimited'), 'lookup endpoints are not rate limited')
+  assert.ok(giftEngine.includes("state !== 'ACTIVE'"), '_giftcard.ts does not require an ACTIVE card')
+})

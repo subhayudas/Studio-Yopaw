@@ -4,7 +4,7 @@
 >
 > **Maintenance rule:** whenever you make a code change that affects architecture, API contracts, env vars, booking flow, component structure, or tests, update the relevant section of this file in the same turn. This file is the primary context source for future sessions.
 >
-> **Periodic audit:** an automated weekly routine re-audits this file against the code (PRs branch-named `docs/claude-md-audit-*`). In-session, only sanity-check sections covering code you touch (recent `git log` is a good drift signal). Last full audit: **2026-06-12** (verified against code; fixed Resend→Twilio, extra attendees, seat counting, blockedSlots, sold-out UX, testing section).
+> **Periodic audit:** an automated weekly routine re-audits this file against the code (PRs branch-named `docs/claude-md-audit-*`). In-session, only sanity-check sections covering code you touch (recent `git log` is a good drift signal). Last full audit: **2026-06-12** (gift cards / loyalty / voucher hardening added 2026-09-24) (verified against code; fixed Resend→Twilio, extra attendees, seat counting, blockedSlots, sold-out UX, testing section).
 
 ---
 
@@ -45,6 +45,10 @@ Studio-Yopaw/
 │   ├── _twilio.ts                # sendTeamSms() — sends SMS to all TWILIO_TEAM_NUMBERS
 │   ├── _availability.ts          # buildAvailabilities(), countSlotAttendees() — seat-count engine
 │   ├── _voucher.ts               # validateVoucher() — voucher-code validation engine (Square Catalog discounts)
+│   ├── _giftcard.ts              # lookupGiftCardByNonce() — Square gift card balance/state from an SDK nonce
+│   ├── _loyalty.ts               # awardLoyaltyForOrder() + toE164() — Square Loyalty accrual (never throws)
+│   ├── _rateLimit.ts             # isRateLimited() — best-effort in-memory limiter for code-lookup endpoints
+│   ├── giftcard.ts               # POST /api/giftcard (thin handler → _giftcard.ts)
 │   ├── availability.ts           # GET  /api/availability (thin handler → _availability.ts)
 │   ├── breeds.ts                 # GET  /api/breeds
 │   ├── booking.ts                # POST /api/booking
@@ -262,6 +266,8 @@ corporateSuccess              → "Request received" confirmation (clock icon)
 | `soldOutDates` | `string[]` (memo) | Dates whose every slot has `seatsRemaining === 0` — rendered as disabled rows with a "Full / Complet" label, merged into the calendar as `[...effectiveDates, ...soldOutDates].sort()` |
 | `voucherInput` | `string` | Raw voucher-code text on the payment step |
 | `appliedVoucher` | `AppliedVoucher \| null` | Validated voucher from `/api/voucher` (`{ code, name, kind: 'percentage'\|'amount', percentage?/amountCents? }`). Drives the summary discount row; `code` is sent to `/api/booking`. Reset on flow restart |
+| `giftCard` | `AppliedGiftCard | null` | `{ nonce, balanceCents, last4 }` from `/api/giftcard`; nonce sent to `/api/booking` as `giftCardNonce`. Reset on restart |
+| `loyalty` | `LoyaltyResult | null` | Points result from the booking response; rendered on the Regular Class success screen |
 | `voucherLoading` / `voucherError` | `boolean` / `string \| null` | Apply-button loading state and invalid-code error message |
 
 ### Progress Bar Percentages (`progressPercent()`)
@@ -379,6 +385,9 @@ type VoucherResult =
 - Catalog reads use `square.catalog.list({ types: 'DISCOUNT' | 'PRICING_RULE' })` with the `page.data` + `getNextPage()` pagination pattern (NOT `for await` — same SDK v44 quirk as `_availability.ts`).
 - Square API failures throw (mapped to 500 by callers) — an API error is never treated as a valid voucher.
 
+### `POST /api/giftcard`
+Body: `{ nonce }` — a gift-card token from the Square Web Payments SDK `payments.giftCard().tokenize()` (customer types GAN + PIN into Square's iframe; we never see them). Returns 200 `{ valid: true, balanceCents, last4 }` or `{ valid: false, reason: 'not_found'|'inactive'|'empty' }`; 429 when rate limited; 500 on Square failure. Never returns the full GAN. Redemption only — gift cards are SOLD via Square Dashboard/POS, not on the site.
+
 ### `POST /api/voucher`
 Thin handler in `voucher.ts`. Body: `{ code: string }`. Returns 200 `{ valid: true, code, name, kind, percentage? | amountCents? }` for a valid code, 200 `{ valid: false, reason }` for an invalid one (not a server error), 500 `{ error: 'Voucher lookup failed' }` on Square API failure. `Cache-Control: no-store`. Returns ONLY the matched discount — never the catalog. The client never supplies or receives anything that controls the charge; the discount is re-resolved server-side at booking time.
 
@@ -389,6 +398,7 @@ Body: `{ givenName, familyName, email, phone, serviceVariationId, serviceVariati
 - `totalPeople = 1 + (extraAttendees?.length ?? 0)` — drives the seat check, order quantity, and Zapier payload
 - `baseAmountCents` is for notification display only — it is NOT used to determine the charge amount. The actual charge comes from the Square Order total (see steps 4–5).
 - `voucherCode?: string` — raw code only; all discount values resolved server-side
+- `cardNonce?: string` + `giftCardNonce?: string` — at least one is needed unless the order total is $0. Gift card balance is re-resolved server-side (`lookupGiftCardByNonce`).
 
 Flow:
 1. `square.customers.search()` by email → create customer if not found. Also attempts to create Square customers for ALL extra attendees via `Promise.all`, falling back to primary-only if rate-limited
@@ -405,6 +415,8 @@ Flow:
    - `square.payments.create()` — charges `order.totalMoney.amount` (the Square-computed total)
    - Payment status validated: must be `COMPLETED` or `APPROVED`
    - **On any failure:** `square.bookings.cancel()` called immediately to prevent ghost appointments. If the cancel itself fails, logs `CRITICAL: Payment failed AND booking cancellation failed — manual cleanup required`
+   **Split tender (step 5):** gift card portion = `min(balance, order total)`; the card nonce pays the remainder (400 `BookingInputError` if a card is needed but missing). Card leg is charged first; if the gift card leg then fails the card payment is refunded (`refunds.refundPayment`). A **$0 order** (100% voucher / fully covered) has no payment — closed with `orders.pay({ paymentIds: [] })` because Square rejects $0 payments. Response: `{ bookingId, paymentStatus, loyalty }`.
+5b. **Loyalty** (`awardLoyaltyForOrder`, after payment, never fails the booking): program `main` must be ACTIVE; account found/created by the booker's phone (E.164 via `toE164`, NA formats normalised; unusable phone → skipped); `loyalty.accounts.accumulatePoints({ orderId })` so Square's own accrual rules value the order; idempotency key `loyalty-order-<orderId>`. Returns `{ pointsEarned, balance, terminology, pointsToNextReward, nextRewardName }` or `null`. Shown on the success screen; redemption stays in Square POS. **Requires** the Square Loyalty program to be set up + active in the Dashboard. Auto-enrols the booker (no opt-in checkbox yet).
 5. Fires `ZAPIER_REGULAR_URL` — single webhook: `{ firstName, lastName, fullName, email, phone, classType, attendeeCount: totalPeople, attendeeNames, startAt, bookingId, totalDollars, paymentStatus, voucherCode }` (`attendeeNames` = comma-separated string of all names; `voucherCode` = applied discount name or `''`; `totalDollars` reflects the discounted Square total)
 6. Sends booking SMS via Twilio (`sendTeamSms` in `api/_twilio.ts`) to all numbers in `TWILIO_TEAM_NUMBERS` — includes booker name/email/phone, all attendee names, session date/time (Montréal TZ), voucher name (when applied), total, payment status
 
@@ -452,7 +464,9 @@ Fetches `GET /api/breeds`.
 Returns `{ schedule: Record<string, BreedEntry[]>, loading: boolean }` where `BreedEntry = { breed: { en, fr }; serviceIds: string[] }`.  
 Front-end filter: `serviceIds.length === 0 || serviceIds.includes(currentServiceVariationId)` — empty array matches all.
 
-### `useSquareCard(appId, locationId)`
+### `useSquareCard(appId, locationId, { method?, containerId?, enabled? })`
+`method: 'giftCard'` mounts the SDK gift-card element (used by `GiftCardPanel` in App.tsx, container `#sq-gift-card-container`, lazy via `enabled`).
+Original description:
 Vanilla Square Web Payments SDK wrapper. Uses `window.Square` (loaded via `<script src="https://web.squarecdn.com/v1/square.js">` in `index.html`).  
 Returns `{ containerRef, tokenize(), loading, ready, sdkError }`.  
 Polls for `window.Square` up to 40 × 250ms before giving up. Cleans up with `card.destroy()` on unmount.
@@ -484,7 +498,7 @@ export type AppliedVoucher =
 export function computeVoucherDiscountCents(baseCents, v) // display-only; clamped to [0, baseCents]
 ```
 
-Voucher display math on the payment step: `discountCents = computeVoucherDiscountCents(baseCents, appliedVoucher)`, then taxes shown via `computeTaxBreakdown(baseCents - discountCents)` — matches Square's MODIFY_TAX_BASIS behaviour. Display only; the real charge is always the Square order total.
+`computeOrderQuote(serviceCents, matCents, voucher)` is the single display-math source for the payment step (mirrors the Square order): discount applies to service+mat subtotal, **mat rental is tax-free**, GST/QST apply to the service line's discounted share. `splitGiftCard(total, gift)` → `{ giftCents, cardCents }`; when `cardCents === 0` the payment step shows a "Confirm booking" button instead of the card form. (Older description follows.) Voucher display math on the payment step: `discountCents = computeVoucherDiscountCents(baseCents, appliedVoucher)`, then taxes shown via `computeTaxBreakdown(baseCents - discountCents)` — matches Square's MODIFY_TAX_BASIS behaviour. Display only; the real charge is always the Square order total.
 
 All IDs read from `VITE_*` env vars. `baseAmountCents` is the pre-tax base; mat rental (500 cents) is added on top for yin bookings where `needsMatRental === true`.
 
@@ -629,6 +643,8 @@ Scroll animations: sections get `.visible` class via IntersectionObserver → CS
 - `tests/e2e/booking-flow.spec.ts` — ~30 tests: all three flows end-to-end (Regular reaches the payment step, Private/Corporate reach inquiry success), progress-bar %, extra-attendee UX (add/remove/cap at 10/waiver gating), sold-out date rows, FR strings.
 - `tests/e2e/timeslot-full.spec.ts` — full time slot shows disabled + "Full"; date with all slots full renders disabled and never opens the time modal.
 - `tests/e2e/voucher.spec.ts` — mocks `/api/voucher` via `page.route`: valid code → discount row + reduced total; invalid code → error, no discount; remove → total restored.
+- Gift card / loyalty: `tests/unit/pricing.test.ts` (`computeOrderQuote`, `splitGiftCard`), `tests/unit/loyalty.test.ts` (`toE164`), `voucher.spec.ts` ($0 voucher path + loyalty success block, mat-rental-untaxed), `verify-fixes.mjs` (server-side gift balance, refund-on-failure, $0 path, loyalty never throws). The gift-card SDK iframe can't be driven offline, so the gift card UI itself is only verified against Square sandbox (GAN `7783320001001635`, PIN `1234`).
+- **E2E note:** specs need `VITE_SQUARE_*_VARIATION_ID` set (any dummy) or availability never loads and every booking spec fails at the date step.
 - `tests/unit/i18n.test.ts` — all extra-attendee/message/company i18n keys present + non-empty in EN and FR. `tests/unit/pricing.test.ts` — `computeTaxBreakdown()` math incl. 11-attendee scaling and mat rental, plus `computeVoucherDiscountCents()` (rounding, clamping, 0%).
 - `tests/verify-fixes.mjs` reads source files directly and asserts known fixes are still present (payment, taxes, mat rental, webhook, extra attendees, seat count incl. `_availability.ts` engine, inquiry, voucher safety: server-side revalidation, ORDER-scope catalog discount, no client-supplied amounts).
 

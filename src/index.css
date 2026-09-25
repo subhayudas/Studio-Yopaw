@@ -2131,3 +2131,14 @@ section, #book { scroll-margin-top: 104px; }
     grid-template-columns: 1fr;
   }
 }
+
+/* Loyalty block on the booking success screen + gift card panel */
+.pricing-success-loyalty {
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: rgba(122, 158, 126, 0.12);
+  text-align: center;
+}
+.pricing-success-loyalty .pricing-success-body { margin: 0 0 0.35rem; }
+.pricing-giftcard { margin-top: 0.75rem; }

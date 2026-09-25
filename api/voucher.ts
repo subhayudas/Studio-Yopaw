@@ -1,8 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { isRateLimited } from './_rateLimit.js'
 import { validateVoucher } from './_voucher.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).end()
+  if (isRateLimited(req, 'voucher')) return res.status(429).json({ error: 'Too many attempts. Please wait a few minutes.' })
 
   const code = (req.body as { code?: unknown })?.code
   const raw = typeof code === 'string' ? code : ''

@@ -20,6 +20,53 @@ export function computeVoucherDiscountCents(baseCents: number, v: AppliedVoucher
   return Math.max(0, Math.min(raw, baseCents))
 }
 
+export interface OrderQuote {
+  subtotalCents: number
+  discountCents: number
+  gstCents: number
+  qstCents: number
+  totalCents: number
+}
+
+/**
+ * Mirrors how the real Square order is built in api/booking.ts (display only):
+ * - the ORDER-scoped discount applies to the whole subtotal (service + mat rental)
+ *   and Square prorates it across line items,
+ * - GST/QST apply to the SERVICE line only (mat rental is tax-free) on its
+ *   discounted amount (MODIFY_TAX_BASIS).
+ */
+export function computeOrderQuote(
+  serviceCents: number,
+  matRentalCents: number,
+  voucher: AppliedVoucher | null,
+): OrderQuote {
+  const subtotalCents = serviceCents + matRentalCents
+  const discountCents = voucher ? computeVoucherDiscountCents(subtotalCents, voucher) : 0
+  const serviceDiscount = subtotalCents > 0 ? Math.round(discountCents * serviceCents / subtotalCents) : 0
+  const taxable = serviceCents - serviceDiscount
+  const gstCents = Math.round(taxable * TAX_RATES.gst)
+  const qstCents = Math.round(taxable * TAX_RATES.qst)
+  return {
+    subtotalCents,
+    discountCents,
+    gstCents,
+    qstCents,
+    totalCents: subtotalCents - discountCents + gstCents + qstCents,
+  }
+}
+
+export interface AppliedGiftCard {
+  nonce: string
+  balanceCents: number
+  last4: string
+}
+
+/** Split an order total between an applied gift card and the remaining card charge. */
+export function splitGiftCard(totalCents: number, gift: AppliedGiftCard | null) {
+  const giftCents = gift ? Math.min(gift.balanceCents, totalCents) : 0
+  return { giftCents, cardCents: totalCents - giftCents }
+}
+
 export const SQUARE_SERVICE_VARIATIONS = {
   yin: {
     serviceVariationId: stripBom(import.meta.env.VITE_SQUARE_YIN_VARIATION_ID),

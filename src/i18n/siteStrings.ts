@@ -172,6 +172,20 @@ export interface SiteStrings {
   voucherRemove: string
   voucherInvalid: string
   voucherDiscountLabel: string
+  giftCardToggle: string
+  giftCardHelper: string
+  giftCardApply: string
+  giftCardChecking: string
+  giftCardApplied: string
+  giftCardRemove: string
+  giftCardInvalid: string
+  giftCardSummaryLabel: string
+  giftCardRemainder: string
+  giftCardFullyCovered: string
+  loyaltyEarned: string
+  loyaltyBalance: string
+  loyaltyNext: string
+  loyaltyNote: string
   abbrevRequiredTitle: string
   galleryBadge: string
   galleryHeading: string
@@ -407,6 +421,20 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     voucherRemove: 'Remove',
     voucherInvalid: 'This code is invalid or expired.',
     voucherDiscountLabel: 'Discount',
+    giftCardToggle: 'Have a gift card?',
+    giftCardHelper: 'Enter your gift card number and PIN below. Any amount not covered is charged to your card.',
+    giftCardApply: 'Apply gift card',
+    giftCardChecking: 'Checking…',
+    giftCardApplied: 'Gift card applied',
+    giftCardRemove: 'Remove',
+    giftCardInvalid: 'This gift card could not be used (invalid, inactive or empty).',
+    giftCardSummaryLabel: 'Gift card',
+    giftCardRemainder: 'Remaining to pay',
+    giftCardFullyCovered: 'Your gift card covers the full amount — no card needed.',
+    loyaltyEarned: 'You earned {points} {unit} with this booking!',
+    loyaltyBalance: 'Your balance: {balance} {unit}.',
+    loyaltyNext: '{remaining} {unit} to go until your next reward.',
+    loyaltyNote: 'Use the phone number on this booking to check and redeem your rewards at the studio.',
     abbrevRequiredTitle: 'required',
     galleryBadge: 'The Studio',
     galleryHeading: 'Moments of ',
@@ -691,6 +719,20 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     voucherRemove: 'Retirer',
     voucherInvalid: 'Ce code est invalide ou expiré.',
     voucherDiscountLabel: 'Rabais',
+    giftCardToggle: 'Vous avez une carte-cadeau ?',
+    giftCardHelper: 'Entrez le numéro et le NIP de votre carte-cadeau ci-dessous. Tout montant non couvert sera débité de votre carte.',
+    giftCardApply: 'Appliquer la carte-cadeau',
+    giftCardChecking: 'Vérification…',
+    giftCardApplied: 'Carte-cadeau appliquée',
+    giftCardRemove: 'Retirer',
+    giftCardInvalid: 'Cette carte-cadeau ne peut pas être utilisée (invalide, inactive ou vide).',
+    giftCardSummaryLabel: 'Carte-cadeau',
+    giftCardRemainder: 'Reste à payer',
+    giftCardFullyCovered: 'Votre carte-cadeau couvre le montant total — aucune carte requise.',
+    loyaltyEarned: 'Vous avez gagné {points} {unit} avec cette réservation !',
+    loyaltyBalance: 'Votre solde : {balance} {unit}.',
+    loyaltyNext: 'Encore {remaining} {unit} avant votre prochaine récompense.',
+    loyaltyNote: 'Utilisez le numéro de téléphone de cette réservation pour consulter et échanger vos récompenses au studio.',
     abbrevRequiredTitle: 'obligatoire',
     galleryBadge: 'Le studio',
     galleryHeading: 'Des moments ',

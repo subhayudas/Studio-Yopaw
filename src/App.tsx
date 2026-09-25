@@ -10,7 +10,7 @@ import { RefundPolicyPage } from './pages/RefundPolicyPage'
 import { WaiverPage } from './pages/WaiverPage'
 import { useSquareAvailability, type SquareSlot } from './hooks/useSquareAvailability'
 import { useBreedSchedule } from './hooks/useBreedSchedule'
-import { SQUARE_SERVICE_VARIATIONS, computeTaxBreakdown, computeVoucherDiscountCents, type AppliedVoucher } from './lib/squareServices'
+import { SQUARE_SERVICE_VARIATIONS, computeOrderQuote, splitGiftCard, type AppliedVoucher, type AppliedGiftCard } from './lib/squareServices'
 
 declare function gtag(...args: unknown[]): void
 
@@ -397,6 +397,111 @@ function SquareCardWidget({
   )
 }
 
+interface LoyaltyResult {
+  pointsEarned: number
+  balance: number
+  terminology: { one: string; other: string }
+  pointsToNextReward: number | null
+  nextRewardName: string | null
+}
+
+function GiftCardPanel({
+  appId,
+  locationId,
+  applied,
+  onApply,
+  onRemove,
+}: {
+  appId: string
+  locationId: string
+  applied: AppliedGiftCard | null
+  onApply: (g: AppliedGiftCard) => void
+  onRemove: () => void
+}) {
+  const { lang, s } = useI18n()
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { containerRef, tokenize, loading, ready, sdkError } = useSquareCard(appId, locationId, {
+    method: 'giftCard',
+    containerId: 'sq-gift-card-container',
+    enabled: open && !applied,
+  })
+
+  const apply = async () => {
+    setError(null)
+    setBusy(true)
+    try {
+      const tok = await tokenize()
+      if (!('nonce' in tok)) { setError(tok.error); return }
+      const res = await fetch('/api/giftcard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nonce: tok.nonce }),
+      })
+      const data = (await res.json().catch(() => ({}))) as { valid?: boolean; balanceCents?: number; last4?: string }
+      if (res.ok && data.valid && typeof data.balanceCents === 'number') {
+        onApply({ nonce: tok.nonce, balanceCents: data.balanceCents, last4: data.last4 ?? '' })
+        setOpen(false)
+      } else {
+        setError(s.giftCardInvalid)
+      }
+    } catch {
+      setError(s.giftCardInvalid)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (!appId || !locationId) return null
+
+  if (applied) {
+    return (
+      <div className="pricing-voucher">
+        <div className="pricing-voucher-applied">
+          <span className="pricing-voucher-applied-text">
+            <span className="pricing-voucher-applied-label">{s.giftCardApplied}:</span>{' '}
+            <strong>••{applied.last4}</strong> ({fmtCAD(applied.balanceCents, lang)})
+          </span>
+          <button type="button" className="pricing-voucher-remove" onClick={onRemove}>
+            {s.giftCardRemove}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="pricing-voucher pricing-giftcard">
+      {!open ? (
+        <button type="button" className="pricing-voucher-remove" onClick={() => setOpen(true)}>
+          {s.giftCardToggle}
+        </button>
+      ) : (
+        <>
+          <p className="pricing-helper-text">{s.giftCardHelper}</p>
+          <div id="sq-gift-card-container" ref={containerRef} style={{ minHeight: ready ? undefined : '44px', marginBottom: '0.75rem' }} />
+          {sdkError && <p className="pricing-voucher-error">{sdkError}</p>}
+          {error && <p className="pricing-voucher-error">{error}</p>}
+          <div className="pricing-voucher-row">
+            <button
+              type="button"
+              className="pricing-voucher-apply"
+              onClick={() => void apply()}
+              disabled={!ready || loading || busy}
+            >
+              {busy ? s.giftCardChecking : s.giftCardApply}
+            </button>
+            <button type="button" className="pricing-voucher-remove" onClick={() => { setOpen(false); setError(null) }}>
+              {lang === 'fr' ? 'Annuler' : 'Cancel'}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 function PricingSection() {
   const { lang, s } = useI18n()
 
@@ -445,6 +550,8 @@ function PricingSection() {
   const [appliedVoucher, setAppliedVoucher] = useState<AppliedVoucher | null>(null)
   const [voucherLoading, setVoucherLoading] = useState(false)
   const [voucherError, setVoucherError] = useState<string | null>(null)
+  const [giftCard, setGiftCard] = useState<AppliedGiftCard | null>(null)
+  const [loyalty, setLoyalty] = useState<LoyaltyResult | null>(null)
 
   // Square availability
   const startDate = useMemo(todayIso, [])
@@ -800,7 +907,18 @@ function PricingSection() {
     }
   }
 
-  const submitBookingWithPayment = async (nonce: string) => {
+  // Single source of truth for the payment-step numbers (mirrors the Square order).
+  const getPaymentQuote = () => {
+    if (flow.kind !== 'public') return null
+    const groupSize = flow.yoga === 'gentle' ? Math.max(2, parseInt(privateGroupCount || '2', 10)) : 1 + extraAttendees.length
+    const svc = SQUARE_SERVICE_VARIATIONS[flow.yoga]
+    const matRentalCents = flow.yoga === 'yin' && needsMatRental ? 500 : 0
+    const serviceCents = svc.baseAmountCents * groupSize
+    const quote = computeOrderQuote(serviceCents, matRentalCents, appliedVoucher)
+    return { groupSize, matRentalCents, serviceCents, quote, ...splitGiftCard(quote.totalCents, giftCard) }
+  }
+
+  const submitBookingWithPayment = async (nonce?: string) => {
     if (flow.kind !== 'public') return
     setBookingLoading(true)
     setBookingError(null)
@@ -826,6 +944,7 @@ function PricingSection() {
           teamMemberId: serviceInfo.teamMemberId,
           startAt: selectedTimeSlotId,
           cardNonce: nonce,
+          giftCardNonce: giftCard?.nonce,
           baseAmountCents: serviceInfo.baseAmountCents,
           serviceName: serviceInfo.serviceName,
           needsMatRental,
@@ -840,6 +959,8 @@ function PricingSection() {
         return
       }
 
+      const booked = (await res.json().catch(() => ({}))) as { loyalty?: LoyaltyResult | null }
+      setLoyalty(booked.loyalty ?? null)
       requestScrollPricingCardAfterAdvance()
       refreshAvailability()
       setFlow({ kind: 'publicSuccess', source: 'regular' })
@@ -872,6 +993,8 @@ function PricingSection() {
     setAppliedVoucher(null)
     setVoucherLoading(false)
     setVoucherError(null)
+    setGiftCard(null)
+    setLoyalty(null)
   }
 
   const applyVoucher = async () => {
@@ -932,6 +1055,27 @@ function PricingSection() {
           time: formatSquareSlotTime(selectedTimeSlotId, lang),
         })}
       </p>
+      {loyalty && (() => {
+        const unit = (n: number) => (n === 1 ? loyalty.terminology.one : loyalty.terminology.other)
+        return (
+          <div className="pricing-success-loyalty">
+            {loyalty.pointsEarned > 0 && (
+              <p className="pricing-success-body">
+                <strong>
+                  {interpolate(s.loyaltyEarned, { points: String(loyalty.pointsEarned), unit: unit(loyalty.pointsEarned) })}
+                </strong>
+              </p>
+            )}
+            <p className="pricing-success-body">
+              {interpolate(s.loyaltyBalance, { balance: String(loyalty.balance), unit: unit(loyalty.balance) })}
+              {loyalty.pointsToNextReward !== null && (
+                <>{' '}{interpolate(s.loyaltyNext, { remaining: String(loyalty.pointsToNextReward), unit: unit(loyalty.pointsToNextReward) })}</>
+              )}
+            </p>
+            <p className="pricing-helper-text">{s.loyaltyNote}</p>
+          </div>
+        )
+      })()}
       <p className="pricing-success-foot">{s.pricingSuccessPublicFoot}</p>
       <button type="button" className="pricing-success-restart" onClick={restartPublicBooking}>
         {s.pricingSuccessRestart}
@@ -1374,13 +1518,10 @@ function PricingSection() {
                   {lang === 'fr' ? 'Paiement sécurisé' : 'Secure Payment'}
                 </h3>
                 {(() => {
-                  const groupSize = flow.yoga === 'gentle' ? Math.max(2, parseInt(privateGroupCount || '2', 10)) : 1 + extraAttendees.length
-                  const svc = SQUARE_SERVICE_VARIATIONS[flow.yoga]
-                  const matRentalCents = flow.yoga === 'yin' && needsMatRental ? 500 : 0
-                  const baseCents = svc.baseAmountCents * groupSize + matRentalCents
-                  const discountCents = appliedVoucher ? computeVoucherDiscountCents(baseCents, appliedVoucher) : 0
-                  const taxableCents = baseCents - discountCents
-                  const { gstCents, qstCents, totalCents } = computeTaxBreakdown(taxableCents)
+                  const pq = getPaymentQuote()
+                  if (!pq) return null
+                  const { groupSize, matRentalCents, serviceCents, quote, giftCents, cardCents } = pq
+                  const { discountCents, gstCents, qstCents, totalCents } = quote
                   return (
                     <div className="pricing-payment-summary">
                       <div className="pricing-payment-summary-row">
@@ -1393,7 +1534,7 @@ function PricingSection() {
                                 ? `${groupSize} × Cours de yoga avec chiots`
                                 : `${groupSize} × Puppy Yoga Class`)}
                         </span>
-                        <span className="pricing-payment-summary-amount">{fmtCAD(baseCents - matRentalCents, lang)}</span>
+                        <span className="pricing-payment-summary-amount">{fmtCAD(serviceCents, lang)}</span>
                       </div>
                       {matRentalCents > 0 && (
                         <div className="pricing-payment-summary-row">
@@ -1423,6 +1564,18 @@ function PricingSection() {
                         </span>
                         <span className="pricing-payment-summary-amount">{fmtCAD(totalCents, lang)}</span>
                       </div>
+                      {giftCents > 0 && giftCard && (
+                        <>
+                          <div className="pricing-payment-summary-row pricing-payment-summary-discount">
+                            <span className="pricing-payment-summary-label">{s.giftCardSummaryLabel} (••{giftCard.last4})</span>
+                            <span className="pricing-payment-summary-amount">−{fmtCAD(giftCents, lang)}</span>
+                          </div>
+                          <div className="pricing-payment-summary-row pricing-payment-summary-total">
+                            <span className="pricing-payment-summary-label">{s.giftCardRemainder}</span>
+                            <span className="pricing-payment-summary-amount">{fmtCAD(cardCents, lang)}</span>
+                          </div>
+                        </>
+                      )}
                       {selectedSessionIso && (
                         <p className="pricing-payment-summary-meta">
                           {formatLongSessionDate(selectedSessionIso, lang)}
@@ -1478,6 +1631,13 @@ function PricingSection() {
                     </>
                   )}
                 </div>
+                <GiftCardPanel
+                  appId={SQUARE_APP_ID}
+                  locationId={SQUARE_LOCATION_ID}
+                  applied={giftCard}
+                  onApply={setGiftCard}
+                  onRemove={() => setGiftCard(null)}
+                />
                 <div className="pricing-payment-security">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M12 2L4 6v6c0 5.25 3.5 10.15 8 11.5C16.5 22.15 20 17.25 20 12V6l-8-4z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
@@ -1492,15 +1652,31 @@ function PricingSection() {
                     {bookingError}
                   </p>
                 )}
-                <SquareCardWidget
-                  appId={SQUARE_APP_ID}
-                  locationId={SQUARE_LOCATION_ID}
-                  loading={bookingLoading}
-                  buttonLabel={bookingLoading
-                    ? (lang === 'fr' ? 'Traitement…' : 'Processing…')
-                    : s.pricingSubmitBookSpot}
-                  onTokenize={(nonce) => { void submitBookingWithPayment(nonce) }}
-                />
+                {getPaymentQuote()?.cardCents === 0 ? (
+                  <>
+                    {giftCard && <p className="pricing-helper-text">{s.giftCardFullyCovered}</p>}
+                    <button
+                      type="button"
+                      className="btn-primary btn-lg pricing-submit"
+                      disabled={bookingLoading}
+                      onClick={() => { void submitBookingWithPayment() }}
+                    >
+                      {bookingLoading
+                        ? (lang === 'fr' ? 'Traitement…' : 'Processing…')
+                        : s.pricingSubmitBookSpot}
+                    </button>
+                  </>
+                ) : (
+                  <SquareCardWidget
+                    appId={SQUARE_APP_ID}
+                    locationId={SQUARE_LOCATION_ID}
+                    loading={bookingLoading}
+                    buttonLabel={bookingLoading
+                      ? (lang === 'fr' ? 'Traitement…' : 'Processing…')
+                      : s.pricingSubmitBookSpot}
+                    onTokenize={(nonce) => { void submitBookingWithPayment(nonce) }}
+                  />
+                )}
               </div>
             )}
 

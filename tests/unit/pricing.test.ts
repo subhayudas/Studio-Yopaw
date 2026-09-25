@@ -58,3 +58,49 @@ describe('computeVoucherDiscountCents', () => {
     expect(computeVoucherDiscountCents(4600, pct(100))).toBe(4600)
   })
 })
+
+import { computeOrderQuote, splitGiftCard } from '../../src/lib/squareServices'
+
+describe('computeOrderQuote (mirrors the Square order)', () => {
+  it('taxes only the service line — mat rental is tax-free', () => {
+    const q = computeOrderQuote(4600, 500, null)
+    expect(q.gstCents).toBe(230)
+    expect(q.qstCents).toBe(459)
+    expect(q.totalCents).toBe(4600 + 500 + 230 + 459)
+  })
+
+  it('prorates a percentage voucher across service + mat and taxes the discounted service', () => {
+    const v: AppliedVoucher = { code: 'X', name: 'X', kind: 'percentage', percentage: 10 }
+    const q = computeOrderQuote(4600, 500, v)
+    expect(q.discountCents).toBe(510) // 10% of $51.00
+    // service share of discount = 510 * 4600/5100 = 460 → taxable 4140
+    expect(q.gstCents).toBe(207)
+    expect(q.qstCents).toBe(413)
+    expect(q.totalCents).toBe(5100 - 510 + 207 + 413)
+  })
+
+  it('a 100% voucher gives a $0 total', () => {
+    const v: AppliedVoucher = { code: 'FREE', name: 'FREE', kind: 'percentage', percentage: 100 }
+    expect(computeOrderQuote(4600, 500, v).totalCents).toBe(0)
+  })
+
+  it('a fixed-amount voucher larger than the subtotal is clamped', () => {
+    const v: AppliedVoucher = { code: 'BIG', name: 'BIG', kind: 'amount', amountCents: 99999 }
+    const q = computeOrderQuote(4600, 0, v)
+    expect(q.discountCents).toBe(4600)
+    expect(q.totalCents).toBe(0)
+  })
+})
+
+describe('splitGiftCard', () => {
+  const gift = (balanceCents: number) => ({ nonce: 'n', balanceCents, last4: '1234' })
+  it('no gift card → everything on the card', () => {
+    expect(splitGiftCard(5000, null)).toEqual({ giftCents: 0, cardCents: 5000 })
+  })
+  it('partial balance → remainder on the card', () => {
+    expect(splitGiftCard(5000, gift(2000))).toEqual({ giftCents: 2000, cardCents: 3000 })
+  })
+  it('balance exceeds total → no card needed', () => {
+    expect(splitGiftCard(5000, gift(9000))).toEqual({ giftCents: 5000, cardCents: 0 })
+  })
+})

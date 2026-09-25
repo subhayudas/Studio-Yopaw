@@ -20,6 +20,7 @@ declare global {
 
 interface SquarePayments {
   card: () => Promise<SquareCard>
+  giftCard: () => Promise<SquareCard>
 }
 
 interface SquareCard {
@@ -41,10 +42,23 @@ interface UseSquareCardReturn {
   sdkError: string | null
 }
 
-export function useSquareCard(appId: string, locationId: string): UseSquareCardReturn {
+interface UseSquareCardOptions {
+  /** Which Web Payments SDK element to mount. Default 'card'. */
+  method?: 'card' | 'giftCard'
+  /** DOM id of the container div (without #). Default 'sq-card-container'. */
+  containerId?: string
+  /** Set false to defer initialisation (e.g. gift-card panel not opened yet). Default true. */
+  enabled?: boolean
+}
+
+export function useSquareCard(
+  appId: string,
+  locationId: string,
+  { method = 'card', containerId = 'sq-card-container', enabled = true }: UseSquareCardOptions = {},
+): UseSquareCardReturn {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const cardRef = useRef<SquareCard | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(enabled)
   const [ready, setReady] = useState(false)
   const [sdkError, setSdkError] = useState<string | null>(null)
 
@@ -73,7 +87,7 @@ export function useSquareCard(appId: string, locationId: string): UseSquareCardR
 
       try {
         const payments = await window.Square.payments(appId, locationId)
-        const card = await payments.card()
+        const card = method === 'giftCard' ? await payments.giftCard() : await payments.card()
 
         if (cancelled) {
           await card.destroy()
@@ -86,7 +100,7 @@ export function useSquareCard(appId: string, locationId: string): UseSquareCardR
         await new Promise(r => setTimeout(r, 50))
 
         if (containerRef.current && !cancelled) {
-          await card.attach('#sq-card-container')
+          await card.attach(`#${containerId}`)
           setReady(true)
         }
       } catch (err) {
@@ -98,7 +112,10 @@ export function useSquareCard(appId: string, locationId: string): UseSquareCardR
       }
     }
 
-    if (appId && locationId) {
+    if (!enabled) {
+      setLoading(false)
+      setReady(false)
+    } else if (appId && locationId) {
       void init()
     } else {
       setLoading(false)
@@ -112,7 +129,7 @@ export function useSquareCard(appId: string, locationId: string): UseSquareCardR
         cardRef.current = null
       }
     }
-  }, [appId, locationId])
+  }, [appId, locationId, method, containerId, enabled])
 
   const tokenize = useCallback(async (): Promise<{ nonce: string } | { error: string }> => {
     if (!cardRef.current) return { error: 'Card form not ready' }
