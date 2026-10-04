@@ -52,6 +52,7 @@ export interface SiteStrings {
     pricing: string
     corporate: string
     faq: string
+    gift: string
     /** About / values; shown in FR nav only (EN keeps Corporate in nav instead). */
     values: string
   }
@@ -182,6 +183,14 @@ export interface SiteStrings {
   giftCardSummaryLabel: string
   giftCardRemainder: string
   giftCardFullyCovered: string
+  giftSectionBadge: string
+  giftSectionHeading: string
+  giftSectionHeadingEm: string
+  giftSectionBody: string
+  giftSectionPerks: string[]
+  giftSectionCta: string
+  giftSectionCtaContact: string
+  giftSectionFine: string
   loyaltyEarned: string
   loyaltyBalance: string
   loyaltyNext: string
@@ -430,6 +439,14 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     giftCardInvalid: 'This gift card could not be used (invalid, inactive or empty).',
     giftCardSummaryLabel: 'Gift card',
     giftCardRemainder: 'Remaining to pay',
+    giftSectionBadge: 'Gift Cards',
+    giftSectionHeading: 'Give the gift of ',
+    giftSectionHeadingEm: 'puppy cuddles',
+    giftSectionBody: 'Birthdays, anniversaries, or just because — a Studio Yopaw gift card is the easiest way to give an unforgettable experience.',
+    giftSectionPerks: ['Delivered instantly by email', 'Choose any amount', 'Redeem at checkout when booking a class', 'Balance carries over until used'],
+    giftSectionCta: 'Buy a gift card',
+    giftSectionCtaContact: 'Ask about gift cards',
+    giftSectionFine: 'Already have one? Enter it on the payment step when you book.',
     giftCardFullyCovered: 'Your gift card covers the full amount — no card needed.',
     loyaltyEarned: 'You earned {points} {unit} with this booking!',
     loyaltyBalance: 'Your balance: {balance} {unit}.',
@@ -525,6 +542,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
       pricing: 'Pricing',
       corporate: 'Corporate',
       faq: 'FAQ',
+      gift: 'Gift Cards',
       values: 'Our Values',
     },
   },
@@ -728,6 +746,14 @@ export const siteStrings: Record<Lang, SiteStrings> = {
     giftCardInvalid: 'Cette carte-cadeau ne peut pas être utilisée (invalide, inactive ou vide).',
     giftCardSummaryLabel: 'Carte-cadeau',
     giftCardRemainder: 'Reste à payer',
+    giftSectionBadge: 'Cartes-cadeaux',
+    giftSectionHeading: 'Offrez des ',
+    giftSectionHeadingEm: 'câlins de chiots',
+    giftSectionBody: 'Anniversaire, occasion spéciale ou simplement pour le plaisir — la carte-cadeau Studio Yopaw est la façon la plus simple d’offrir une expérience inoubliable.',
+    giftSectionPerks: ['Livrée instantanément par courriel', 'Choisissez le montant', 'Utilisable au paiement lors de la réservation d’un cours', 'Le solde est conservé jusqu’à utilisation'],
+    giftSectionCta: 'Acheter une carte-cadeau',
+    giftSectionCtaContact: 'Renseignements sur les cartes-cadeaux',
+    giftSectionFine: 'Vous en avez déjà une ? Entrez-la à l’étape du paiement lors de votre réservation.',
     giftCardFullyCovered: 'Votre carte-cadeau couvre le montant total — aucune carte requise.',
     loyaltyEarned: 'Vous avez gagné {points} {unit} avec cette réservation !',
     loyaltyBalance: 'Votre solde : {balance} {unit}.',
@@ -825,6 +851,7 @@ export const siteStrings: Record<Lang, SiteStrings> = {
       pricing: 'Tarifs',
       corporate: 'Corporatif',
       faq: 'FAQ',
+      gift: 'Cartes-cadeaux',
       values: 'Nos valeurs',
     },
   },

@@ -27,6 +27,7 @@ export function Navbar({
             <li><a href="/#experience">{s.navLinks.howItWorks}</a></li>
             <li><a href="/#classes">{s.navLinks.classes}</a></li>
             <li><a href="/#pricing">{s.navLinks.pricing}</a></li>
+            <li><a href="/#gift-cards">{s.navLinks.gift}</a></li>
             <li><a href="/#about">{s.navLinks.values}</a></li>
             <li><a href="/#faq">{s.navLinks.faq}</a></li>
           </ul>
@@ -59,6 +60,7 @@ export function Navbar({
             <a href="/#experience" onClick={() => setMenuOpen(false)}>{s.navLinks.howItWorks}</a>
             <a href="/#classes" onClick={() => setMenuOpen(false)}>{s.navLinks.classes}</a>
             <a href="/#pricing" onClick={() => setMenuOpen(false)}>{s.navLinks.pricing}</a>
+            <a href="/#gift-cards" onClick={() => setMenuOpen(false)}>{s.navLinks.gift}</a>
             <a href="/#about" onClick={() => setMenuOpen(false)}>{s.navLinks.values}</a>
             <a href="/#faq" onClick={() => setMenuOpen(false)}>{s.navLinks.faq}</a>
             <div className="mobile-menu-actions">

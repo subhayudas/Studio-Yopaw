@@ -215,6 +215,48 @@ function AboutSection() {
   )
 }
 
+const GIFT_CARD_URL = (import.meta.env.VITE_GIFT_CARD_URL as string | undefined)?.trim() ?? ''
+
+function GiftCardSection() {
+  const { ref, inView } = useInView(0.2)
+  const { s } = useI18n()
+  return (
+    <section className="gift-section" id="gift-cards">
+      <div className={`gift-inner${inView ? ' visible' : ''}`} ref={ref}>
+        <div className="gift-visual" aria-hidden="true">
+          <div className="gift-card-mock">
+            <img src="/yopawlogo.png" alt="" />
+            <span>Studio Yopaw</span>
+          </div>
+        </div>
+        <div className="gift-text">
+          <span className="section-badge">{s.giftSectionBadge}</span>
+          <h2>{s.giftSectionHeading}<em>{s.giftSectionHeadingEm}</em>.</h2>
+          <p>{s.giftSectionBody}</p>
+          <ul className="gift-perks">
+            {s.giftSectionPerks.map(perk => <li key={perk}>{perk}</li>)}
+          </ul>
+          {GIFT_CARD_URL ? (
+            <a
+              href={GIFT_CARD_URL}
+              className="btn-primary btn-lg"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {s.giftSectionCta}
+            </a>
+          ) : (
+            <a href="mailto:Studioyopaw@gmail.com?subject=Gift%20card" className="btn-primary btn-lg">
+              {s.giftSectionCtaContact}
+            </a>
+          )}
+          <p className="gift-fine">{s.giftSectionFine}</p>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function ClassesSection() {
   const { ref, inView } = useInView(0.12)
   const { s } = useI18n()
@@ -2016,6 +2058,7 @@ function MarketingSite() {
       <ExperienceSection />
       <ClassesSection />
       <PricingSection />
+      <GiftCardSection />
       <GallerySection />
       <AboutSection />
       <FAQSection />
