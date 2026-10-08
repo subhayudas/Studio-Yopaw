@@ -33,7 +33,6 @@ export function Footer() {
             <li><a href="/#experience">{s.navLinks.howItWorks}</a></li>
             <li><a href="/#classes">{s.navLinks.classes}</a></li>
             <li><a href="/#pricing">{s.navLinks.pricing}</a></li>
-            <li><a href="/#gift-cards">{s.navLinks.gift}</a></li>
             <li><a href="/#about">{s.navLinks.values}</a></li>
             <li><a href="/#faq">{s.navLinks.faq}</a></li>
             <li><a href={waiverHref}>{s.footerWaiver}</a></li>

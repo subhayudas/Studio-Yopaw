@@ -174,7 +174,6 @@ All sections are top-level function components inside `App.tsx`. Order on the pa
 3. **`ExperienceSection`** — 3-step session flow (Warm Up 15min → Gentle Flow with Pups 15min → Play & Connect 30min)
 4. **`ClassesSection`** — 3 class cards (Regular Class, Private Event, Corporate)
 5. **`PricingSection`** — Multi-step booking wizard (see detailed section below)
-5b. **`GiftCardSection`** (`#gift-cards`) — gift-card selling band right after the booking wizard; CTA opens `VITE_GIFT_CARD_URL` (Square-hosted purchase page) in a new tab, or falls back to a mailto when unset. Also linked from Navbar + Footer (`navLinks.gift`). Redemption is separate (payment step `GiftCardPanel`).
 6. **`GallerySection`** — Photo grid using `GALLERY_IMAGES`, IntersectionObserver animation
 7. **`AboutSection`** — Studio story with floating paw icons
 8. **`FAQSection`** — Accordion FAQ, links to refund policy via `<<REFUND_POLICY_LINK>>` token
@@ -604,7 +603,6 @@ VITE_SQUARE_GENTLE_BASE_CENTS=4600
 VITE_SQUARE_CORP_VARIATION_ID=
 VITE_SQUARE_CORP_VARIATION_VERSION=
 VITE_SQUARE_CORP_BASE_CENTS=4600
-VITE_GIFT_CARD_URL=                    # Optional: Square gift-card purchase link for the #gift-cards section
 ```
 
 `VITE_SQUARE_APP_ID` is read at module level in `App.tsx`. If empty, the payment step shows a configuration error instead of the card form.
